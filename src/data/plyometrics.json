@@ -1,0 +1,1464 @@
+[
+ {
+  "id": "Alternate_Leg_Diagonal_Bound",
+  "name": "Alternate Leg Diagonal Bound",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Assume a comfortable stance with one foot slightly in front of the other.",
+   "Begin by pushing off with the front leg, driving the opposite knee forward and as high as possible before landing. Attempt to cover as much distance to each side with each bound.",
+   "It may help to use a line on the ground to guage distance from side to side.",
+   "Repeat the sequence with the other leg."
+  ],
+  "images": [
+   "Alternate_Leg_Diagonal_Bound/0.jpg",
+   "Alternate_Leg_Diagonal_Bound/1.jpg"
+  ]
+ },
+ {
+  "id": "Backward_Medicine_Ball_Throw",
+  "name": "Backward Medicine Ball Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [],
+  "instructions": [
+   "This exercise is best done with a partner. If you lack a partner, the ball can be thrown and retrieved or thrown against a wall.",
+   "Begin standing a few meters in front of your partner, both facing the same direction. Begin holding the ball between your legs.",
+   "Squat down and then forcefully reverse direction, coming to full extension and you toss the ball over your head to your partner.",
+   "Your partner can then roll the ball back to you. Repeat for the desired number of repetitions."
+  ],
+  "images": [
+   "Backward_Medicine_Ball_Throw/0.jpg",
+   "Backward_Medicine_Ball_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Bench_Jump",
+  "name": "Bench Jump",
+  "level": "intermediate",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Begin with a box or bench 1-2 feet in front of you. Stand with your feet shoulder width apart. This will be your starting position.",
+   "Perform a short squat in preparation for the jump; swing your arms behind you.",
+   "Rebound out of this position, extending through the hips, knees, and ankles to jump as high as possible. Swing your arms forward and up.",
+   "Jump over the bench, landing with the knees bent, absorbing the impact through the legs.",
+   "Turn around and face the opposite direction, then jump back over the bench."
+  ],
+  "images": [
+   "Bench_Jump/0.jpg",
+   "Bench_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Bench_Sprint",
+  "name": "Bench Sprint",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand on the ground with one foot resting on a bench or box with your heel close to the edge.",
+   "Push off with your foot on top of the bench, extending through the hip and knee.",
+   "Land with the opposite foot on top of the box, returning your other foot back to the start position.",
+   "Continue alternating from one foot to another to complete the set."
+  ],
+  "images": [
+   "Bench_Sprint/0.jpg",
+   "Bench_Sprint/1.jpg"
+  ]
+ },
+ {
+  "id": "Box_Jump_Multiple_Response",
+  "name": "Box Jump (Multiple Response)",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Assume a relaxed stance facing the box or platform approximately an arm's length away. Arms should be down at the sides and legs slightly bent.",
+   "Using the arms to aid in the initial burst, jump upward and forward, landing with feet simultaneously on top of the box or platform.",
+   "Immediately drop or jump back down to the original starting place; then repeat the sequence."
+  ],
+  "images": [
+   "Box_Jump_Multiple_Response/0.jpg",
+   "Box_Jump_Multiple_Response/1.jpg"
+  ]
+ },
+ {
+  "id": "Box_Skip",
+  "name": "Box Skip",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "quadriceps"
+  ],
+  "instructions": [
+   "You will need several boxes lined up about 8 feet apart.",
+   "Begin facing the first box with one leg slightly behind the other.",
+   "Drive off the back leg, attempting to gain as much height with the hips as possible.",
+   "Immediately upon landing on the box, drive the other leg forward and upward to gain height and distance, leaping from the box. Land between the first two boxes with the same leg that landed on the first box.",
+   "Then, step to the next box and repeat."
+  ],
+  "images": [
+   "Box_Skip/0.jpg",
+   "Box_Skip/1.jpg"
+  ]
+ },
+ {
+  "id": "Carioca_Quick_Step",
+  "name": "Carioca Quick Step",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "adductors"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "abductors",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Begin with your feet a few inches apart and your left arm up in a relaxed, athletic position.",
+   "With your right foot, quick step behind and pull the knee up.",
+   "Fire your arms back up when you pull the right knee, being sure that your knee goes straight up and down. Avoid turning your feet as you move and continue to look forward as you move to the side."
+  ],
+  "images": [
+   "Carioca_Quick_Step/0.jpg",
+   "Carioca_Quick_Step/1.jpg"
+  ]
+ },
+ {
+  "id": "Catch_and_Overhead_Throw",
+  "name": "Catch and Overhead Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "lats"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "chest",
+   "shoulders"
+  ],
+  "instructions": [
+   "Begin standing while facing a wall or a partner.",
+   "Using both hands, position the ball behind your head, stretching as much as possible, and forcefully throw the ball forward.",
+   "Ensure that you follow your throw through, being prepared to receive your rebound from your throw. If you are throwing against the wall, make sure that you stand close enough to the wall to receive the rebound, and aim a little higher than you would with a partner."
+  ],
+  "images": [
+   "Catch_and_Overhead_Throw/0.jpg",
+   "Catch_and_Overhead_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Chest_Push_from_3_point_stance",
+  "name": "Chest Push from 3 point stance",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Begin in a three point stance, squatted down with your back flat and one hand on the ground. Place the medicine ball directly in front of you.",
+   "To begin, take your first step as you pull the ball to your chest, positioning both hands to prepare for the throw.",
+   "As you execute the second step, explosively release the ball forward as hard as possible."
+  ],
+  "images": [
+   "Chest_Push_from_3_point_stance/0.jpg",
+   "Chest_Push_from_3_point_stance/1.jpg"
+  ]
+ },
+ {
+  "id": "Chest_Push_multiple_response",
+  "name": "Chest Push (multiple response)",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Begin in a kneeling position facing a wall or utilize a partner. Hold the ball with both hands tight into the chest.",
+   "Execute the pass by exploding forward and outward with the hips while pushing the ball as hard as possible.",
+   "Follow through by falling forward, catching yourself with your hands.",
+   "Immediately return to an upright position. Repeat for the desired number of repetitions."
+  ],
+  "images": [
+   "Chest_Push_multiple_response/0.jpg",
+   "Chest_Push_multiple_response/1.jpg"
+  ]
+ },
+ {
+  "id": "Chest_Push_single_response",
+  "name": "Chest Push (single response)",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Begin in a kneeling position holding the medicine ball with both hands tightly into the chest.",
+   "Execute the pass by exploding forward and outward with the hips while pushing the ball as far as possible.",
+   "Follow through by falling forward, catching yourself with your hands."
+  ],
+  "images": [
+   "Chest_Push_single_response/0.jpg",
+   "Chest_Push_single_response/1.jpg"
+  ]
+ },
+ {
+  "id": "Chest_Push_with_Run_Release",
+  "name": "Chest Push with Run Release",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Begin in an athletic stance with the knees bent, hips back, and back flat. Hold the medicine ball near your legs. This will be your starting position.",
+   "While taking your first step draw the medicine ball into your chest.",
+   "As you take the second step, explosively push the ball forward, immediately sprinting for 10 yards after the release. If you are really fast, you can catch your own pass!"
+  ],
+  "images": [
+   "Chest_Push_with_Run_Release/0.jpg",
+   "Chest_Push_with_Run_Release/1.jpg"
+  ]
+ },
+ {
+  "id": "Depth_Jump_Leap",
+  "name": "Depth Jump Leap",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "For this drill you will need two boxes or benches, one 12 to 16 inches high and the other 22 to 26 inches high.",
+   "Stand on one of the two boxes with arms at the sides; feet should be together and slightly off the edge as in the depth jump. Place the other box approximately two or three feet in front of and facing the performer.",
+   "Begin by dropping off the initial box, landing and simultaneously taking off with both feet.",
+   "Rebound by driving upward and outward as intensely as possible, using the arms and full extension of the body to jump onto the higher box. Again, allow the legs to absorb the impact."
+  ],
+  "images": [
+   "Depth_Jump_Leap/0.jpg",
+   "Depth_Jump_Leap/1.jpg"
+  ]
+ },
+ {
+  "id": "Double_Leg_Butt_Kick",
+  "name": "Double Leg Butt Kick",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Begin standing with your knees slightly bent.",
+   "Quickly squat a short distance, flexing the hips and knees, and immediately extend to jump for maximum vertical height.",
+   "As you go up, tuck your heels by flexing the knees, attempting to touch the buttocks.",
+   "Finish the motion by landing with the knees only partially bent, using your legs to absorb the impact."
+  ],
+  "images": [
+   "Double_Leg_Butt_Kick/0.jpg",
+   "Double_Leg_Butt_Kick/1.jpg"
+  ]
+ },
+ {
+  "id": "Drop_Push",
+  "name": "Drop Push",
+  "level": "intermediate",
+  "equipment": "other",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Position low boxes or other platforms 2-3 feet apart.",
+   "Move to a pushup position between them, supporting yourself by placing your hands on the boxes.",
+   "With good posture, drop from the platforms by pressing up and moving your hands to shoulder width, cushioning your landing by absorbing the impact through the arm."
+  ],
+  "images": [
+   "Drop_Push/0.jpg",
+   "Drop_Push/1.jpg"
+  ]
+ },
+ {
+  "id": "Dumbbell_Seated_Box_Jump",
+  "name": "Dumbbell Seated Box Jump",
+  "level": "intermediate",
+  "equipment": "dumbbell",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Position a box a couple feet to the side of a bench. Hold a dumbbell to your chest with both hands and seat yourself on the bench facing the box. This will be your starting position.",
+   "Plant your feet firmly on the ground as you lean forward, extending through the hips and knees to jump up and forward.",
+   "Land on the box with both feet, absorbing the impact by allowing the hips and knees to bend.",
+   "Step down and return to the starting position."
+  ],
+  "images": [
+   "Dumbbell_Seated_Box_Jump/0.jpg",
+   "Dumbbell_Seated_Box_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Fast_Skipping",
+  "name": "Fast Skipping",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Start in a relaxed position with one leg slightly forward. This will be your starting position.",
+   "Skip by executing a step-hop pattern of right-right-step to left-left-step, and so on, alternating back and forth.",
+   "Perform fast skips by maintaining close contact with the ground and reduce air time, moving as quickly as possible."
+  ],
+  "images": [
+   "Fast_Skipping/0.jpg",
+   "Fast_Skipping/1.jpg"
+  ]
+ },
+ {
+  "id": "Front_Box_Jump",
+  "name": "Front Box Jump",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Begin with a box of an appropriate height 1-2 feet in front of you. Stand with your feet should width apart. This will be your starting position.",
+   "Perform a short squat in preparation for jumping, swinging your arms behind you.",
+   "Rebound out of this position, extending through the hips, knees, and ankles to jump as high as possible. Swing your arms forward and up.",
+   "Land on the box with the knees bent, absorbing the impact through the legs. You can jump from the box back to the ground, or preferably step down one leg at a time."
+  ],
+  "images": [
+   "Front_Box_Jump/0.jpg",
+   "Front_Box_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Front_Cone_Hops_or_hurdle_hops",
+  "name": "Front Cone Hops (or hurdle hops)",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Set up a row of cones or other small barriers, placing them a few feet apart.",
+   "Stand in front of the first cone with your feet shoulder width apart. This will be your starting position.",
+   "Begin by jumping with both feet over the first cone, swinging both arms as you jump.",
+   "Absorb the impact of landing by bending the knees, rebounding out of the first leap by jumping over the next cone.",
+   "Continue until you have jumped over all of the cones."
+  ],
+  "images": [
+   "Front_Cone_Hops_or_hurdle_hops/0.jpg",
+   "Front_Cone_Hops_or_hurdle_hops/1.jpg"
+  ]
+ },
+ {
+  "id": "Heavy_Bag_Thrust",
+  "name": "Heavy Bag Thrust",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Utilize a heavy bag for this exercise. Assume an upright stance next to the bag, with your feet staggered, fairly wide apart. Place your hand on the bag at about chest height. This will be your starting position.",
+   "Begin by twisting at the waist, pushing the bag forward as hard as possible. Perform this move quickly, pushing the bag away from your body.",
+   "Receive the bag as it swings back by reversing these steps."
+  ],
+  "images": [
+   "Heavy_Bag_Thrust/0.jpg",
+   "Heavy_Bag_Thrust/1.jpg"
+  ]
+ },
+ {
+  "id": "Hurdle_Hops",
+  "name": "Hurdle Hops",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Set up a row of hurdles or other small barriers, placing them a few feet apart.",
+   "Stand in front of the first hurdle with your feet shoulder width apart. This will be your starting position.",
+   "Begin by jumping with both feet over the first hurdle, swinging both arms as you jump.",
+   "Absorb the impact of landing by bending the knees, rebounding out of the first leap by jumping over the next hurdle. Continue until you have jumped over all of the hurdles."
+  ],
+  "images": [
+   "Hurdle_Hops/0.jpg",
+   "Hurdle_Hops/1.jpg"
+  ]
+ },
+ {
+  "id": "Incline_Push-Up_Depth_Jump",
+  "name": "Incline Push-Up Depth Jump",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "For this drill you will need a box about 12 inches high, and two thick mats or aerobics steps.",
+   "Place the steps just outside of your shoulders, and place your feet on top of the box so that you are in an incline pushup position, your hands just inside the steps. This will be your starting position.",
+   "Begin by bending at the elbows to lower your body, quickly reversing position to push your body off of the ground. As you leave the ground, move your hands onto the steps, bending your elbows to absorb the impact.",
+   "Repeat the motion to return to the starting position."
+  ],
+  "images": [
+   "Incline_Push-Up_Depth_Jump/0.jpg",
+   "Incline_Push-Up_Depth_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Isometric_Chest_Squeezes",
+  "name": "Isometric Chest Squeezes",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "While either seating or standing, bend your arms at a 90-degree angle and place the palms of your hands together in front of your chest. Tip: Your hands should be open with the palms together and fingers facing forward (perpendicular to your torso).",
+   "Push both hands against each other as you contract your chest. Start with slow tension and increase slowly. Keep breathing normally as you execute this contraction.",
+   "Hold for the recommended number of seconds.",
+   "Now release the tension slowly.",
+   "Rest for the recommended amount of time and repeat."
+  ],
+  "images": [
+   "Isometric_Chest_Squeezes/0.jpg",
+   "Isometric_Chest_Squeezes/1.jpg"
+  ]
+ },
+ {
+  "id": "Knee_Tuck_Jump",
+  "name": "Knee Tuck Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Begin in a comfortable standing position with your knees slightly bent. Hold your hands in front of you, palms down with your fingertips together at chest height. This will be your starting position.",
+   "Rapidly dip down into a quarter squat and immediately explode upward. Drive the knees towards the chest, attempting to touch them to the palms of the hands.",
+   "Jump as high as you can, raising your knees up, and then ensure a good land be re-extending your legs, absorbing impact through be allowing the knees to rebend."
+  ],
+  "images": [
+   "Knee_Tuck_Jump/0.jpg",
+   "Knee_Tuck_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Kneeling_Arm_Drill",
+  "name": "Kneeling Arm Drill",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "abdominals"
+  ],
+  "instructions": [
+   "This drill helps increase arm efficiency during the run. Begin kneeling, left foot in front, right knee down. Apply pressure through the front heel to keep your glutes and hamstrings activated.",
+   "Begin by blocking the arms in long, pendulum like swings. Close the arm angle, blocking with the arms as you would when jogging, progressing to a run and finally a sprint.",
+   "As soon as your hands pass the hip, accelerate them forward during the sprinting motion to move them as quickly as possible.",
+   "Switch knees and repeat."
+  ],
+  "images": [
+   "Kneeling_Arm_Drill/0.jpg",
+   "Kneeling_Arm_Drill/1.jpg"
+  ]
+ },
+ {
+  "id": "Lateral_Bound",
+  "name": "Lateral Bound",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "adductors"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Assume a half squat position facing 90 degrees from your direction of travel. This will be your starting position.",
+   "Allow your lead leg to do a countermovement inward as you shift your weight to the outside leg.",
+   "Immediately push off and extend, attempting to bound to the side as far as possible.",
+   "Upon landing, immediately push off in the opposite direction, returning to your original start position.",
+   "Continue back and forth for several repetitions."
+  ],
+  "images": [
+   "Lateral_Bound/0.jpg",
+   "Lateral_Bound/1.jpg"
+  ]
+ },
+ {
+  "id": "Lateral_Box_Jump",
+  "name": "Lateral Box Jump",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "adductors"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Assume a comfortable standing position, with a short box positioned next to you. This will be your starting position.",
+   "Quickly dip into a quarter squat to initiate the stretch reflex, and immediately reverse direction to jump up and to the side.",
+   "Bring your knees high enough to ensure your feet have good clearance over the box.",
+   "Land on the center of the box, using your legs to absorb the impact.",
+   "Carefully jump down to the other side of the box, and continue going back and forth for several repetitions."
+  ],
+  "images": [
+   "Lateral_Box_Jump/0.jpg",
+   "Lateral_Box_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Lateral_Cone_Hops",
+  "name": "Lateral Cone Hops",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "adductors"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Position a number of cones in a row several feet apart.",
+   "Stand next to the end of the cones, facing 90 degrees to the direction of travel. This will be your starting position.",
+   "Begin the jump by dipping with the knees to initiate a stretch reflex, and immediately reverse direction to push off the ground, jumping up and sideways over the cone.",
+   "Use your legs to absorb impact upon landing, and rebound into the next jump, continuing down the row of cones."
+  ],
+  "images": [
+   "Lateral_Cone_Hops/0.jpg",
+   "Lateral_Cone_Hops/1.jpg"
+  ]
+ },
+ {
+  "id": "Linear_3-Part_Start_Technique",
+  "name": "Linear 3-Part Start Technique",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "quadriceps"
+  ],
+  "instructions": [
+   "This drill helps you accelerate as quickly as possible into a sprint from a dead stop. It helps to use a line to start from. Begin with two feet on the line. Place your left foot with the toe next to your right ankle. Place your right foot 4-6 inches behind the left.",
+   "Place your right hand onto the line, and thing bring your nose close to your left knee.",
+   "Squat down as you lean foward, your head being lower than your hips and your weight loaded onto the left leg. This will be your starting position.",
+   "Take your left hand up so that it is parallel to the ground, pointing behind you, and explode out when ready."
+  ],
+  "images": [
+   "Linear_3-Part_Start_Technique/0.jpg",
+   "Linear_3-Part_Start_Technique/1.jpg"
+  ]
+ },
+ {
+  "id": "Linear_Acceleration_Wall_Drill",
+  "name": "Linear Acceleration Wall Drill",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Lean at around 45 degrees against a wall. Your feet should be together, glutes contracted.",
+   "Begin by lifting your right knee quickly, pausing, and then driving it straight down into the ground.",
+   "Switch legs, raising the opposite knee, and then attacking the ground straight down.",
+   "Repeat once more with your right leg, and as soon as the right foot strikes the ground hammer them out rapidly, alternating left and right as fast as you can."
+  ],
+  "images": [
+   "Linear_Acceleration_Wall_Drill/0.jpg",
+   "Linear_Acceleration_Wall_Drill/1.jpg"
+  ]
+ },
+ {
+  "id": "Linear_Depth_Jump",
+  "name": "Linear Depth Jump",
+  "level": "intermediate",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "You will need two boxes or benches spaced a few feet away from each other. Begin by standing on one box facing towards the other platform.",
+   "To initiate the movement, gently drop down to the ground between your platforms, allowing the knees and hips to flex.",
+   "Reverse the motion by exploding, extending through the hips, knees, and ankles to jump onto the other platform.",
+   "Land softly, asborbing the impact through the legs."
+  ],
+  "images": [
+   "Linear_Depth_Jump/0.jpg",
+   "Linear_Depth_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Medicine_Ball_Chest_Pass",
+  "name": "Medicine Ball Chest Pass",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "You will need a partner for this exercise. Lacking one, this movement can be performed against a wall.",
+   "Begin facing your partner holding the medicine ball at your torso with both hands.",
+   "Pull the ball to your chest, and reverse the motion by extending through the elbows. For sports applications, you can take a step as you throw.",
+   "Your partner should catch the ball, and throw it back to you.",
+   "Receive the throw with both hands at chest height."
+  ],
+  "images": [
+   "Medicine_Ball_Chest_Pass/0.jpg",
+   "Medicine_Ball_Chest_Pass/1.jpg"
+  ]
+ },
+ {
+  "id": "Medicine_Ball_Full_Twist",
+  "name": "Medicine Ball Full Twist",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "shoulders"
+  ],
+  "instructions": [
+   "For this exercise you will need a medicine ball and a partner. Stand back to back with your partner, spaced 2-3 feet apart. This will be your starting position.",
+   "Hold the ball in front of the trunk. Open the hips and turn the shoulders at the same time as your partner.",
+   "For full rotation, you and your partner should twist in the same direction, i.e. counter-clockwise.",
+   "Pass the ball to your partner, and both of you can now twist in the opposite direction to repeat the procedure."
+  ],
+  "images": [
+   "Medicine_Ball_Full_Twist/0.jpg",
+   "Medicine_Ball_Full_Twist/1.jpg"
+  ]
+ },
+ {
+  "id": "Medicine_Ball_Scoop_Throw",
+  "name": "Medicine Ball Scoop Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Assume a semisquat stance with a medicine ball in your hands. Your arms should hang so the ball is near your feet.",
+   "Begin by thrusting the hips forward as you extend through the legs, jumping up.",
+   "As you do, swing your arms up and over your head, keeping them extended, releasing the ball at the peak of your movement. The goal is to throw the ball the greatest distance behind you."
+  ],
+  "images": [
+   "Medicine_Ball_Scoop_Throw/0.jpg",
+   "Medicine_Ball_Scoop_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Mountain_Climbers",
+  "name": "Mountain Climbers",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "hamstrings",
+   "shoulders"
+  ],
+  "instructions": [
+   "Begin in a pushup position, with your weight supported by your hands and toes. Flexing the knee and hip, bring one leg until the knee is approximately under the hip. This will be your starting position.",
+   "Explosively reverse the positions of your legs, extending the bent leg until the leg is straight and supported by the toe, and bringing the other foot up with the hip and knee flexed. Repeat in an alternating fashion for 20-30 seconds."
+  ],
+  "images": [
+   "Mountain_Climbers/0.jpg",
+   "Mountain_Climbers/1.jpg"
+  ]
+ },
+ {
+  "id": "Moving_Claw_Series",
+  "name": "Moving Claw Series",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "quadriceps"
+  ],
+  "instructions": [
+   "This move helps prepare your running form to help you excel at sprinting. As you run, be sure to flex the knee, aiming to kick your glutes as the hip extends.",
+   "Reload the quad as the leg moves back forward, attacking the ground on the next step.",
+   "Ensure that as you run, you block with the arms, punching through in a rapid 1-2 motion."
+  ],
+  "images": [
+   "Moving_Claw_Series/0.jpg",
+   "Moving_Claw_Series/1.jpg"
+  ]
+ },
+ {
+  "id": "Overhead_Slam",
+  "name": "Overhead Slam",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "lats"
+  ],
+  "secondary_muscles": [],
+  "instructions": [
+   "Hold a medine ball with both hands and stand with your feet at shoulder width. This will be your starting position.",
+   "Initiate the countermovement by raising the ball above your head and fully extending your body.",
+   "Reverse the motion, slamming the ball into the ground directly in front of you as hard as you can.",
+   "Receive the ball with both hands on the bounce and repeat the movement."
+  ],
+  "images": [
+   "Overhead_Slam/0.jpg",
+   "Overhead_Slam/1.jpg"
+  ]
+ },
+ {
+  "id": "Plyo_Push-up",
+  "name": "Plyo Push-up",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Move into a prone position on the floor, supporting your weight on your hands and toes.",
+   "Your arms should be fully extended with the hands around shoulder width. Keep your body straight throughout the movement. This will be your starting position.",
+   "Descend by flexing at the elbow, lowering your chest towards the ground.",
+   "At the bottom, reverse the motion by pushing yourself up through elbow extension as quickly as possible. Attempt to push your upper body up until your hands leave the ground.",
+   "Return to the starting position and repeat the exercise.",
+   "For added difficulty, add claps into the movement while you are air borne."
+  ],
+  "images": [
+   "Plyo_Push-up/0.jpg",
+   "Plyo_Push-up/1.jpg"
+  ]
+ },
+ {
+  "id": "Quick_Leap",
+  "name": "Quick Leap",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "You will need a box for this exerise.",
+   "Begin facing the box standing 1-2 feet from its edge.",
+   "By utilizing your hips, hop onto the box, landing on both legs. Ensure that you land with your legs bent and your feet flat.",
+   "Immediately upon landing, fully extend through the entire body and swing your arms overhead to explode off of the box. Use your legs to absorb the impact of landing."
+  ],
+  "images": [
+   "Quick_Leap/0.jpg",
+   "Quick_Leap/1.jpg"
+  ]
+ },
+ {
+  "id": "Return_Push_from_Stance",
+  "name": "Return Push from Stance",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "triceps"
+  ],
+  "instructions": [
+   "You will need a partner for this drill.",
+   "Begin in an athletic 2 or 3 point stance.",
+   "At the signal, move into a position to receive the pass from your partner.",
+   "Catch the medicine ball with both hands and immediately throw it back to your partner.",
+   "You can modify this drill by running different routes."
+  ],
+  "images": [
+   "Return_Push_from_Stance/0.jpg",
+   "Return_Push_from_Stance/1.jpg"
+  ]
+ },
+ {
+  "id": "Rocket_Jump",
+  "name": "Rocket Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Begin in a relaxed stance with your feet shoulder width apart and hold your arms close to the body.",
+   "To initiate the move, squat down halfway and explode back up as high as possible.",
+   "Fully extend your entire body, reaching overhead as far as possible. As you land, absorb your impact through the legs."
+  ],
+  "images": [
+   "Rocket_Jump/0.jpg",
+   "Rocket_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Scissors_Jump",
+  "name": "Scissors Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Assume a lunge stance position with one foot forward with the knee bent, and the rear knee nearly touching the ground.",
+   "Ensure that the front knee is over the midline of the foot. Extending through both legs, jump as high as possible, swinging your arms to gain lift.",
+   "As you jump as high as you can, switch the position of your legs, moving your front leg to the back and the rear leg to the front.",
+   "As you land, absorb the impact through the legs by adopting the lunge position, and repeat."
+  ],
+  "images": [
+   "Scissors_Jump/0.jpg",
+   "Scissors_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Side_Hop-Sprint",
+  "name": "Side Hop-Sprint",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand to the side of a cone or hurdle.",
+   "Begin this drill by hopping sideways over the obstacle, rebounding out of your landing to hop back to where you started.",
+   "Hop for a prescribed number or repetitions as quickly as possible, and finish this drill by sprinting a short distance upon landing the last hop."
+  ],
+  "images": [
+   "Side_Hop-Sprint/0.jpg",
+   "Side_Hop-Sprint/1.jpg"
+  ]
+ },
+ {
+  "id": "Side_Standing_Long_Jump",
+  "name": "Side Standing Long Jump",
+  "level": "beginner",
+  "equipment": null,
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Begin standing with your feet hip width apart in an athletic stance. Your head and chest should be up, knees and hips slightly bent. This will be your starting position.",
+   "Leaning to your right, extend through your hips, knees, and ankles to jump into the air. Block with the arms to lead the movement, jumping as far to your right as you can.",
+   "Land facing the same direction with your feet hip width apart, absorbing the impact through your lower body."
+  ],
+  "images": [
+   "Side_Standing_Long_Jump/0.jpg",
+   "Side_Standing_Long_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Side_to_Side_Box_Shuffle",
+  "name": "Side to Side Box Shuffle",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand to one side of the box with your left foot resting on the middle of it.",
+   "To begin, jump up and over to the other side of the box, landing with your right foot on top of the box and your left foot on the floor. Swing your arms to aid your movement.",
+   "Continue shuffling back and forth across the box."
+  ],
+  "images": [
+   "Side_to_Side_Box_Shuffle/0.jpg",
+   "Side_to_Side_Box_Shuffle/1.jpg"
+  ]
+ },
+ {
+  "id": "Single-Cone_Sprint_Drill",
+  "name": "Single-Cone Sprint Drill",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "This drill teaches quick foot action. You need a single cone. Begin standing next to the cone with one arm back and one arm forward.",
+   "Chop the feet as quickly as possible, blocking with the arms. Circle the cone, keep your knees up, with violent foot action.",
+   "Rest after three trips around the cone."
+  ],
+  "images": [
+   "Single-Cone_Sprint_Drill/0.jpg",
+   "Single-Cone_Sprint_Drill/1.jpg"
+  ]
+ },
+ {
+  "id": "Single-Leg_Hop_Progression",
+  "name": "Single-Leg Hop Progression",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Arrange a line of cones in front of you. Assume a relaxed standing position, balanced on one leg. Raise the knee of your opposite leg. This will be your starting position.",
+   "Hop forward, jumping and landing with the same leg over the cone.",
+   "Use a countermovement jump to hop from cone to cone.",
+   "At the end, turn around and go back on the other leg."
+  ],
+  "images": [
+   "Single-Leg_Hop_Progression/0.jpg",
+   "Single-Leg_Hop_Progression/1.jpg"
+  ]
+ },
+ {
+  "id": "Single-Leg_Lateral_Hop",
+  "name": "Single-Leg Lateral Hop",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand to the side of a cone or hurdle. To get into the start position, stand on one leg with your knee slightly bent.",
+   "To begin, execute a counterjump to hop sideways over the cone.",
+   "Land on your jumping leg, and immediately rebound out of it by jumping back to the start position.",
+   "Continue hopping back and forth."
+  ],
+  "images": [
+   "Single-Leg_Lateral_Hop/0.jpg",
+   "Single-Leg_Lateral_Hop/1.jpg"
+  ]
+ },
+ {
+  "id": "Single-Leg_Stride_Jump",
+  "name": "Single-Leg Stride Jump",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand to the side of a box with your inside foot on top of it, close to the edge.",
+   "Begin by swinging the arms upward as you push through the top leg, jumping upward as high as possible. Attempt to drive the opposite knee upward.",
+   "Land in the same position that you started, using your inside leg to decelerate the impact."
+  ],
+  "images": [
+   "Single-Leg_Stride_Jump/0.jpg",
+   "Single-Leg_Stride_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Single_Leg_Butt_Kick",
+  "name": "Single Leg Butt Kick",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Begin by standing on one leg, with the bent knee raised. This will be your start position.",
+   "Using a countermovement jump, take off upward by extending the hip, knee, and ankle of the grounded leg.",
+   "Immediately flex the knee and attempt to touch your butt with the heel of your jumping leg.",
+   "Return the leg to a partially bent position underneath the hips and land. Your opposite leg should stay in relatively the same position throughout the drill."
+  ],
+  "images": [
+   "Single_Leg_Butt_Kick/0.jpg",
+   "Single_Leg_Butt_Kick/1.jpg"
+  ]
+ },
+ {
+  "id": "Single_Leg_Push-off",
+  "name": "Single Leg Push-off",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand on the ground with one foot resting on the box, heel close to the edge.",
+   "Push off with your foot on top of the box, trying to gain as much height as possible by extending through the hip and knee.",
+   "Land with the same foot on top of the box, returning your other foot back to the start position."
+  ],
+  "images": [
+   "Single_Leg_Push-off/0.jpg",
+   "Single_Leg_Push-off/1.jpg"
+  ]
+ },
+ {
+  "id": "Sledgehammer_Swings",
+  "name": "Sledgehammer Swings",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "forearms",
+   "lats",
+   "middle back",
+   "shoulders"
+  ],
+  "instructions": [
+   "You will need a tire and a sledgehammer for this exercise. Stand in front of the tire about two feet away from it with a staggered stance. Grip the sledgehammer.",
+   "If you are right handed, your left hand should be at the bottom of the handle, and your right hand should be choking up closer to the head.",
+   "As you bring the sledge up, your right hand slides toward the head; as you swing down, your right hand will slide down to join your left hand. Slam it down as hard as you can against the tire. Control the bounce of the hammer off of the tire.",
+   "Repeat on the other side."
+  ],
+  "images": [
+   "Sledgehammer_Swings/0.jpg",
+   "Sledgehammer_Swings/1.jpg"
+  ]
+ },
+ {
+  "id": "Split_Jump",
+  "name": "Split Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Assume a lunge stance position with one foot forward with the knee bent, and the rear knee nearly touching the ground.",
+   "Ensure that the front knee is over the midline of the foot.",
+   "Extending through both legs, jump as high as possible, swinging your arms to gain lift.",
+   "As you jump, bring your feet together, and move them back to their initial positions as you land.",
+   "Absorb the impact by reverting back to the starting position."
+  ],
+  "images": [
+   "Split_Jump/0.jpg",
+   "Split_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Standing_Long_Jump",
+  "name": "Standing Long Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "This drill is best done in sand or other soft landing surface. Ensure that you are able to measure distance. Stand in a partial squat stance with feet shoulder width apart.",
+   "Utilizing a big arm swing and a countermovement of the legs, jump forward as far as you can.",
+   "Attempt to land with your feet out in front you, reaching as far as possible with your legs.",
+   "Measure the distance from your landing point to the starting point and track results."
+  ],
+  "images": [
+   "Standing_Long_Jump/0.jpg",
+   "Standing_Long_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Standing_Two-Arm_Overhead_Throw",
+  "name": "Standing Two-Arm Overhead Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "lats"
+  ],
+  "instructions": [
+   "Stand with your feet shoulder width apart holding a medicine ball in both hands. To begin, reach the medicine ball deep behind your head as you bend the knees slightly and lean back.",
+   "Violently throw the ball forward, flexing at the hip and using your whole body to complete the movement.",
+   "The medicine ball can be thrown to a partner or to a wall, receiving it as it bounces back."
+  ],
+  "images": [
+   "Standing_Two-Arm_Overhead_Throw/0.jpg",
+   "Standing_Two-Arm_Overhead_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Star_Jump",
+  "name": "Star Jump",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "shoulders"
+  ],
+  "instructions": [
+   "Begin in a relaxed stance with your feet shoulder width apart and hold your arms close to the body.",
+   "To initiate the move, squat down halfway and explode back up as high as possible. Fully extend your entire body, spreading your legs and arms away from the body.",
+   "As you land, bring your limbs back in and absorb your impact through the legs."
+  ],
+  "images": [
+   "Star_Jump/0.jpg",
+   "Star_Jump/1.jpg"
+  ]
+ },
+ {
+  "id": "Stride_Jump_Crossover",
+  "name": "Stride Jump Crossover",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abductors",
+   "adductors",
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Stand to the side of a box with your inside foot on top of it, close to the edge.",
+   "Begin by swinging the arms upward as you push through the top leg, jumping upward as high as possible. Attempt to drive the opposite knee upward.",
+   "Land in the opposite position that you started, on the opposite side of the box. The foot that was initially on the box will now be on the ground, with the opposite foot now on the box.",
+   "Repeat the movement, crossing back over to the other side."
+  ],
+  "images": [
+   "Stride_Jump_Crossover/0.jpg",
+   "Stride_Jump_Crossover/1.jpg"
+  ]
+ },
+ {
+  "id": "Supine_Chest_Throw",
+  "name": "Supine Chest Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "triceps"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "shoulders"
+  ],
+  "instructions": [
+   "This drill is great for chest passes when you lack a partner or a wall of sufficient strength. Lay on the ground on your back with your knees bent.",
+   "Begin with the ball on your chest, held with both hands on the bottom.",
+   "Explode up, extending through the elbow to throw the ball directly above you as high as possible.",
+   "Catch the ball with both hands as it comes down."
+  ],
+  "images": [
+   "Supine_Chest_Throw/0.jpg",
+   "Supine_Chest_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Supine_One-Arm_Overhead_Throw",
+  "name": "Supine One-Arm Overhead Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "lats",
+   "shoulders"
+  ],
+  "instructions": [
+   "Lay on the ground on your back with your knees bent. Hold the ball with one hand, extending the arm fully behind your head. This will be your starting position.",
+   "Initiate the movement at the shoulder, throwing the ball directly forward of you as you sit up, attempting to go for maximum distance.",
+   "The ball can be thrown to a partner or bounced off of a wall."
+  ],
+  "images": [
+   "Supine_One-Arm_Overhead_Throw/0.jpg",
+   "Supine_One-Arm_Overhead_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Supine_Two-Arm_Overhead_Throw",
+  "name": "Supine Two-Arm Overhead Throw",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "lats",
+   "shoulders"
+  ],
+  "instructions": [
+   "Lay on the ground on your back with your knees bent.",
+   "Hold the ball with both hands, extending the arms fully behind your head. This will be your starting position.",
+   "Initiate the movement at the shoulder, throwing the ball directly forward of you as you sit up, attempting to go for maximum distance.",
+   "The ball can be thrown to a partner or bounced off of a wall."
+  ],
+  "images": [
+   "Supine_Two-Arm_Overhead_Throw/0.jpg",
+   "Supine_Two-Arm_Overhead_Throw/1.jpg"
+  ]
+ },
+ {
+  "id": "Vertical_Swing",
+  "name": "Vertical Swing",
+  "level": "beginner",
+  "equipment": "dumbbell",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "glutes",
+   "quadriceps",
+   "shoulders"
+  ],
+  "instructions": [
+   "Allow the dumbbell to hang at arms length between your legs, holding it with both hands. Keep your back straight and your head up.",
+   "Swing the dumbbell between your legs, flexing at the hips and bending the knees slightly.",
+   "Powerfully reverse the motion by extending at the hips, knees, and ankles to propel yourself upward, swinging the dumbell over your head.",
+   "As you land, absorb the impact through your legs and draw the dumbbell to your torso before the next repetition."
+  ],
+  "images": [
+   "Vertical_Swing/0.jpg",
+   "Vertical_Swing/1.jpg"
+  ]
+ }
+]

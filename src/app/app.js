@@ -1,23 +1,17 @@
 import './app.css';
 import { supabase, $, esc, getProfile } from '../supabase.js';
+import { fmt, today, monthStart, weekStart, paceStr, DISC } from './common.js';
+import { renderRunning } from './running.js';
+import { renderPlyo } from './plyo.js';
 
-// Para activar natación: agregar { v: 'swimming', t: 'Natación' } aquí (el enum de la BD ya lo tiene).
-const DISCIPLINES = [
-  { v: 'running', t: 'Running' },
-  { v: 'cycling', t: 'Ciclismo' },
-];
-const NAME = Object.fromEntries([...DISCIPLINES, { v: 'swimming', t: 'Natación' }].map((d) => [d.v, d.t]));
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
-const fmt = (n) => (Math.round(n * 10) / 10).toLocaleString('es-BO');
-const monthStart = () => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-const today = () => new Date().toISOString().slice(0, 10);
-const pace = (km, min) => { const p = min / km; return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')} /km`; };
-const weekStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+const TABS = [['inicio', 'Inicio'], ['running', 'Running'], ['plyo', 'Pliometría'], ['pago', 'Membresía']];
+let ctx = null;
 
-/* ---------------- Login ---------------- */
+/* ---------------- Login / registro ---------------- */
 function showLogin(signup = false) {
-  $('#logout').hidden = true; $('#admin-link').hidden = true;
+  ctx = null; $('#logout').hidden = true; $('#admin-link').hidden = true; $('#tabs').hidden = true;
   view.innerHTML = `
     <h1>Bienvenido<br>al Crowd</h1><p class="muted">${signup ? 'Crea tu cuenta de socio.' : 'Ingresa con tu correo.'}</p>
     <form id="lf" class="card" style="margin-top:20px">
@@ -38,73 +32,56 @@ function showLogin(signup = false) {
   };
 }
 
-/* ---------------- Dashboard ---------------- */
-async function showApp(user) {
+/* ---------------- Shell con pestañas ---------------- */
+async function boot(user) {
   const profile = await getProfile(user.id);
-  $('#logout').hidden = false;
-  $('#admin-link').hidden = profile?.role !== 'admin';
-
-  const [{ data: acts = [] }, { data: mems = [] }] = await Promise.all([
-    supabase.from('activities').select('*').order('performed_on', { ascending: false }).order('created_at', { ascending: false }),
-    supabase.from('memberships').select('*').order('period', { ascending: false }),
-  ]);
-
-  const ws = weekStart();
-  const weekKm = {};
-  DISCIPLINES.forEach((d) => (weekKm[d.v] = 0));
-  acts.filter((a) => a.performed_on >= ws).forEach((a) => (weekKm[a.discipline] = (weekKm[a.discipline] || 0) + Number(a.distance_km)));
-  const best = (disc) => acts.filter((a) => a.discipline === disc).sort((a, b) => b.distance_km - a.distance_km)[0];
-  const last = acts[0];
-  const total = acts.reduce((s, a) => s + Number(a.distance_km), 0);
-  const cur = mems.find((m) => m.period === monthStart());
-
-  view.innerHTML = `
-    <h1>Hola, ${esc(profile?.full_name || '')}</h1><p class="muted">Tu progreso en el Crowd</p>
-
-    <h2>Resumen</h2>
-    <div class="grid">
-      <div class="card stat"><b>${fmt(weekKm.running)} km</b><span>Running · semana</span></div>
-      <div class="card stat"><b>${fmt(weekKm.cycling)} km</b><span>Ciclismo · semana</span></div>
-      <div class="card stat"><b>${fmt(total)} km</b><span>Total</span></div>
-    </div>
-    <div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${NAME[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min · ${last.performed_on}` : 'Aún no registras nada.'}</div>
-    <div class="card"><span class="muted">Récords (distancia más larga)</span><br>
-      ${DISCIPLINES.map((d) => { const b = best(d.v); return `${d.t}: ${b ? `<b>${fmt(b.distance_km)} km</b> (${b.performed_on})` : '—'}`; }).join('<br>')}</div>
-
-    <h2>Registrar actividad</h2>
-    <form id="af" class="card">
-      <div class="row"><div><label for="d">Disciplina</label><select id="d">${DISCIPLINES.map((d) => `<option value="${d.v}">${d.t}</option>`).join('')}</select></div>
-      <div><label for="f">Fecha</label><input id="f" type="date" value="${today()}" max="${today()}" required></div></div>
-      <div class="row"><div><label for="k">Distancia (km)</label><input id="k" type="number" step="0.01" min="0.01" inputmode="decimal" required></div>
-      <div><label for="m">Duración (min)</label><input id="m" type="number" step="0.1" min="0.1" inputmode="decimal" required></div></div>
-      <button class="btn" type="submit">Guardar</button><p class="msg" id="am"></p>
-    </form>
-
-    <h2>Historial</h2>
-    <div class="card">${acts.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Km</th><th>Min</th><th>Ritmo</th><th></th></tr>
-      ${acts.slice(0, 50).map((a) => `<tr><td>${a.performed_on}</td><td>${NAME[a.discipline]}</td><td>${fmt(a.distance_km)}</td><td>${fmt(a.duration_min)}</td>
-      <td>${a.discipline === 'running' ? pace(a.distance_km, a.duration_min) : ''}</td><td><button class="link" data-del="${a.id}" aria-label="Borrar">✕</button></td></tr>`).join('')}</table>` : '<p class="muted">Sin registros.</p>'}</div>
-
-    <h2>Membresía · 200 Bs/mes</h2>
-    <div class="card" id="mem"></div>`;
-
-  $('#af').onsubmit = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase.from('activities').insert({
-      discipline: $('#d').value, performed_on: $('#f').value,
-      distance_km: +$('#k').value, duration_min: +$('#m').value,
-    });
-    if (error) $('#am').textContent = 'No se pudo guardar: ' + error.message; else showApp(user);
-  };
-  view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-    if (confirm('¿Borrar este registro?')) { await supabase.from('activities').delete().eq('id', b.dataset.del); showApp(user); }
-  }));
-  renderMembership(user, cur);
+  ctx = { user, profile, isAdmin: profile?.role === 'admin' };
+  $('#logout').hidden = false; $('#admin-link').hidden = !ctx.isAdmin; $('#tabs').hidden = false;
+  route();
 }
 
-function renderMembership(user, cur) {
-  const box = $('#mem');
+function route() {
+  if (!ctx) return;
+  const tab = (location.hash.slice(1) || 'inicio');
+  document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + tab));
+  view.innerHTML = '<p class="muted center">Cargando…</p>';
+  const fn = { inicio: renderHome, running: renderRunning, plyo: renderPlyo, pago: renderMembership }[tab] || renderHome;
+  Promise.resolve(fn(view, ctx)).catch((e) => { view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
+}
+
+/* ---------------- Inicio ---------------- */
+async function renderHome(v) {
+  const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }] = await Promise.all([
+    supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(200),
+    supabase.from('workouts').select('id, performed_on, duration_min, workout_sets(id)').order('performed_on', { ascending: false }).limit(100),
+    supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
+  ]);
+  const ws0 = weekStart();
+  const km = (d) => acts.filter((a) => a.discipline === d && a.performed_on >= ws0).reduce((s, a) => s + Number(a.distance_km), 0);
+  const last = acts[0];
+  const cur = mems[0];
+  const plyoWeek = ws.filter((w) => w.performed_on >= ws0).length;
+
+  v.innerHTML = `<h1>Hola, ${esc(ctx.profile?.full_name || '')}</h1><p class="muted">Tu semana en el Crowd</p>
+    ${!cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#pago">Pagar ahora</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
+    <div class="grid">
+      <div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div>
+      <div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div>
+      <div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>
+    </div>
+    <div class="card"><span class="muted">Última salida</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>
+    <div class="card"><span class="muted">Última sesión de pliometría</span><br>${ws[0] ? `<b>${ws[0].performed_on}</b> · ${ws[0].workout_sets.length} series${ws[0].duration_min ? ' · ' + fmt(ws[0].duration_min, 0) + ' min' : ''}` : 'Aún no registras nada.'}</div>
+    <p><a class="btn" href="#running" style="text-decoration:none">Registrar running</a> <a class="btn ghost" href="#plyo" style="text-decoration:none">Registrar pliometría</a></p>`;
+}
+
+/* ---------------- Membresía (pago por QR manual) ---------------- */
+async function renderMembership(v) {
+  const { data: mems = [] } = await supabase.from('memberships').select('*').order('period', { ascending: false }).order('created_at', { ascending: false });
+  const cur = mems.find((m) => m.period === monthStart() && m.status !== 'rejected') || mems.find((m) => m.period === monthStart());
   const status = cur ? `<p>Estado de este mes: <span class="pill ${cur.status}">${STATUS[cur.status]}</span></p>` : '<p class="muted">Aún no pagaste este mes.</p>';
+  v.innerHTML = `<h1>Membresía</h1><p class="muted">200 Bs / mes</p><div class="card" id="mem"></div>
+    ${mems.length ? `<h2>Mis pagos</h2><div class="card"><table><tr><th>Mes</th><th>Estado</th></tr>${mems.map((m) => `<tr><td>${m.period.slice(0, 7)}</td><td><span class="pill ${m.status}">${STATUS[m.status]}</span></td></tr>`).join('')}</table></div>` : ''}`;
+  const box = $('#mem');
   if (cur && cur.status !== 'rejected') { box.innerHTML = status + (cur.status === 'pending' ? '<p class="muted">Recibimos tu comprobante. El administrador lo aprobará pronto.</p>' : ''); return; }
   box.innerHTML = `${status}
     <p class="muted">1. Paga 200 Bs escaneando este QR. 2. Sube la foto del comprobante.</p>
@@ -115,14 +92,21 @@ function renderMembership(user, cur) {
     e.preventDefault();
     const file = $('#fl').files[0]; if (!file) return;
     if (file.size > 5 * 1024 * 1024) { $('#pm').textContent = 'La foto pesa más de 5 MB.'; return; }
-    const path = `${user.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`;
+    const path = `${ctx.user.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`;
     const up = await supabase.storage.from('receipts').upload(path, file);
     if (up.error) { $('#pm').textContent = 'Error subiendo: ' + up.error.message; return; }
     const ins = await supabase.from('memberships').insert({ period: monthStart(), proof_path: path });
-    if (ins.error) $('#pm').textContent = 'Error: ' + ins.error.message; else showApp(user);
+    if (ins.error) $('#pm').textContent = 'Error: ' + ins.error.message; else renderMembership(v);
   };
 }
 
 /* ---------------- Arranque: sesión persistente ---------------- */
+$('#tabs').innerHTML = TABS.map(([h, t]) => `<a href="#${h}">${t}</a>`).join('');
 $('#logout').onclick = () => supabase.auth.signOut();
-supabase.auth.onAuthStateChange((_ev, session) => { session ? showApp(session.user) : showLogin(); });
+window.addEventListener('hashchange', route);
+let booted = null;
+supabase.auth.onAuthStateChange((_ev, session) => {
+  if (!session) { booted = null; showLogin(); return; }
+  if (booted !== session.user.id) { booted = session.user.id; boot(session.user); }  // evita recargar en cada refresh de token
+});
+void today;
