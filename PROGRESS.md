@@ -21,7 +21,7 @@ historial). Reescrito, sin copiar código. Se omitió Strava/planes de entrenami
   - Vista `weekly_km` (security_invoker) y función pública `ping()` para keep-alive.
 - `app.html` + `src/app/app.js`: login email/contraseña con **sesión persistente** (`persistSession`, `autoRefreshToken`), dashboard
   (km semanales running/ciclismo, total, última actividad, récords, historial con ritmo, borrar), formulario de actividad, pago por QR.
-- Pago manual: muestra `public/qr-pago.png` (**placeholder = logo, reemplazar por el QR real**), sube comprobante al bucket y crea membresía `pending`.
+- Pago manual: muestra `public/qr-pago.webp` (**placeholder = logo, reemplazar por el QR real**), sube comprobante al bucket y crea membresía `pending`.
 - `admin.html` + `src/app/admin.js`: lista pendientes con link firmado (1 h) al comprobante, botones Aprobar/Rechazar.
 - `.github/workflows/keepalive.yml`: cron cada 3 días → `POST /rest/v1/rpc/ping`.
 
@@ -30,7 +30,7 @@ historial). Reescrito, sin copiar código. Se omitió Strava/planes de entrenami
 2. Poner tu usuario como admin: `update public.profiles set role='admin' where id='<UUID>';`
 3. Copiar `.env.example` → `.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`; mismas variables en Vercel.
 4. Secrets del repo GitHub: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (keep-alive).
-5. Reemplazar `public/qr-pago.png` por el QR real.
+5. Reemplazar `public/qr-pago.webp` por el QR real.
 6. Cursor: enlazar navegación landing → `/app.html` (botón "Únete al Club"/login) y pulir UX.
 7. No probado contra un Supabase real todavía (solo compila: `npm run build`). Probar: login, registrar km, subir comprobante, aprobar.
 8. Opcional: bloquear funciones si el mes no está aprobado (hoy solo se muestra el estado; no bloquea).

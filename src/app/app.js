@@ -108,7 +108,7 @@ function renderMembership(user, cur) {
   if (cur && cur.status !== 'rejected') { box.innerHTML = status + (cur.status === 'pending' ? '<p class="muted">Recibimos tu comprobante. El administrador lo aprobará pronto.</p>' : ''); return; }
   box.innerHTML = `${status}
     <p class="muted">1. Paga 200 Bs escaneando este QR. 2. Sube la foto del comprobante.</p>
-    <img class="qr" src="/qr-pago.png" alt="QR de pago">
+    <img class="qr" src="/qr-pago.webp" alt="QR de pago">
     <form id="pf"><label for="fl">Comprobante (foto)</label><input id="fl" type="file" accept="image/*" required>
     <button class="btn" type="submit">Enviar comprobante</button><p class="msg" id="pm"></p></form>`;
   $('#pf').onsubmit = async (e) => {
