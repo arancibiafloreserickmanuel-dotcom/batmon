@@ -33,14 +33,14 @@ historial). Reescrito, sin copiar código. Se omitió Strava/planes de entrenami
 
 ## FASE 2 (12 nov) — Pliometría + running ampliado + admin detallado
 Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLAUDE_CHROME_2.md).
-- :
+- `supabase/migrations/0002_plyometrics_running_admin.sql`:
   - activities += run_type (easy|long|tempo|intervals|race|recovery), rpe, elevation_m.
   - exercises(id text pk, name, name_es, category, level, equipment, primary/secondary_muscles[], instructions[], images[], source dataset|custom, created_by, is_active). RLS: ver activos; crear/editar/borrar propios custom; admin todo.
   - workouts(user_id, kind='plyometrics', performed_on, duration_min, rpe, notes) + workout_sets(workout_id, user_id, exercise_id, position, set_no, reps, contacts, height_cm, box_height_cm, distance_m, weight_kg, rest_sec, duration_sec). RLS propio; admin ver/editar/borrar.
   - RPC admin: admin_member_overview(), admin_set_role(), admin_delete_user() (security definer, validan is_admin()). Policies admin: borrar/editar activities, borrar memberships, update profiles.
 - Dataset: yuhonas/free-exercise-db (dominio público, LICENSE en public/exercises/). 61 ejercicios categoría plyometrics: src/data/plyometrics.json + 122 fotos en public/exercises/<id>/0|1.jpg. Se importan a la BD desde Admin → Ejercicios → "Importar catálogo base" (upsert; no pisa name_es ni is_active).
-- App (): pestañas Inicio | Running | Pliometría | Membresía (hash routing). Archivos: src/app/app.js (shell, login, inicio, pago), running.js (stats, récords, gráfico 8 semanas, form con tipo/desnivel/esfuerzo, editar/borrar), plyo.js (constructor de sesión con selector de ejercicios con fotos, series con reps/contactos/altura/cajón/distancia/peso/descanso, borrador en localStorage, historial, récords, biblioteca, ejercicio propio), common.js.
-- Admin (): Pagos (aprobar/rechazar/reabrir/borrar), Socios (resumen, ver/borrar datos, hacer/quitar admin, eliminar socio con confirmación), Ejercicios (importar, traducir name_es, activar/desactivar, borrar).
+- App (`app.html`): pestañas Inicio | Running | Pliometría | Membresía (hash routing). Archivos: src/app/app.js (shell, login, inicio, pago), running.js (stats, récords, gráfico 8 semanas, form con tipo/desnivel/esfuerzo, editar/borrar), plyo.js (constructor de sesión con selector de ejercicios con fotos, series con reps/contactos/altura/cajón/distancia/peso/descanso, borrador en localStorage, historial, récords, biblioteca, ejercicio propio), common.js.
+- Admin (`admin.html`): Pagos (aprobar/rechazar/reabrir/borrar), Socios (resumen, ver/borrar datos, hacer/quitar admin, eliminar socio con confirmación), Ejercicios (importar, traducir name_es, activar/desactivar, borrar).
 - Referencia revisada solo lectura: D:Erickapp movilida-total-web (picker de ejercicios con filtros, ficha con instrucciones/imagen, ejercicios propios). Allí el estado vive en un store de cliente; aquí es relacional con RLS. No se copió código ni estilos glass.
 - Decisión: tabla workouts.kind permite añadir 'strength' después sin migrar de nuevo la estructura de series.
 
