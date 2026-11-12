@@ -1,0 +1,17 @@
+# Evita que Supabase (plan gratis) pause el proyecto por inactividad (7 días).
+# Requiere secrets del repo: SUPABASE_URL y SUPABASE_ANON_KEY.
+name: supabase-keepalive
+on:
+  schedule:
+    - cron: '0 12 */3 * *'   # cada 3 días
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (rpc ping)
+        run: |
+          curl -fsS -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/ping" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" -d '{}'

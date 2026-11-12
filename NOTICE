@@ -1,0 +1,20 @@
+fluid-cursor
+Copyright (c) 2026 Taha Bakri
+
+This product includes software adapted from:
+
+    WebGL-Fluid-Simulation
+    Copyright (c) 2017 Pavel Dobryakov
+    https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
+    Licensed under the MIT License.
+
+The fluid solver — the GLSL shaders and the GPU simulation pipeline
+(advection, divergence, curl, vorticity, Jacobi pressure solve, gradient
+subtract) — is adapted from Pavel Dobryakov's MIT-licensed work. The
+underlying technique originates with NVIDIA GPU Gems, Chapter 38,
+"Fast Fluid Dynamics Simulation on the GPU."
+
+Original work in this repository (MIT, Taha Bakri):
+the preset system, the live controls panel, the reduced-motion and
+pause-on-blur handling, the fluid-cursor wrapper module, and the
+editorial type-inversion demo page.
