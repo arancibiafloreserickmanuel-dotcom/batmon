@@ -21,19 +21,21 @@ historial). Reescrito, sin copiar código. Se omitió Strava/planes de entrenami
   - Vista `weekly_km` (security_invoker) y función pública `ping()` para keep-alive.
 - `app.html` + `src/app/app.js`: login email/contraseña con **sesión persistente** (`persistSession`, `autoRefreshToken`), dashboard
   (km semanales running/ciclismo, total, última actividad, récords, historial con ritmo, borrar), formulario de actividad, pago por QR.
-- Pago manual: muestra `public/qr-pago.webp` (**placeholder = logo, reemplazar por el QR real**), sube comprobante al bucket y crea membresía `pending`.
+- Pago manual: muestra `public/qr-pago.webp` (QR real ya cargado), sube comprobante al bucket y crea membresía `pending`.
 - `admin.html` + `src/app/admin.js`: lista pendientes con link firmado (1 h) al comprobante, botones Aprobar/Rechazar.
 - `.github/workflows/keepalive.yml`: cron cada 3 días → `POST /rest/v1/rpc/ping`.
 
-## FALTA (para Claude in Chrome / Cursor)
-1. Crear proyecto Supabase, pegar `schema.sql`, crear los 10 usuarios en Auth > Users (sin signup público: desactivar "Allow new users to sign up").
-2. Poner tu usuario como admin: `update public.profiles set role='admin' where id='<UUID>';`
-3. Copiar `.env.example` → `.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`; mismas variables en Vercel.
-4. Secrets del repo GitHub: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (keep-alive).
-5. Reemplazar `public/qr-pago.webp` por el QR real.
-6. Cursor: enlazar navegación landing → `/app.html` (botón "Únete al Club"/login) y pulir UX.
-7. No probado contra un Supabase real todavía (solo compila: `npm run build`). Probar: login, registrar km, subir comprobante, aprobar.
-8. Opcional: bloquear funciones si el mes no está aprobado (hoy solo se muestra el estado; no bloquea).
+## ESTADO (12 nov)
+- Supabase creado (São Paulo), schema ejecutado, RLS activo, bucket receipts privado. Registro público ACTIVO (apagar cuando se registren los 10 socios).
+- Vercel: https://batmon.vercel.app (repo arancibiafloreserickmanuel-dotcom/batmon, rama main). Site URL de Supabase = esa URL.
+- Keep-alive GitHub Action cada 3 días con secrets SUPABASE_URL / SUPABASE_ANON_KEY (probado en verde).
+- QR real en public/qr-pago.webp. Landing enlaza a app.html (Entrar / Únete al Club).
+
+## FALTA
+1. Registrar cuenta admin en /app.html y ejecutar: update public.profiles set role='admin' where id=(select id from auth.users where email='CORREO');
+2. Prueba final: registrar km, subir comprobante, aprobar en /admin.html, comprobar sesión persistente.
+3. Variables de Vercel también en Development (opcional).
+4. Opcional: bloquear funciones si el mes no está aprobado; habilitar natación.
 
 ## Correr local
 `npm install` → `npm run dev` → `/app.html`, `/admin.html`.
