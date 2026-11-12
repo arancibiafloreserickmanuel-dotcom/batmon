@@ -1,0 +1,3 @@
+name: supabase-keepalive
+on: {schedule: [{cron: '0 12 * * 1'}], workflow_dispatch: {}}
+jobs: {ping: {runs-on: ubuntu-latest, steps: [{name: 'Ping Supabase', env: {SUPABASE_URL: '${{ secrets.SUPABASE_URL }}', SUPABASE_ANON_KEY: '${{ secrets.SUPABASE_ANON_KEY }}'}, run: 'curl -sf -X POST "$SUPABASE_URL/rest/v1/rpc/ping" -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" -H "Content-Type: application/json" -d ''{}'''}]}}
