@@ -6,7 +6,7 @@ import translations from '../data/plyometrics_es.json';
 import trainingCatalog from '../data/training_exercises.json';
 
 const view = $('#view');
-const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['ejercicios', 'Ejercicios']];
+const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios']];
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
@@ -79,7 +79,7 @@ async function detalle(u) {
     supabase.from('workouts').select('*, workout_sets(id)').eq('user_id', u.id).order('performed_on', { ascending: false }).limit(100),
     supabase.from('profile_modules').select('module_key, enabled').eq('user_id', u.id),
   ]);
-  const moduleState = { running: true, plyo: true, training: true };
+  const moduleState = { running: true, cycling: true, swimming: true, plyo: true, training: true };
   (moduleRows || []).forEach((row) => { moduleState[row.module_key] = row.enabled; });
   const plyoSessions = ws.filter((w) => w.kind === 'plyometrics');
   const trainingSessions = ws.filter((w) => w.kind === 'training');
@@ -90,7 +90,7 @@ async function detalle(u) {
     <h2>Pliometría (${plyoSessions.length})</h2><div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
     <h2>Entrenamiento (${trainingSessions.length})</h2><div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
     <h2>Módulos de este socio</h2><p class="muted">Los módulos desactivados se ocultan en su navegación y accesos directos.</p>
-    ${moduleError ? `<p class="msg">No disponible: aplica la migración 0003 para gestionar módulos.</p>` : `<div class="module-settings">${[['running','Running / Ciclismo / Natación'],['plyo','Pliometría'],['training','Entrenamiento']].map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-module="${key}" ${moduleState[key] ? 'checked' : ''} aria-label="Activar ${title}"></label>`).join('')}</div>`}
+    ${moduleError ? `<p class="msg">No disponible: aplica la migración 0004 para gestionar módulos.</p>` : `<div class="module-settings">${[['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']].map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-module="${key}" ${moduleState[key] ? 'checked' : ''} aria-label="Activar ${title}"></label>`).join('')}</div>`}
     <h2>Acciones</h2>
     ${self ? '<p class="muted">Eres tú: no puedes cambiar tu rol ni borrarte.</p>' : `<button class="btn sm ghost" id="role">${u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}</button>
       <button class="btn sm" id="rmuser" style="background:#a00;border-color:#a00">Eliminar socio y sus datos</button>`}`);
@@ -171,8 +171,25 @@ async function ejercicios() {
   };
 }
 
+/* ------------------------------- Módulos ------------------------------- */
+const MODULES = [['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']];
+async function modulos() {
+  const [{ data: globalRows = [], error: globalError }, { data: users = [], error: userError }] = await Promise.all([
+    supabase.from('app_modules').select('module_key,enabled'), supabase.from('profiles').select('id,full_name').order('full_name'),
+  ]);
+  if (globalError || userError) { $('#body').innerHTML = `<h2>Módulos</h2><p class="msg">Aplica la migración 0004 para configurar módulos.</p>`; return; }
+  const globals = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
+  $('#body').innerHTML = `<h1>Módulos</h1><p class="muted">Activa módulos para todo el club y ajusta excepciones por socio.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''}></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><input type="checkbox" data-user="${u.id}" data-module="${key}" checked></label>`).join('')}</div></details>`).join('')}</div>`;
+  const userRows = await supabase.from('profile_modules').select('user_id,module_key,enabled');
+  if (userRows.error) { notify(`No se pudieron leer excepciones: ${userRows.error.message}`); return; }
+  userRows.data.forEach(r => { const input = $('#module-users').querySelector(`[data-user="${r.user_id}"][data-module="${r.module_key}"]`); if (input) input.checked = r.enabled; });
+  $('#module-user-search').oninput = e => { const q=e.target.value.toLowerCase(); $('#module-users').querySelectorAll('[data-name]').forEach(card => card.hidden=!card.dataset.name.toLowerCase().includes(q)); };
+  $('#body').querySelectorAll('[data-global]').forEach(input => input.onchange=async()=>{ const {error}=await supabase.from('app_modules').upsert({module_key:input.dataset.global,enabled:input.checked,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'module_key'}); if(error){input.checked=!input.checked;notify(error.message);} });
+  $('#body').querySelectorAll('[data-user]').forEach(input => input.onchange=async()=>{ const {error}=await supabase.from('profile_modules').upsert({user_id:input.dataset.user,module_key:input.dataset.module,enabled:input.checked,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'user_id,module_key'}); if(error){input.checked=!input.checked;notify(error.message);} });
+}
+
 /* ------------------------------- Shell ------------------------------- */
-const SECTIONS = { pagos, socios, ejercicios };
+const SECTIONS = { pagos, socios, modulos, ejercicios };
 function route() {
   const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + t));

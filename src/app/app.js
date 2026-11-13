@@ -10,6 +10,8 @@ const view = $('#view');
 const TABS = [
   ['inicio', 'Inicio', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'],
   ['running', 'Running', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/></svg>'],
+  ['cycling', 'Ciclismo', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/></svg>'],
+  ['swimming', 'Natación', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/></svg>'],
   ['plyo', 'Pliometría', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="7" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="10" cy="19" r="1"/></svg>'],
   ['training', 'Entrenamiento', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M4 9v6m14-8v10m2-8v6M6 12h12"/></svg>'],
   ['pago', 'Membresía', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>'],
@@ -59,13 +61,16 @@ function showNewPassword() {
 
 /* ---------------- Shell con pestañas ---------------- */
 async function boot(user) {
-  const [{ data: profile }, { data: membership }, { data: moduleRows, error: moduleError }] = await Promise.all([
+  const [{ data: profile }, { data: membership }, { data: moduleRows }, { data: globalRows }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('memberships').select('status').eq('user_id', user.id).eq('period', monthStart()).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profile_modules').select('module_key, enabled').eq('user_id', user.id),
+    supabase.from('app_modules').select('module_key,enabled'),
   ]);
-  const modules = { running: true, plyo: true, training: !moduleError };
-  (moduleRows || []).forEach((row) => { modules[row.module_key] = row.enabled; });
+  const globals = Object.fromEntries(['running','cycling','swimming','plyo','training'].map(key => [key, true]));
+  (globalRows || []).forEach(row => { globals[row.module_key] = row.enabled; });
+  const members = Object.fromEntries((moduleRows || []).map(row => [row.module_key, row.enabled]));
+  const modules = Object.fromEntries(Object.keys(globals).map(key => [key, globals[key] && members[key] !== false]));
   ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules };
   $('#logout').hidden = false; $('#admin-link').hidden = !ctx.isAdmin; $('#tabs').hidden = false;
   renderTabs();
@@ -73,7 +78,7 @@ async function boot(user) {
 }
 
 function renderTabs() {
-  $('#tabs').innerHTML = TABS.filter(([key]) => !['running', 'plyo', 'training'].includes(key) || ctx.modules[key])
+  $('#tabs').innerHTML = TABS.filter(([key]) => !['running', 'cycling', 'swimming', 'plyo', 'training'].includes(key) || ctx.modules[key])
     .map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}"><span class="tab-icon">${icon}</span><span>${t}</span></a>`).join('');
 }
 
@@ -82,12 +87,12 @@ function route() {
   const tab = (location.hash.slice(1) || 'inicio');
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + tab));
   view.innerHTML = '<p class="muted center">Cargando…</p>';
-  const moduleKey = { running: 'running', plyo: 'plyo', training: 'training' }[tab];
+  const moduleKey = { running: 'running', cycling: 'cycling', swimming: 'swimming', plyo: 'plyo', training: 'training' }[tab];
   if (moduleKey && !ctx.modules[moduleKey]) {
     view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
     return;
   }
-  const fn = { inicio: renderHome, running: renderRunning, plyo: renderPlyo, training: renderTraining, pago: renderMembership }[tab] || renderHome;
+  const fn = { inicio: renderHome, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, pago: renderMembership }[tab] || renderHome;
   Promise.resolve(fn(view, ctx)).catch((e) => { view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 

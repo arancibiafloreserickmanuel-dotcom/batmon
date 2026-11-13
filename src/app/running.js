@@ -3,14 +3,15 @@ import { fmt, today, weekStart, paceStr, num, RUN_TYPE, DISC, confirmDialog, not
 
 const DISCIPLINES = [{ v: 'running', t: 'Running' }, { v: 'cycling', t: 'Ciclismo' }, { v: 'swimming', t: 'Natación' }];
 
-export async function renderRunning(view, ctx) {
+export async function renderRunning(view, ctx, discipline = 'running') {
   if (!ctx.canRegister) {
     view.innerHTML = '<h1>Running</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar actividades. <a href="#pago">Ir a Membresía</a></div>';
     return;
   }
-  const { data: acts = [] } = await supabase.from('activities').select('*')
+  let { data: acts = [] } = await supabase.from('activities').select('*')
     .order('performed_on', { ascending: false }).order('created_at', { ascending: false });
   const sum = (arr) => arr.reduce((s, a) => s + Number(a.distance_km), 0);
+  acts = acts.filter((a) => a.discipline === discipline);
   const runs = acts.filter((a) => a.discipline === 'running');
   const ws = weekStart();
   const ms = today().slice(0, 7);
@@ -33,12 +34,8 @@ export async function renderRunning(view, ctx) {
   const maxKm = Math.max(1, ...weeks.map((w) => w.km));
 
   view.innerHTML = `
-    <h1>Running &amp; Ciclismo</h1>
-    <div class="grid">
-      <div class="card stat"><b>${fmt(week('running'))} km</b><span>Running · semana</span></div>
-      <div class="card stat"><b>${fmt(month('running'))} km</b><span>Running · mes</span></div>
-      <div class="card stat"><b>${fmt(week('cycling'))} km</b><span>Ciclismo · semana</span></div>
-    </div>
+    <h1>${DISC[discipline]}</h1>
+    <div class="grid"><div class="card stat"><b>${fmt(week(discipline))} km</b><span>${DISC[discipline]} · semana</span></div><div class="card stat"><b>${fmt(month(discipline))} km</b><span>${DISC[discipline]} · mes</span></div></div>
     <div class="card"><span class="muted">Récords running</span><br>
       Más larga: ${longest ? `<b>${fmt(longest.distance_km)} km</b> (${longest.performed_on})` : '—'}<br>
       Mejor ritmo (≥3 km): ${fastest ? `<b>${paceStr(fastest.distance_km, fastest.duration_min)}</b> en ${fmt(fastest.distance_km)} km (${fastest.performed_on})` : '—'}<br>
@@ -49,7 +46,7 @@ export async function renderRunning(view, ctx) {
     <h2 id="ftitle">Registrar salida</h2>
     <form id="af" class="card">
       <input type="hidden" id="eid">
-      <div class="row"><div><label for="d">Disciplina</label><select id="d">${DISCIPLINES.map((d) => `<option value="${d.v}">${d.t}</option>`).join('')}</select></div>
+      <div class="row"><div><label for="d">Disciplina</label><select id="d">${DISCIPLINES.filter((d) => d.v === discipline).map((d) => `<option value="${d.v}">${d.t}</option>`).join('')}</select></div>
       <div><label for="f">Fecha</label><input id="f" type="date" value="${today()}" max="${today()}" required></div></div>
       <div class="row"><div><label for="k">Distancia (km)</label><input id="k" type="number" step="0.01" min="0.01" inputmode="decimal" required></div>
       <div><label for="m">Duración (min)</label><input id="m" type="number" step="0.1" min="0.1" inputmode="decimal" required></div></div>

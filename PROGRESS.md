@@ -62,10 +62,13 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - `supabase/migrations/0003_training_modules.sql`: amplía `workouts.kind`, añade plan JSONB individual y preferencias de módulo con RLS: el socio gestiona su plan; solo admin cambia preferencias de módulos.
 - Archivos: `src/app/training.js`, `src/data/training_exercises.json`, `src/app/app.js`, `src/app/admin.js`, `src/app/app.css`, `supabase/migrations/0003_training_modules.sql`.
 - Verificación: `npm run build` pasó; el catálogo tiene 20 IDs únicos.
+- Ajuste solicitado: menú separado para Running, Ciclismo, Natación, Pliometría y Entrenamiento; página Admin → Módulos con controles globales y combinaciones individuales por socio. La barra inferior permite desplazarse horizontalmente cuando los módulos visibles superan el ancho móvil.
+- `supabase/migrations/0004_module_controls.sql`: catálogo global de módulos y claves granulares por socio. Los módulos globalmente apagados quedan deshabilitados incluso si un socio tiene una excepción activa.
 
 ## PENDIENTE
 - La migración `supabase/migrations/0002_plyometrics_running_admin.sql` sigue pendiente de aplicar; las pantallas de pliometría/admin dependen de ella. No se aplicó ninguna migración directamente en Supabase; 0003 solo define RLS para sus dos tablas nuevas y no cambia las policies existentes.
 - Para Entrenamiento y los switches por socio también hay que aplicar `supabase/migrations/0003_training_modules.sql` después de 0002. Después importar el catálogo desde Admin → Ejercicios.
+- Para la página Admin → Módulos y el menú granular se requiere aplicar además `supabase/migrations/0004_module_controls.sql`, después de 0003.
 - Pendiente comprobación con Supabase real: registro de actividad/sesión con membresía aprobada, bloqueo con pago pendiente/rechazado, ciclo aprobar/rechazar y recuperación de contraseña.
 - Registrar cuenta admin y ejecutar el SQL de asignación de rol del paso 1 arriba; confirmar credenciales y variables de entorno en Vercel antes del despliegue.
 - El dataset de traducciones cubre los 61 ejercicios base; ejercicios propios se siguen nombrando por su creador.
