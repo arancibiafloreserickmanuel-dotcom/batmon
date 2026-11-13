@@ -113,7 +113,7 @@ export function showLogin(view, signup = false) {
 }
 
 function showRecovery(view) {
-  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos. Si tu cuenta admin se creó con Google, entra con Google y configura una contraseña en Perfil → Configuración.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
+  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe tu usuario y el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos. Si tu cuenta admin se creó con Google, entra con Google y configura una contraseña en Perfil → Configuración.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
   $('#recovery-login', view).onclick = () => showLogin(view);
   $('#recovery-form', view).onsubmit = async (event) => {
     event.preventDefault();
@@ -125,7 +125,7 @@ function showRecovery(view) {
     if (password !== $('#confirm-password', view).value) { message.textContent = 'Las contraseñas no coinciden.'; return; }
     button.disabled = true;
     const { data, error } = await supabase.functions.invoke('account-recovery', {
-      body: { action: 'change', phone, new_password: password },
+      body: { action: 'change', username, phone, new_password: password },
     });
     if (error || !data?.ok) {
       message.textContent = error
