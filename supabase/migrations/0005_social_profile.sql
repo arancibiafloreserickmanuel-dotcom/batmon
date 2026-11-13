@@ -74,3 +74,21 @@ language sql stable security definer set search_path=public as $$
 $$;
 revoke all on function public.profile_directory() from public,anon;
 grant execute on function public.profile_directory() to authenticated;
+
+-- ---- Correcciones de seguridad/funcionalidad (revisión) ----
+-- 1) El destinatario solo puede cambiar `status` (si pudiera editar requester,
+--    se haría "amigo" de cualquiera y leería sus publicaciones).
+revoke update on public.friendships from authenticated;
+grant update (status) on public.friendships to authenticated;
+
+-- 2) Los amigos aceptados pueden leer los archivos (avatar/fotos/videos) del otro;
+--    sin esto las publicaciones de amigos no se podían ver.
+drop policy if exists profile_media_read_friends on storage.objects;
+create policy profile_media_read_friends on storage.objects for select to authenticated using (
+  bucket_id='profile-media' and exists (
+    select 1 from public.friendships f where f.status='accepted' and (
+      (f.requester=auth.uid() and f.addressee::text=(storage.foldername(name))[1]) or
+      (f.addressee=auth.uid() and f.requester::text=(storage.foldername(name))[1])
+    )
+  )
+);
