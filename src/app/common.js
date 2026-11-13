@@ -18,3 +18,23 @@ export const draft = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignorar */ } },
   del(k) { try { localStorage.removeItem(k); } catch { /* ignorar */ } },
 };
+
+export function notify(message, kind = 'error') {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; host.setAttribute('aria-live', 'polite'); document.body.append(host); }
+  const item = document.createElement('div'); item.className = `toast ${kind}`; item.textContent = message; host.append(item);
+  setTimeout(() => item.remove(), 4200);
+}
+
+export function confirmDialog(message, confirmText = 'Confirmar') {
+  return new Promise((resolve) => {
+    const safe = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const overlay = document.createElement('div'); overlay.className = 'modal';
+    overlay.innerHTML = `<section class="sheet confirm-sheet" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><div class="sheet-h"><b id="confirm-title">Confirmar acción</b></div><p>${safe(message)}</p><div class="quick-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn" data-ok>${safe(confirmText)}</button></div></section>`;
+    const finish = (value) => { overlay.remove(); resolve(value); };
+    overlay.querySelector('[data-cancel]').onclick = () => finish(false);
+    overlay.querySelector('[data-ok]').onclick = () => finish(true);
+    overlay.onclick = (e) => { if (e.target === overlay) finish(false); };
+    document.body.append(overlay); overlay.querySelector('[data-cancel]').focus();
+  });
+}

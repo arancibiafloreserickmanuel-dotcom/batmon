@@ -44,14 +44,20 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Referencia revisada solo lectura: `D:\Erick\app movil\vida-total-web` (picker de ejercicios con filtros, ficha con instrucciones/imagen, ejercicios propios). Allí el estado vive en un store de cliente; aquí es relacional con RLS. No se copió código ni estilos glass.
 - Decisión: tabla workouts.kind permite añadir 'strength' después sin migrar de nuevo la estructura de series.
 
-## PENDIENTE DE DISEÑO (para ChatGPT/Cursor/Antigravity)
-UI deliberadamente básica: estilos solo en src/app/app.css. Traducir nombres al español (admin → Ejercicios → columna ES). Bloqueo por pago, avisos al socio, natación, recuperación de contraseña, subir foto en ejercicio propio.
+## FASE 3 — DISEÑO MOBILE-FIRST Y FUNCIONES FRONTEND (13 nov)
+- App móvil: navegación inferior fija con zonas táctiles grandes y safe area; tarjetas/inputs accesibles, contraste y modo oscuro; registro rápido, historial running en tarjetas y métricas semanales; constructor de pliometría con tarjetas por serie, controles +/- , copiar serie y cronómetro de descanso.
+- Membresía: QR y pasos numerados; bloqueo de formularios running/pliometría hasta aprobación del periodo actual; aviso en Inicio cuando el estado cambia a aprobado/rechazado.
+- Cuenta: recuperación por email con `resetPasswordForEmail` y formulario para fijar contraseña; Natación habilitada con ritmo opcional en min/100 m.
+- Admin: pestañas inferiores; pagos, socios y catálogo en tarjetas; búsqueda de socios; confirmaciones propias, vista ampliada de comprobantes con opción de abrir en pestaña y aplicar las 61 traducciones actualizando solo `name_es`.
+- Landing: ajustes responsive para móvil, botón Entrar visible y CTA Únete al Club alcanzable; no se modificó la animación ni sus módulos. Sin blur en la cabecera/controles.
+- Archivos: `app.html`, `admin.html`, `src/app/app.css`, `src/app/app.js`, `src/app/running.js`, `src/app/plyo.js`, `src/app/admin.js`, `src/app/common.js`, `src/data/plyometrics_es.json`, `src/style.css`.
+- Verificación: `npm run build` pasó el 13 nov; dataset y traducciones tienen 61 IDs coincidentes.
 
-## FALTA
-1. Registrar cuenta admin en /app.html y ejecutar: update public.profiles set role='admin' where id=(select id from auth.users where email='CORREO');
-2. Prueba final: registrar km, subir comprobante, aprobar en /admin.html, comprobar sesión persistente.
-3. Variables de Vercel también en Development (opcional).
-4. Opcional: bloquear funciones si el mes no está aprobado; habilitar natación.
+## PENDIENTE
+- La migración `supabase/migrations/0002_plyometrics_running_admin.sql` sigue pendiente de aplicar; las pantallas de pliometría/admin dependen de ella. No se tocó la base de datos ni RLS.
+- Pendiente comprobación con Supabase real: registro de actividad/sesión con membresía aprobada, bloqueo con pago pendiente/rechazado, ciclo aprobar/rechazar y recuperación de contraseña.
+- Registrar cuenta admin y ejecutar el SQL de asignación de rol del paso 1 arriba; confirmar credenciales y variables de entorno en Vercel antes del despliegue.
+- El dataset de traducciones cubre los 61 ejercicios base; ejercicios propios se siguen nombrando por su creador.
 
 ## Correr local
 `npm install` → `npm run dev` → `/app.html`, `/admin.html`.

@@ -1,10 +1,13 @@
 import { supabase, $, esc } from '../supabase.js';
-import { fmt, today, weekStart, paceStr, num, RUN_TYPE, DISC } from './common.js';
+import { fmt, today, weekStart, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
 
-// Para activar natación: agregar { v: 'swimming', t: 'Natación' } aquí (el enum de la BD ya lo tiene).
-const DISCIPLINES = [{ v: 'running', t: 'Running' }, { v: 'cycling', t: 'Ciclismo' }];
+const DISCIPLINES = [{ v: 'running', t: 'Running' }, { v: 'cycling', t: 'Ciclismo' }, { v: 'swimming', t: 'Natación' }];
 
 export async function renderRunning(view, ctx) {
+  if (!ctx.canRegister) {
+    view.innerHTML = '<h1>Running</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar actividades. <a href="#pago">Ir a Membresía</a></div>';
+    return;
+  }
   const { data: acts = [] } = await supabase.from('activities').select('*')
     .order('performed_on', { ascending: false }).order('created_at', { ascending: false });
   const sum = (arr) => arr.reduce((s, a) => s + Number(a.distance_km), 0);
@@ -41,7 +44,7 @@ export async function renderRunning(view, ctx) {
       Mejor ritmo (≥3 km): ${fastest ? `<b>${paceStr(fastest.distance_km, fastest.duration_min)}</b> en ${fmt(fastest.distance_km)} km (${fastest.performed_on})` : '—'}<br>
       Ritmo medio total: <b>${paceStr(totRunKm, totRunMin)}</b> · ${fmt(totRunKm)} km en ${runs.length} salidas</div>
     <div class="card"><span class="muted">Km por semana (running)</span>
-      <div class="bars">${weeks.map((w) => `<div class="bar"><i style="height:${Math.round((w.km / maxKm) * 100)}%"></i><small>${fmt(w.km, 0)}</small><em>${w.s}</em></div>`).join('')}</div></div>
+      <div class="bars">${weeks.map((w) => `<div class="week-bar"><i style="height:${Math.round((w.km / maxKm) * 100)}%"></i><small>${fmt(w.km, 0)}</small><em>${w.s}</em></div>`).join('')}</div></div>
 
     <h2 id="ftitle">Registrar salida</h2>
     <form id="af" class="card">
@@ -59,13 +62,11 @@ export async function renderRunning(view, ctx) {
     </form>
 
     <h2>Historial</h2>
-    <div class="card scroll">${acts.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Km</th><th>Min</th><th>Ritmo</th><th></th></tr>
-      ${acts.slice(0, 80).map((a) => `<tr><td>${a.performed_on}</td><td>${DISC[a.discipline]}${a.run_type ? ` · ${RUN_TYPE[a.run_type]}` : ''}</td>
-      <td>${fmt(a.distance_km)}</td><td>${fmt(a.duration_min)}</td><td>${a.discipline === 'running' ? paceStr(a.distance_km, a.duration_min) : fmt((a.distance_km / a.duration_min) * 60) + ' km/h'}</td>
-      <td class="nw"><button class="link" data-edit="${a.id}">Editar</button> <button class="link" data-del="${a.id}">Borrar</button></td></tr>`).join('')}</table>` : '<p class="muted">Sin registros todavía.</p>'}</div>`;
+    <div class="activity-list">${acts.length ? acts.slice(0, 80).map((a) => `<article class="card activity-card"><div><b>${DISC[a.discipline]}${a.run_type ? ` · ${RUN_TYPE[a.run_type]}` : ''}</b><span>${a.performed_on}</span></div><strong>${fmt(a.distance_km)} km</strong><p>${fmt(a.duration_min)} min · ${a.discipline === 'running' ? paceStr(a.distance_km, a.duration_min) : a.discipline === 'swimming' ? `${fmt(a.duration_min / (a.distance_km * 10), 2)} min/100 m` : fmt((a.distance_km / a.duration_min) * 60) + ' km/h'}</p><div class="activity-actions"><button class="btn sm ghost" data-edit="${a.id}">Editar</button><button class="btn sm ghost" data-del="${a.id}">Borrar</button></div></article>`).join('') : '<p class="card muted">Aún no registras salidas. Tu historial aparecerá aquí.</p>'}</div>`;
 
-  const live = () => { const k = +$('#k').value, m = +$('#m').value; $('#pv').textContent = k > 0 && m > 0 ? `Ritmo: ${paceStr(k, m)} · ${fmt((k / m) * 60)} km/h` : ''; };
+  const live = () => { const k = +$('#k').value, m = +$('#m').value, d = $('#d').value; $('#pv').textContent = k > 0 && m > 0 ? (d === 'running' ? `Ritmo: ${paceStr(k, m)}` : d === 'swimming' ? `Ritmo: ${fmt(m / (k * 10), 2)} min/100 m` : `Velocidad: ${fmt((k / m) * 60)} km/h`) : ''; };
   $('#k').oninput = live; $('#m').oninput = live;
+  $('#d').onchange = live;
 
   $('#af').onsubmit = async (e) => {
     e.preventDefault();
@@ -77,9 +78,9 @@ export async function renderRunning(view, ctx) {
   };
   $('#cn').onclick = () => renderRunning(view, ctx);
   view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-    if (!confirm('¿Borrar este registro?')) return;
+    if (!(await confirmDialog('¿Borrar este registro?', 'Borrar'))) return;
     const { error } = await supabase.from('activities').delete().eq('id', b.dataset.del);
-    if (error) alert(error.message); else renderRunning(view, ctx);
+    if (error) notify(error.message); else renderRunning(view, ctx);
   }));
   view.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
     const a = acts.find((x) => x.id === b.dataset.edit);

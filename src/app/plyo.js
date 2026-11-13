@@ -1,5 +1,5 @@
 import { supabase, $, esc } from '../supabase.js';
-import { fmt, today, num, LEVEL, draft } from './common.js';
+import { fmt, today, num, LEVEL, draft, confirmDialog, notify } from './common.js';
 
 const DRAFT_KEY = 'batmon_plyo_draft_v1';
 const FIELDS = [ // columnas de cada serie (clave BD, etiqueta corta, step)
@@ -12,6 +12,7 @@ const thumb = (e, cls = 'th') => (e?.images?.[0] ? `<img class="${cls}" loading=
 let catalog = [];          // ejercicios activos de pliometría
 let sub = 'new';           // new | hist | lib
 let W = null;              // sesión en construcción
+let restTimer = null;
 const blankSet = () => Object.fromEntries(FIELDS.map(([k]) => [k, '']));
 const blankW = () => ({ date: today(), duration: '', rpe: '', notes: '', items: [] });
 
@@ -25,6 +26,10 @@ function modal(html) {
 }
 
 export async function renderPlyo(view, ctx) {
+  if (!ctx.canRegister) {
+    view.innerHTML = '<h1>Pliometría</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar sesiones. <a href="#pago">Ir a Membresía</a></div>';
+    return;
+  }
   const { data = [], error } = await supabase.from('exercises').select('*').eq('category', 'plyometrics').eq('is_active', true).order('name');
   if (error) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(error.message)}</p>`; return; }
   catalog = data;
@@ -57,11 +62,11 @@ function builder(box, view, ctx) {
         return `<div class="card ex" data-i="${i}">
           <div class="exh">${thumb(e)}<div><b>${name(e)}</b><br><span class="muted">${esc((e.primary_muscles || []).join(', '))}</span></div>
           <button class="link" data-act="rmex" aria-label="Quitar ejercicio">✕</button></div>
-          <div class="scroll"><table class="sets"><tr><th>#</th>${FIELDS.map(([, l]) => `<th>${l}</th>`).join('')}</tr>
-          ${it.sets.map((s, j) => `<tr data-j="${j}"><td>${j + 1}</td>${FIELDS.map(([k, , st]) => `<td><input type="number" min="0" step="${st}" inputmode="decimal" data-k="${k}" value="${s[k]}"></td>`).join('')}</tr>`).join('')}</table></div>
-          <button class="btn sm ghost" data-act="addset">+ Serie</button><button class="btn sm ghost" data-act="rmset">− Serie</button></div>`;
+          <div class="set-list">${it.sets.map((s, j) => `<div class="set-card" data-j="${j}"><b>Serie ${j + 1}</b>${FIELDS.map(([k, l, st]) => `<label>${l}<span class="stepper"><button type="button" data-step="-" data-k="${k}" aria-label="Restar ${l}">−</button><input aria-label="${l}, serie ${j + 1}" type="number" min="0" step="${st}" inputmode="decimal" data-k="${k}" value="${s[k]}"><button type="button" data-step="+" data-k="${k}" aria-label="Sumar ${l}">+</button></span></label>`).join('')}</div>`).join('')}</div>
+          <button class="btn sm ghost" data-act="addset">+ Serie</button><button class="btn sm ghost" data-act="rmset">− Serie</button><button class="btn sm ghost" data-act="copyset">Copiar serie anterior</button></div>`;
       }).join('')}
       <button class="btn ghost" id="addex" type="button">+ Agregar ejercicio</button>
+      <div class="card rest-control"><b>Descanso opcional</b><div class="quick-actions"><button class="btn sm ghost" id="reststart" type="button">Iniciar 60 s</button><button class="btn sm ghost" id="reststop" type="button">Detener</button><strong id="restleft" aria-live="polite">01:00</strong></div></div>
       <div><button class="btn" id="savew" type="button">Guardar sesión</button> <button class="link" id="clr" type="button">Vaciar</button><p class="msg" id="wm2"></p></div>`;
 
     $('#wd', box).oninput = (e) => { W.date = e.target.value; save(); };
@@ -70,13 +75,24 @@ function builder(box, view, ctx) {
     $('#wn', box).oninput = (e) => { W.notes = e.target.value; save(); };
     box.querySelectorAll('.ex').forEach((card) => {
       const it = W.items[+card.dataset.i];
-      card.querySelectorAll('input[data-k]').forEach((inp) => (inp.oninput = () => { it.sets[+inp.closest('tr').dataset.j][inp.dataset.k] = inp.value; save(); }));
+      card.querySelectorAll('input[data-k]').forEach((inp) => (inp.oninput = () => { it.sets[+inp.closest('.set-card').dataset.j][inp.dataset.k] = inp.value; save(); }));
+      card.querySelectorAll('[data-step]').forEach((b) => (b.onclick = () => {
+        const input = b.parentElement.querySelector('input'); const step = Number(input.step) || 1;
+        const value = Math.max(0, (Number(input.value) || 0) + (b.dataset.step === '+' ? step : -step));
+        input.value = String(value); input.dispatchEvent(new Event('input', { bubbles: true }));
+      }));
       card.querySelector('[data-act=addset]').onclick = () => { const last = it.sets[it.sets.length - 1]; it.sets.push(last ? { ...last } : blankSet()); save(); draw(); };
       card.querySelector('[data-act=rmset]').onclick = () => { if (it.sets.length > 1) it.sets.pop(); save(); draw(); };
+      card.querySelector('[data-act=copyset]').onclick = () => { if (it.sets.length > 1) it.sets[it.sets.length - 1] = { ...it.sets[it.sets.length - 2] }; save(); draw(); };
       card.querySelector('[data-act=rmex]').onclick = () => { W.items.splice(+card.dataset.i, 1); save(); draw(); };
     });
     $('#addex', box).onclick = () => picker(ctx, (ids) => { ids.forEach((id) => W.items.push({ ex: id, sets: [blankSet(), blankSet(), blankSet()] })); save(); draw(); });
-    $('#clr', box).onclick = () => { if (confirm('¿Vaciar la sesión en curso?')) { W = blankW(); draft.del(DRAFT_KEY); draw(); } };
+    $('#reststart', box).onclick = () => {
+      clearInterval(restTimer); let left = 60; $('#restleft', box).textContent = '01:00';
+      restTimer = setInterval(() => { left -= 1; const out = $('#restleft', box); if (out) out.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`; if (left <= 0) { clearInterval(restTimer); notify('Descanso terminado', 'success'); } }, 1000);
+    };
+    $('#reststop', box).onclick = () => { clearInterval(restTimer); $('#restleft', box).textContent = '01:00'; };
+    $('#clr', box).onclick = () => confirmDialog('¿Vaciar la sesión en curso?', 'Vaciar sesión').then((ok) => { if (ok) { W = blankW(); draft.del(DRAFT_KEY); draw(); } });
     $('#savew', box).onclick = () => saveWorkout(box, () => { W = blankW(); draft.del(DRAFT_KEY); sub = 'hist'; renderPlyo(view, ctx); });
   };
   draw();
@@ -181,9 +197,9 @@ async function history(box) {
         ${w.notes ? `<p class="muted">${esc(w.notes)}</p>` : ''}<button class="link" data-del="${w.id}">Borrar sesión</button></details>`;
     }).join('') : '<p class="muted">Aún no registras sesiones.</p>'}`;
   box.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-    if (!confirm('¿Borrar esta sesión y sus series?')) return;
+    if (!(await confirmDialog('¿Borrar esta sesión y sus series?', 'Borrar sesión'))) return;
     const { error: e } = await supabase.from('workouts').delete().eq('id', b.dataset.del);
-    if (e) alert(e.message); else history(box);
+    if (e) notify(e.message); else history(box);
   }));
 }
 
@@ -206,8 +222,8 @@ function detail(e, ctx, view) {
   m.querySelector('[data-close]').onclick = () => m.remove();
   const d = $('#del', m);
   if (d) d.onclick = async () => {
-    if (!confirm('¿Borrar este ejercicio?')) return;
+    if (!(await confirmDialog('¿Borrar este ejercicio?', 'Borrar ejercicio'))) return;
     const { error } = await supabase.from('exercises').delete().eq('id', e.id);
-    if (error) alert('No se puede borrar (¿ya está en una sesión?): ' + error.message); else { m.remove(); renderPlyo(view, ctx); }
+    if (error) notify('No se puede borrar (¿ya está en una sesión?): ' + error.message); else { m.remove(); renderPlyo(view, ctx); }
   };
 }
