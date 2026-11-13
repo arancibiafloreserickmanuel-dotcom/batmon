@@ -3,6 +3,7 @@ import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, today, monthStart, weekStart, paceStr, DISC } from './common.js';
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
+import { renderTraining } from './training.js';
 
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
@@ -10,6 +11,7 @@ const TABS = [
   ['inicio', 'Inicio', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'],
   ['running', 'Running', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/></svg>'],
   ['plyo', 'Pliometría', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="7" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="10" cy="19" r="1"/></svg>'],
+  ['training', 'Entrenamiento', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M4 9v6m14-8v10m2-8v6M6 12h12"/></svg>'],
   ['pago', 'Membresía', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>'],
 ];
 let ctx = null;
@@ -57,13 +59,22 @@ function showNewPassword() {
 
 /* ---------------- Shell con pestañas ---------------- */
 async function boot(user) {
-  const [{ data: profile }, { data: membership }] = await Promise.all([
+  const [{ data: profile }, { data: membership }, { data: moduleRows, error: moduleError }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('memberships').select('status').eq('user_id', user.id).eq('period', monthStart()).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('profile_modules').select('module_key, enabled').eq('user_id', user.id),
   ]);
-  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved' };
+  const modules = { running: true, plyo: true, training: !moduleError };
+  (moduleRows || []).forEach((row) => { modules[row.module_key] = row.enabled; });
+  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules };
   $('#logout').hidden = false; $('#admin-link').hidden = !ctx.isAdmin; $('#tabs').hidden = false;
+  renderTabs();
   route();
+}
+
+function renderTabs() {
+  $('#tabs').innerHTML = TABS.filter(([key]) => !['running', 'plyo', 'training'].includes(key) || ctx.modules[key])
+    .map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}"><span class="tab-icon">${icon}</span><span>${t}</span></a>`).join('');
 }
 
 function route() {
@@ -71,7 +82,12 @@ function route() {
   const tab = (location.hash.slice(1) || 'inicio');
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + tab));
   view.innerHTML = '<p class="muted center">Cargando…</p>';
-  const fn = { inicio: renderHome, running: renderRunning, plyo: renderPlyo, pago: renderMembership }[tab] || renderHome;
+  const moduleKey = { running: 'running', plyo: 'plyo', training: 'training' }[tab];
+  if (moduleKey && !ctx.modules[moduleKey]) {
+    view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
+    return;
+  }
+  const fn = { inicio: renderHome, running: renderRunning, plyo: renderPlyo, training: renderTraining, pago: renderMembership }[tab] || renderHome;
   Promise.resolve(fn(view, ctx)).catch((e) => { view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
@@ -79,14 +95,15 @@ function route() {
 async function renderHome(v) {
   const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(200),
-    supabase.from('workouts').select('id, performed_on, duration_min, workout_sets(id)').order('performed_on', { ascending: false }).limit(100),
+    supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id)').order('performed_on', { ascending: false }).limit(100),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
   ]);
   const ws0 = weekStart();
   const km = (d) => acts.filter((a) => a.discipline === d && a.performed_on >= ws0).reduce((s, a) => s + Number(a.distance_km), 0);
   const last = acts[0];
   const cur = mems[0];
-  const plyoWeek = ws.filter((w) => w.performed_on >= ws0).length;
+  const plyoWeek = ws.filter((w) => w.kind === 'plyometrics' && w.performed_on >= ws0).length;
+  const trainingWeek = ws.filter((w) => w.kind === 'training' && w.performed_on >= ws0).length;
 
   const seenKey = `batmon_membership_status_${ctx.user.id}`;
   const previousStatus = localStorage.getItem(seenKey);
@@ -96,14 +113,13 @@ async function renderHome(v) {
   v.innerHTML = `<h1>Hola, ${esc(ctx.profile?.full_name || '')}</h1><p class="muted">Tu semana en el Crowd</p>${statusNotice}
     ${!cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#pago">Pagar ahora</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
     <div class="grid">
-      <div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div>
-      <div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div>
-      <div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>
-      <div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>
+      ${ctx.modules.running ? `<div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div><div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div><div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>` : ''}
+      ${ctx.modules.plyo ? `<div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>` : ''}
+      ${ctx.modules.training ? `<div class="card stat"><b>${trainingWeek}</b><span>Entrenamiento · sesiones</span></div>` : ''}
     </div>
-    <div class="card"><span class="muted">Última salida</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>
-    <div class="card"><span class="muted">Última sesión de pliometría</span><br>${ws[0] ? `<b>${ws[0].performed_on}</b> · ${ws[0].workout_sets.length} series${ws[0].duration_min ? ' · ' + fmt(ws[0].duration_min, 0) + ' min' : ''}` : 'Aún no registras nada.'}</div>
-    <div class="quick-actions"><a class="btn" href="#running">Registrar running</a><a class="btn ghost" href="#plyo">Registrar pliometría</a></div>`;
+    ${ctx.modules.running ? `<div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>` : ''}
+    ${ctx.modules.plyo && ws.some((w) => w.kind === 'plyometrics') ? `<div class="card"><span class="muted">Última sesión de pliometría</span><br>${(() => { const recent = ws.find((w) => w.kind === 'plyometrics'); return recent ? `<b>${recent.performed_on}</b> · ${recent.workout_sets.length} series${recent.duration_min ? ' · ' + fmt(recent.duration_min, 0) + ' min' : ''}` : ''; })()}</div>` : ''}
+    <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
 }
 
 /* ---------------- Membresía (pago por QR manual) ---------------- */

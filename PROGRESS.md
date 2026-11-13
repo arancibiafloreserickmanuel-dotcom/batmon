@@ -53,8 +53,19 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Archivos: `app.html`, `admin.html`, `src/app/app.css`, `src/app/app.js`, `src/app/running.js`, `src/app/plyo.js`, `src/app/admin.js`, `src/app/common.js`, `src/data/plyometrics_es.json`, `src/style.css`.
 - Verificación: `npm run build` pasó el 13 nov; dataset y traducciones tienen 61 IDs coincidentes.
 
+## FASE 4 — TRACKER DE ENTRENAMIENTO Y MÓDULOS POR SOCIO (13 nov)
+- Revisión de referencia: [hugogtab/opengym](https://github.com/hugogtab/opengym), fork del tracker openGym. Se adaptaron conceptos de plan semanal, sesión guiada, precarga de la última sesión, registro de series, RPE, descanso e historial; no se reutilizó código ni multimedia del proyecto.
+- Nuevo `src/app/training.js`: plan semanal persistente por día, sesión libre/planificada, series de repeticiones/peso/tiempo/descanso, valores recientes precargados, temporizador, volumen resumido e historial.
+- Catálogo inicial propio de 20 movimientos en `src/data/training_exercises.json`, con importación desde Admin → Ejercicios. No incluye imágenes de terceros.
+- Admin → Socios → Ver datos: switches para mostrar/ocultar Running (incluye ciclismo/natación), Pliometría y Entrenamiento para cada socio.
+- Shell de la app: navegación, resumen semanal y accesos rápidos se filtran según los módulos habilitados. Pestaña manual de un módulo desactivado muestra el estado deshabilitado.
+- `supabase/migrations/0003_training_modules.sql`: amplía `workouts.kind`, añade plan JSONB individual y preferencias de módulo con RLS: el socio gestiona su plan; solo admin cambia preferencias de módulos.
+- Archivos: `src/app/training.js`, `src/data/training_exercises.json`, `src/app/app.js`, `src/app/admin.js`, `src/app/app.css`, `supabase/migrations/0003_training_modules.sql`.
+- Verificación: `npm run build` pasó; el catálogo tiene 20 IDs únicos.
+
 ## PENDIENTE
-- La migración `supabase/migrations/0002_plyometrics_running_admin.sql` sigue pendiente de aplicar; las pantallas de pliometría/admin dependen de ella. No se tocó la base de datos ni RLS.
+- La migración `supabase/migrations/0002_plyometrics_running_admin.sql` sigue pendiente de aplicar; las pantallas de pliometría/admin dependen de ella. No se aplicó ninguna migración directamente en Supabase; 0003 solo define RLS para sus dos tablas nuevas y no cambia las policies existentes.
+- Para Entrenamiento y los switches por socio también hay que aplicar `supabase/migrations/0003_training_modules.sql` después de 0002. Después importar el catálogo desde Admin → Ejercicios.
 - Pendiente comprobación con Supabase real: registro de actividad/sesión con membresía aprobada, bloqueo con pago pendiente/rechazado, ciclo aprobar/rechazar y recuperación de contraseña.
 - Registrar cuenta admin y ejecutar el SQL de asignación de rol del paso 1 arriba; confirmar credenciales y variables de entorno en Vercel antes del despliegue.
 - El dataset de traducciones cubre los 61 ejercicios base; ejercicios propios se siguen nombrando por su creador.
