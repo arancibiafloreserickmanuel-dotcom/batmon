@@ -84,9 +84,9 @@ export function showLogin(view, signup = false) {
       const username = $('#username', view).value.trim();
       const password = $('#pw', view).value;
       if (username.includes('@')) {
-        // Compatibilidad para cuentas antiguas creadas con correo.
+        // Cuentas antiguas pueden usar correo y contraseña si alguna vez la configuraron.
         const { error } = await supabase.auth.signInWithPassword({ email: username, password });
-        if (error) throw new Error('Usuario o contraseña incorrectos.');
+        if (error) throw new Error('No se pudo entrar con esa contraseña. Si esta cuenta se creó con Google, entra con el botón Google; después puedes configurar usuario y contraseña en Perfil → Configuración.');
         return;
       }
       const { data, error } = await supabase.functions.invoke('username-login', { body: { username, password } });
@@ -113,7 +113,7 @@ export function showLogin(view, signup = false) {
 }
 
 function showRecovery(view) {
-  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
+  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos. Si tu cuenta admin se creó con Google, entra con Google y configura una contraseña en Perfil → Configuración.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
   $('#recovery-login', view).onclick = () => showLogin(view);
   $('#recovery-form', view).onsubmit = async (event) => {
     event.preventDefault();
