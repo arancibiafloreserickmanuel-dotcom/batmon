@@ -59,7 +59,7 @@ function validPhone(phone) {
 function digitsError(error) {
   const message = String(error?.message || '');
   if (/phone_provider_disabled|phone signups are disabled/i.test(message)) {
-    return 'El registro con teléfono está desactivado en Supabase. Activa Autenticación → Proveedores → Teléfono y permite los registros nuevos por teléfono.';
+    return 'Supabase tiene desactivado el proveedor Teléfono. Actívalo en Autenticación → Proveedores → Teléfono y desactiva Confirmar teléfono para no enviar SMS al registrarte.';
   }
   if (error?.message?.includes('FunctionsFetchError') || error?.message?.includes('Failed to fetch')) {
     return 'No se pudo conectar con la verificación SMS. Revisa la configuración del servidor.';
@@ -78,7 +78,7 @@ export function showLogin(view, signup = false) {
       ${signup ? inputField('nm', 'Nombre completo', 'text', 'autocomplete="name" required') : ''}
       ${signup ? inputField('username', 'Usuario', 'text', `autocomplete="username" autocapitalize="none" minlength="3" maxlength="24" pattern="${userPattern}" required`) : inputField('username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}
       ${signup ? inputField('carnet', 'Número de carnet', 'text', 'autocomplete="off" maxlength="32" required') : ''}
-      ${signup ? `${inputField('phone', 'Teléfono para recuperar tu cuenta', 'tel', 'autocomplete="tel" inputmode="tel" required')}<small class="auth-hint">Código SMS. Bolivia: +591 o número móvil de 8 dígitos.</small>` : ''}
+      ${signup ? `${inputField('phone', 'Número de teléfono', 'tel', 'autocomplete="tel" inputmode="tel" required')}<small class="auth-hint">Lo asociamos a tu cuenta. No enviaremos un código para registrarte.</small>` : ''}
       ${signup ? inputField('em', 'Correo electrónico (opcional)', 'email', 'autocomplete="email"') : ''}
       ${inputField('pw', 'Contraseña', 'password', `minlength="8" autocomplete="${signup ? 'new-password' : 'current-password'}" required`)}
       <button class="auth-submit" type="submit">${signup ? 'Crear cuenta' : 'Entrar'}</button><p class="auth-msg" id="lm" aria-live="polite"></p>
@@ -113,13 +113,9 @@ export function showLogin(view, signup = false) {
           } },
         });
         if (error) throw error;
-        if (data.session) {
-          showIdentitySetup(view, data.user, {
-            full_name: $('#nm', view).value.trim(), username, carnet_number: carnet,
-            contact_email: $('#em', view).value.trim() || null,
-          });
-        } else {
-          showSignupVerification(view, { phone, username, carnet });
+        if (!data.session) {
+          message.textContent = 'Supabase está pidiendo confirmar el teléfono por SMS. Para registrarte sin mensajes, desactiva “Confirmar teléfono” en Autenticación → Proveedores → Teléfono. Si quedó una cuenta pendiente, elimínala desde Authentication → Users antes de volver a intentarlo.';
+          button.disabled = false;
         }
         return;
       }
@@ -153,20 +149,6 @@ export function showLogin(view, signup = false) {
       $('#lm', view).textContent = `No se pudo iniciar con Google: ${error.message}`;
       button.disabled = false;
     }
-  };
-}
-
-function showSignupVerification(view, signupData) {
-  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="signup-back" type="button">← Volver</button><h1>Verifica tu<br>teléfono</h1><p class="muted">Te enviamos un código SMS al número registrado.</p><form id="signup-verify" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Código de verificación</p>${otpBoxes()}<p class="auth-msg" id="signup-verify-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Verificar</button><div class="auth-footer"><span class="muted">${esc(signupData.phone)}</span></div></form></section>`;
-  bindOtpInputs(view);
-  $('#signup-back', view).onclick = () => showLogin(view, true);
-  $('#signup-verify', view).onsubmit = async (event) => {
-    event.preventDefault();
-    const token = otpValue(view);
-    const message = $('#signup-verify-msg', view);
-    if (token.length !== OTP_LENGTH) { message.textContent = `Ingresa los ${OTP_LENGTH} dígitos del mensaje.`; return; }
-    const { error } = await supabase.auth.verifyOtp({ phone: signupData.phone, token, type: 'sms' });
-    if (error) message.textContent = `No se pudo verificar: ${error.message}`;
   };
 }
 

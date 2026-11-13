@@ -5,8 +5,8 @@ El socio inicia sesión con su nombre de usuario y contraseña; el correo queda 
 ## Configuración necesaria en Supabase
 
 1. Ejecuta `migrations/0008_username_sms_recovery.sql` en el SQL Editor del proyecto, después de las migraciones anteriores.
-2. En **Authentication → Providers → Phone**, habilita la autenticación por teléfono y la confirmación por SMS.
-3. Configura un proveedor de SMS en **Authentication → SMS Provider** y una plantilla que incluya `{{ .Code }}`. Supabase usa el largo y los límites de OTP configurados en Auth; la interfaz de este proyecto está preparada para códigos de seis dígitos.
+2. En **Authentication → Providers → Phone**, habilita el proveedor Teléfono y permite registros nuevos. Desactiva **Confirm phone** para que el alta vincule el número sin enviar un código SMS.
+3. La recuperación actual sí envía un código SMS para comprobar que la persona controla el número antes de cambiar la contraseña. Para usar esa recuperación, configura un proveedor SMS en **Authentication → SMS Provider** y una plantilla que incluya `{{ .Code }}`. Supabase usa el largo y los límites de OTP configurados en Auth; la interfaz está preparada para códigos de seis dígitos.
 4. Despliega las funciones de Edge. `supabase/config.toml` desactiva la validación de JWT de estas dos funciones porque deben aceptar solicitudes antes de iniciar sesión; las contraseñas se validan contra Supabase Auth y el secreto de servidor nunca llega al navegador.
 
 ```powershell
