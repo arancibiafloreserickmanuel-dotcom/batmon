@@ -236,6 +236,19 @@ export function mountComplexCarousel() {
     return (halfW * 2) / Math.max(1, root.clientWidth);
   }
 
+  function moveByPixels(deltaPixels, passVerticalRemainderToPage = false) {
+    const start = targetOffset;
+    const unitsPerPixel = worldUnitsPerPixel();
+    const next = clampOffset(start + deltaPixels * unitsPerPixel);
+    targetOffset = next;
+    if (passVerticalRemainderToPage && unitsPerPixel > 0) {
+      const consumedPixels = (next - start) / unitsPerPixel;
+      const remainder = deltaPixels - consumedPixels;
+      if (Math.abs(remainder) > 0.5) window.scrollBy(0, remainder);
+    }
+    return Math.abs(next - start) > 0.001;
+  }
+
   function onWheel(event) {
     if (event.ctrlKey) return;
     let dx = event.deltaX;
@@ -246,10 +259,8 @@ export function mountComplexCarousel() {
     // once an end is reached, the browser keeps scrolling the page normally.
     const dominant = Math.abs(dx) > Math.abs(dy) ? dx : dy;
     if (!dominant) return;
-    const nextOffset = clampOffset(targetOffset + dominant * 0.8 * worldUnitsPerPixel());
-    if (Math.abs(nextOffset - targetOffset) < 0.001) return;
+    if (!moveByPixels(dominant * 0.8)) return;
     event.preventDefault();
-    targetOffset = nextOffset;
   }
 
   function hitCard(clientX, clientY) {
@@ -262,7 +273,7 @@ export function mountComplexCarousel() {
 
   function onPointerDown(event) {
     if (event.target.closest('button')) return;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false };
+    drag = { id: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false, axis: null };
     latestPointerDelta = 0;
     lastPointerMove = performance.now();
   }
@@ -272,18 +283,24 @@ export function mountComplexCarousel() {
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
     if (!drag.moved && Math.max(Math.abs(dx), Math.abs(dy)) > 6) {
-      // Let vertical swipes scroll the page. Only claim horizontal gestures.
-      if (Math.abs(dy) >= Math.abs(dx)) {
+      const axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+      // A mouse drag has no native page-scroll gesture; ignore vertical drags.
+      // Touch and pen use vertical movement to advance slides, as the mouse
+      // wheel does on desktop, then hand any excess movement to the page.
+      if (axis === 'y' && drag.pointerType === 'mouse') {
         drag = null;
         return;
       }
+      drag.axis = axis;
       drag.moved = true;
       root.setPointerCapture(event.pointerId);
     }
     if (!drag.moved) return;
     const moveX = event.clientX - drag.lastX;
-    targetOffset = clampOffset(targetOffset - moveX * worldUnitsPerPixel());
-    latestPointerDelta = moveX;
+    const moveY = event.clientY - drag.lastY;
+    const step = drag.axis === 'x' ? moveX : moveY;
+    moveByPixels(-step, drag.axis === 'y');
+    latestPointerDelta = step;
     lastPointerMove = performance.now();
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
@@ -298,7 +315,7 @@ export function mountComplexCarousel() {
       suppressPointerClick = true;
       window.setTimeout(() => { suppressPointerClick = false; }, 0);
       if (performance.now() - lastPointerMove < 100) {
-        targetOffset = clampOffset(targetOffset - latestPointerDelta * worldUnitsPerPixel() * 6);
+        moveByPixels(-latestPointerDelta * 6, drag.axis === 'y');
       }
       if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId);
     }
