@@ -14,7 +14,7 @@ const TABS = [
   ['swimming', 'Natación', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/></svg>'],
   ['plyo', 'Pliometría', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="7" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="10" cy="19" r="1"/></svg>'],
   ['training', 'Entrenamiento', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M4 9v6m14-8v10m2-8v6M6 12h12"/></svg>'],
-  ['pago', 'Membresía', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>'],
+  ['perfil', 'Perfil', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'],
 ];
 let ctx = null;
 
@@ -92,7 +92,7 @@ function route() {
     view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
     return;
   }
-  const fn = { inicio: renderHome, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, pago: renderMembership }[tab] || renderHome;
+  const fn = { inicio: renderHome, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, perfil: renderProfile }[tab] || renderHome;
   Promise.resolve(fn(view, ctx)).catch((e) => { view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
@@ -116,7 +116,7 @@ async function renderHome(v) {
   const statusNotice = previousStatus && cur?.status && previousStatus !== cur.status && ['approved', 'rejected'].includes(cur.status)
     ? `<div class="card ${cur.status === 'approved' ? 'okbox' : 'warn'}">${cur.status === 'approved' ? '¡Tu pago fue aprobado! Ya puedes registrar entrenamientos.' : 'Tu pago fue rechazado. Revisa el comprobante y vuelve a enviarlo desde Membresía.'}</div>` : '';
   v.innerHTML = `<h1>Hola, ${esc(ctx.profile?.full_name || '')}</h1><p class="muted">Tu semana en el Crowd</p>${statusNotice}
-    ${!cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#pago">Pagar ahora</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
+    ${!cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
     <div class="grid">
       ${ctx.modules.running ? `<div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div><div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div><div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>` : ''}
       ${ctx.modules.plyo ? `<div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>` : ''}
@@ -151,6 +151,35 @@ async function renderMembership(v) {
     const ins = await supabase.from('memberships').insert({ period: monthStart(), proof_path: path });
     if (ins.error) $('#pm').textContent = 'Error: ' + ins.error.message; else renderMembership(v);
   };
+}
+
+async function renderProfile(v) {
+  const [{ data: activities = [] }, { data: workouts = [] }, { data: payments = [] }] = await Promise.all([
+    supabase.from('activities').select('discipline,distance_km,duration_min,performed_on').order('performed_on', { ascending: false }).limit(300),
+    supabase.from('workouts').select('kind,performed_on,duration_min,workout_sets(id)').order('performed_on', { ascending: false }).limit(200),
+    supabase.from('memberships').select('period,status,amount_bs,proof_path').order('period', { ascending: false }).limit(12),
+  ]);
+  const todayDate = new Date();
+  const key = `profile_period_${ctx.user.id}`;
+  const period = localStorage.getItem(key) || 'week';
+  const range = period === 'day' ? 1 : period === 'month' ? 30 : 7;
+  const from = new Date(todayDate); from.setDate(from.getDate() - range + 1);
+  const dateKey = d => new Date(d).toISOString().slice(0,10);
+  const days = Array.from({length: period === 'week' ? 7 : period === 'day' ? 1 : 30}, (_, i) => { const d = new Date(from); d.setDate(d.getDate()+i); return dateKey(d); });
+  const values = days.map(d => activities.filter(a => a.performed_on === d).length + workouts.filter(w => w.performed_on === d).length);
+  const max = Math.max(1, ...values);
+  const km = activities.reduce((s,a)=>s+Number(a.distance_km||0),0);
+  const initials = (ctx.profile?.full_name || 'BC').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+  v.innerHTML = `<section class="profile-page"><header class="profile-hero"><div class="profile-avatar">${initials}</div><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>@${esc((ctx.profile?.full_name || 'socio').toLowerCase().replace(/\s+/g,'.'))}</span></div><button id="edit-profile" class="btn sm ghost">Editar perfil</button></header>
+    <div class="profile-counts"><div><b>${activities.length + workouts.length}</b><span>Entrenos</span></div><div><b>${fmt(km,0)}</b><span>Km</span></div><div><b>${payments.filter(p=>p.status==='approved').length}</b><span>Meses al día</span></div></div>
+    <section class="card profile-chart"><div class="profile-section-head"><div><span class="muted">Tu constancia</span><h2>Actividad</h2></div><div class="period-switch">${[['day','Día'],['week','Semana'],['month','Mes']].map(([k,t])=>`<button data-period="${k}" class="${period===k?'on':''}">${t}</button>`).join('')}</div></div><div class="profile-bars">${values.map((n,i)=>`<div><i style="height:${Math.max(4,n/max*100)}%"></i><small>${period==='month'?(i+1):days[i].slice(8)}</small></div>`).join('')}</div><p class="muted">Sesiones registradas por día</p></section>
+    <section class="card profile-friends"><div class="profile-section-head"><h2>Amigos del Crowd</h2><button class="link" id="find-friends">Buscar</button></div><p class="muted">Conecta con socios para ver y compartir su progreso.</p><p class="msg" id="friend-msg"></p></section>
+    <section class="card"><div class="profile-section-head"><h2>Membresía</h2><span class="pill ${payments[0]?.status || 'pending'}">${payments[0] ? STATUS[payments[0].status] : 'Sin pago'}</span></div><p class="muted">${payments[0]?.period?.slice(0,7) || 'Este mes'} · 200 Bs</p>${payments.length?`<div class="profile-payments">${payments.slice(0,4).map(p=>`<span>${p.period.slice(0,7)} <b class="pill ${p.status}">${STATUS[p.status]}</b></span>`).join('')}</div>`:''}<button class="btn" id="membership-open">Pagar o ver comprobantes</button></section>
+    <h2>Actividad reciente</h2><div class="activity-list">${[...activities.map(a=>({date:a.performed_on,title:DISC[a.discipline],detail:`${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min`})),...workouts.map(w=>({date:w.performed_on,title:w.kind==='training'?'Entrenamiento':'Pliometría',detail:`${w.workout_sets.length} series${w.duration_min?` · ${fmt(w.duration_min,0)} min`:''}`}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(a=>`<article class="card activity-card"><b>${esc(a.title)}</b><span>${a.date}</span><p>${a.detail}</p></article>`).join('') || '<p class="card muted">Todavía no hay entrenamientos. ¡Registra el primero!</p>'}</div></section>`;
+  v.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{localStorage.setItem(key,b.dataset.period);renderProfile(v);});
+  $('#membership-open',v).onclick=()=>renderMembership(v);
+  $('#edit-profile',v).onclick=()=>{v.innerHTML=`<h1>Editar perfil</h1><form id="profile-form" class="card"><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form>`;$('#profile-form',v).onsubmit=async e=>{e.preventDefault();const name=$('#profile-name',v).value.trim();const {error}=await supabase.from('profiles').update({full_name:name}).eq('id',ctx.user.id);if(error)$('#profile-msg',v).textContent=error.message;else{ctx.profile.full_name=name;renderProfile(v);}};};
+  $('#find-friends',v).onclick=()=>$('#friend-msg',v).textContent='La lista de amigos necesita habilitar solicitudes de amistad en Supabase.';
 }
 
 /* ---------------- Arranque: sesión persistente ---------------- */
