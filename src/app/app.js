@@ -18,6 +18,13 @@ const TABS = [
 ];
 let ctx = null;
 
+function applyTheme(preference) {
+  const allowed = ctx?.themePolicy || 'choice';
+  const saved = preference || localStorage.getItem(`batmon_theme_${ctx?.user?.id}`) || 'light';
+  const theme = allowed === 'choice' ? saved : allowed;
+  document.body.dataset.theme = theme;
+}
+
 /* ---------------- Login / registro ---------------- */
 function showLogin(signup = false) {
   ctx = null; $('#logout').hidden = true; $('#admin-link').hidden = true; $('#tabs').hidden = true;
@@ -61,17 +68,19 @@ function showNewPassword() {
 
 /* ---------------- Shell con pestañas ---------------- */
 async function boot(user) {
-  const [{ data: profile }, { data: membership }, { data: moduleRows }, { data: globalRows }] = await Promise.all([
+  const [{ data: profile }, { data: membership }, { data: moduleRows }, { data: globalRows }, { data: appearance }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('memberships').select('status').eq('user_id', user.id).eq('period', monthStart()).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profile_modules').select('module_key, enabled').eq('user_id', user.id),
     supabase.from('app_modules').select('module_key,enabled'),
+    supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle(),
   ]);
   const globals = Object.fromEntries(['running','cycling','swimming','plyo','training'].map(key => [key, true]));
   (globalRows || []).forEach(row => { globals[row.module_key] = row.enabled; });
   const members = Object.fromEntries((moduleRows || []).map(row => [row.module_key, row.enabled]));
   const modules = Object.fromEntries(Object.keys(globals).map(key => [key, globals[key] && members[key] !== false]));
-  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules };
+  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules, themePolicy: appearance?.theme_policy || 'choice' };
+  applyTheme();
   $('#logout').hidden = false; $('#admin-link').hidden = !ctx.isAdmin; $('#tabs').hidden = false;
   renderTabs();
   route();
@@ -181,18 +190,27 @@ async function renderProfile(v) {
   const moduleData = [['running','Running','running.png'],['plyo','Pliometría','plyo.png'],['training','Gym','training.png'],['swimming','Natación','swimming.png']];
   const moduleActivities = activities.filter(a=>selectedModule==='all'||a.discipline===selectedModule);
   const moduleWorkouts = workouts.filter(w=>selectedModule==='all'||(selectedModule==='plyo'&&w.kind==='plyometrics')||(selectedModule==='training'&&w.kind==='training'));
-  v.innerHTML = `<section class="profile-page"><header class="profile-hero"><label for="avatar-file" class="profile-avatar">${avatarData?.signedUrl?`<img src="${avatarData.signedUrl}" alt="Foto de perfil">`:initials}<input hidden id="avatar-file" type="file" accept="image/*"></label><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>${esc(ctx.user.email || '')}</span></div><button id="edit-profile" class="btn sm ghost">Editar perfil</button></header>
+  v.innerHTML = `<section class="profile-page"><header class="profile-hero"><label for="avatar-file" class="profile-avatar">${avatarData?.signedUrl?`<img src="${avatarData.signedUrl}" alt="Foto de perfil">`:initials}<input hidden id="avatar-file" type="file" accept="image/*"></label><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>${esc(ctx.user.email || '')}</span></div><div><button id="settings-open" class="btn sm ghost" aria-label="Configuración">⚙</button><button id="edit-profile" class="btn sm ghost">Editar perfil</button></div></header>
     <div class="profile-counts"><div><b>${counts.workouts}</b><span>Entrenos</span></div><div><b>${fmt(counts.km,0)}</b><span>Km</span></div><div><b>${friends}</b><span>Amigos</span></div></div>
     <nav class="profile-highlights" aria-label="Accesos a entrenamientos">${moduleData.map(([id,title,img])=>`<button data-module="${id}" class="${selectedModule===id?'selected':''}"><span><img src="/profile-modules/${img}" alt=""></span><small>${title}</small></button>`).join('')}<button data-media="progress"><span>↗</span><small>Progreso</small></button></nav>
     <section class="card"><div class="profile-section-head"><h2>Membresía</h2><span class="pill ${payments[0]?.status || 'pending'}">${payments[0] ? STATUS[payments[0].status] : 'Sin pago'}</span></div><p class="muted">${payments[0]?.period?.slice(0,7) || 'Este mes'} · 200 Bs</p>${payments.length?`<div class="profile-payments">${payments.slice(0,4).map(p=>`<span>${p.period.slice(0,7)} <b class="pill ${p.status}">${STATUS[p.status]}</b></span>`).join('')}</div>`:''}<button class="btn" id="membership-open">Pagar o ver comprobantes</button></section>
     <nav class="profile-media-tabs" aria-label="Publicaciones del perfil"><button data-media="posts" class="${mediaView==='posts'?'on':''}">▦ <span>Publicaciones</span></button><button data-media="videos" class="${mediaView==='videos'?'on':''}">▷ <span>Videos</span></button><button data-media="progress" class="${mediaView==='progress'?'on':''}">▥ <span>Progreso</span></button></nav>
     ${mediaView==='progress'?`<section class="card profile-chart"><div class="profile-section-head"><div><span class="muted">${selectedModule==='all'?'Todos tus módulos':DISC[selectedModule]|| (selectedModule==='plyo'?'Pliometría':'Entrenamiento')}</span><h2>Actividad</h2></div><div class="period-switch">${[['day','Día'],['week','Semana'],['month','Mes']].map(([k,t])=>`<button data-period="${k}" class="${period===k?'on':''}">${t}</button>`).join('')}</div></div><div class="profile-bars">${values.map((n,i)=>`<div><i style="height:${Math.max(4,n/max*100)}%"></i><small>${period==='month'?(i+1):days[i].slice(8)}</small></div>`).join('')}</div><p class="muted">Sesiones registradas por día</p><button id="measurement-open" class="btn ghost">Añadir medidas corporales</button></section>`:mediaView==='videos'?'<div class="profile-empty">Aún no hay videos de entrenamiento.</div>':`<div class="profile-post-grid">${[...moduleActivities.map(a=>({date:a.performed_on,title:DISC[a.discipline],detail:`${fmt(a.distance_km)} km`})),...moduleWorkouts.map(w=>({date:w.performed_on,title:w.kind==='training'?'Entrenamiento':'Pliometría',detail:`${w.workout_sets.length} series`}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,18).map(a=>`<article><b>${esc(a.title)}</b><span>${a.detail}</span><small>${a.date}</small></article>`).join('')||'<div class="profile-empty">Tus entrenamientos aparecerán aquí.</div>'}</div>`}</section>`;
   $('#avatar-file',v).onchange=async e=>{const f=e.target.files[0];if(!f)return;const path=`${ctx.user.id}/avatar-${Date.now()}.${f.name.split('.').pop()}`;const up=await supabase.storage.from('profile-media').upload(path,f,{upsert:true});if(up.error){notify(up.error.message);return;}const {error}=await supabase.from('profiles').update({avatar_path:path}).eq('id',ctx.user.id);if(error)notify(error.message);else{ctx.profile.avatar_path=path;renderProfile(v);}};
+  $('#settings-open',v).onclick=()=>renderProfileSettings(v);
   v.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{localStorage.setItem(moduleKey,b.dataset.module);renderProfile(v);});
   v.querySelectorAll('[data-media]').forEach(b=>b.onclick=()=>{localStorage.setItem(mediaKey,b.dataset.media);renderProfile(v);});
   v.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{localStorage.setItem(key,b.dataset.period);renderProfile(v);});
   $('#membership-open',v).onclick=()=>renderMembership(v);
   $('#edit-profile',v).onclick=()=>{v.innerHTML=`<h1>Editar perfil</h1><form id="profile-form" class="card"><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form>`;$('#profile-form',v).onsubmit=async e=>{e.preventDefault();const name=$('#profile-name',v).value.trim();const {error}=await supabase.from('profiles').update({full_name:name}).eq('id',ctx.user.id);if(error)$('#profile-msg',v).textContent=error.message;else{ctx.profile.full_name=name;renderProfile(v);}};};
+}
+
+function renderProfileSettings(v) {
+  const saved=localStorage.getItem(`batmon_theme_${ctx.user.id}`)||'light';
+  const forced=ctx.themePolicy!=='choice';
+  v.innerHTML=`<div class="profile-settings"><button class="link" id="settings-back">← Volver al perfil</button><h1>Configuración</h1><section class="card"><h2>Apariencia</h2><p class="muted">${forced?`El administrador estableció el modo ${ctx.themePolicy==='dark'?'oscuro':'claro'} para todo el club.`:'Elige el tema que prefieres usar.'}</p><label for="user-theme">Tema</label><select id="user-theme" ${forced?'disabled':''}><option value="light" ${saved==='light'?'selected':''}>Claro</option><option value="dark" ${saved==='dark'?'selected':''}>Oscuro</option></select></section></div>`;
+  $('#settings-back',v).onclick=()=>renderProfile(v);
+  $('#user-theme',v).onchange=e=>{localStorage.setItem(`batmon_theme_${ctx.user.id}`,e.target.value);applyTheme(e.target.value);};
 }
 
 /* ---------------- Arranque: sesión persistente ---------------- */

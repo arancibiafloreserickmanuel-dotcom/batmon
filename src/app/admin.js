@@ -174,12 +174,13 @@ async function ejercicios() {
 /* ------------------------------- Módulos ------------------------------- */
 const MODULES = [['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']];
 async function modulos() {
-  const [{ data: globalRows = [], error: globalError }, { data: users = [], error: userError }] = await Promise.all([
-    supabase.from('app_modules').select('module_key,enabled'), supabase.from('profiles').select('id,full_name').order('full_name'),
+  const [{ data: globalRows = [], error: globalError }, { data: users = [], error: userError }, { data: appearance }] = await Promise.all([
+    supabase.from('app_modules').select('module_key,enabled'), supabase.from('profiles').select('id,full_name').order('full_name'), supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle(),
   ]);
   if (globalError || userError) { $('#body').innerHTML = `<h2>Módulos</h2><p class="msg">Aplica la migración 0004 para configurar módulos.</p>`; return; }
   const globals = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
-  $('#body').innerHTML = `<h1>Módulos</h1><p class="muted">Activa módulos para todo el club y ajusta excepciones por socio.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''}></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><input type="checkbox" data-user="${u.id}" data-module="${key}" checked></label>`).join('')}</div></details>`).join('')}</div>`;
+  $('#body').innerHTML = `<h1>Módulos y apariencia</h1><p class="muted">Configura qué módulos y tema verá el club.</p><h2>Tema para todo el club</h2><label for="theme-policy">Apariencia</label><select id="theme-policy"><option value="choice" ${appearance?.theme_policy==='choice'?'selected':''}>Cada socio puede elegir</option><option value="dark" ${appearance?.theme_policy==='dark'?'selected':''}>Forzar modo oscuro</option><option value="light" ${appearance?.theme_policy==='light'?'selected':''}>Forzar modo claro</option></select><p class="muted">Los fondos de textura se aplicarán en ambos modos.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''}></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><input type="checkbox" data-user="${u.id}" data-module="${key}" checked></label>`).join('')}</div></details>`).join('')}</div>`;
+  $('#theme-policy').onchange=async e=>{const {error}=await supabase.from('site_settings').upsert({id:true,theme_policy:e.target.value,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'id'});if(error)notify(error.message);};
   const userRows = await supabase.from('profile_modules').select('user_id,module_key,enabled');
   if (userRows.error) { notify(`No se pudieron leer excepciones: ${userRows.error.message}`); return; }
   userRows.data.forEach(r => { const input = $('#module-users').querySelector(`[data-user="${r.user_id}"][data-module="${r.module_key}"]`); if (input) input.checked = r.enabled; });
@@ -200,6 +201,9 @@ function route() {
 async function init() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) { location.href = '/app.html'; return; }
+  const { data: appearance } = await supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle();
+  const theme = appearance?.theme_policy === 'choice' ? localStorage.getItem(`batmon_theme_${session.user.id}`) || 'light' : appearance?.theme_policy || 'light';
+  document.body.dataset.theme = theme;
   me = await getProfile(session.user.id);
   if (me?.role !== 'admin') { view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para administradores.</p>'; return; }
   view.innerHTML = '<div id="body"></div>';
