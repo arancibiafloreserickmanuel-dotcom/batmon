@@ -7,6 +7,7 @@ Deno.serve(async (request) => {
   try {
     const payload = await request.json();
     const action = payload?.action;
+    const username = typeof payload?.username === 'string' ? payload.username.trim().toLowerCase() : '';
     const phone = typeof payload?.phone === 'string' ? payload.phone.replace(/\D/g, '') : '';
     const password = typeof payload?.new_password === 'string' ? payload.new_password : '';
     if (action !== 'change') return json({ error: 'Acción no válida.' }, 400);
@@ -16,14 +17,17 @@ Deno.serve(async (request) => {
     const admin = adminClient();
     const { data: profile, error: lookupError } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, role')
+      .eq('username', username)
       .eq('recovery_phone', phone)
       .maybeSingle();
     if (lookupError) {
       console.error('No se pudo buscar número de recuperación:', lookupError.message);
       return json({ error: 'No se pudo verificar el número. Inténtalo de nuevo.' }, 503);
     }
-    if (!profile) return json({ error: 'El número no coincide con una cuenta registrada.' }, 404);
+    if (!profile) return json({ error: 'El usuario y el número no coinciden con una cuenta registrada.' }, 404);
+    // Las cuentas admin no se recuperan por teléfono (un número es fácil de conocer).
+    if (profile.role === 'admin') return json({ error: 'Esta cuenta no se puede recuperar aquí. Contacta al administrador del club.' }, 403);
 
     const { error: updateError } = await admin.auth.admin.updateUserById(profile.id, { password });
     if (updateError) {
