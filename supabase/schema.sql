@@ -18,25 +18,29 @@ create table if not exists public.profiles (
   username text,
   carnet_number text,
   contact_email text,
+  recovery_phone text,
   role       text not null default 'member' check (role in ('member','admin')),
   created_at timestamptz not null default now(),
   constraint profiles_username_format check (username is null or username ~ '^[a-z0-9_.-]{3,24}$'),
-  constraint profiles_carnet_length check (carnet_number is null or length(trim(carnet_number)) between 3 and 32)
+  constraint profiles_carnet_length check (carnet_number is null or length(trim(carnet_number)) between 3 and 32),
+  constraint profiles_recovery_phone_format check (recovery_phone is null or recovery_phone ~ '^\d{8}$')
 );
 create unique index if not exists profiles_username_unique on public.profiles (lower(username)) where username is not null;
 create unique index if not exists profiles_carnet_unique on public.profiles (upper(trim(carnet_number))) where carnet_number is not null;
+create unique index if not exists profiles_recovery_phone_unique on public.profiles (recovery_phone) where recovery_phone is not null;
 
 -- Crea el profile automáticamente al crear un usuario en Auth
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, full_name, username, carnet_number, contact_email)
+  insert into public.profiles (id, full_name, username, carnet_number, contact_email, recovery_phone)
   values (
     new.id,
     coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), nullif(split_part(coalesce(new.email, new.phone, ''),'@',1), ''), 'Socio Batmon'),
     nullif(lower(trim(new.raw_user_meta_data->>'username')), ''),
     nullif(upper(trim(new.raw_user_meta_data->>'carnet_number')), ''),
-    nullif(trim(new.raw_user_meta_data->>'contact_email'), '')
+    nullif(trim(new.raw_user_meta_data->>'contact_email'), ''),
+    nullif(regexp_replace(coalesce(new.raw_user_meta_data->>'recovery_phone', ''), '\D', '', 'g'), '')
   );
   return new;
 end $$;
@@ -116,9 +120,6 @@ begin
     raise exception 'El usuario debe tener entre 3 y 24 caracteres: letras, números, punto, guion o guion bajo.';
   end if;
   if normalized_carnet is null or length(normalized_carnet) not between 3 and 32 then raise exception 'Revisa el número de carnet.'; end if;
-  if not exists (select 1 from auth.users where id=current_user_id and phone is not null and phone_confirmed_at is not null) then
-    raise exception 'Primero verifica tu teléfono por SMS.';
-  end if;
   update public.profiles
   set username=coalesce(username,normalized_username), carnet_number=coalesce(carnet_number,normalized_carnet),
       contact_email=coalesce(nullif(trim(p_contact_email),''),contact_email)

@@ -1,5 +1,8 @@
 [functions.username-login]
 verify_jwt = false
 
+[functions.username-signup]
+verify_jwt = false
+
 [functions.account-recovery]
 verify_jwt = false

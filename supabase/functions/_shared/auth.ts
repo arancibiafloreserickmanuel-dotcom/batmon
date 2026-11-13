@@ -42,3 +42,11 @@ export function publicClient() {
 export function normalizeUsername(value: unknown) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
+
+// Supabase Auth requires an email or phone for password sessions. New Batmon
+// accounts use a deterministic internal email alias so signup never needs the
+// Phone provider or an SMS. The member's real contact email stays in profiles.
+export function authEmailForUsername(username: string) {
+  const domain = new URL(supabaseUrl).hostname;
+  return `${normalizeUsername(username)}@${domain}`;
+}

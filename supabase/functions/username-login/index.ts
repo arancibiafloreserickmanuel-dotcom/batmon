@@ -1,4 +1,4 @@
-import { adminClient, anonKey, corsHeaders, json, normalizeUsername, supabaseUrl } from '../_shared/auth.ts';
+import { adminClient, anonKey, authEmailForUsername, corsHeaders, json, normalizeUsername, supabaseUrl } from '../_shared/auth.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -17,13 +17,19 @@ Deno.serve(async (request) => {
     if (!profile) return json({ error: 'Usuario o contraseña incorrectos.' }, 401);
 
     const { data: account, error: accountError } = await admin.auth.admin.getUserById(profile.id);
-    const phone = account?.user?.phone;
-    if (accountError || !phone) return json({ error: 'Usuario o contraseña incorrectos.' }, 401);
+    if (accountError || !account?.user) return json({ error: 'Usuario o contraseña incorrectos.' }, 401);
+
+    // Existing phone-auth accounts keep working while new accounts use a
+    // project-local email alias and no longer depend on Phone Auth.
+    const legacyPhone = account.user.phone && account.user.user_metadata?.auth_mode !== 'username';
+    const credentials = legacyPhone
+      ? { phone: account.user.phone, password }
+      : { email: account.user.email || authEmailForUsername(username), password };
 
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: anonKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify(credentials),
     });
     if (!authResponse.ok) {
       const status = authResponse.status === 429 ? 429 : 401;

@@ -167,17 +167,7 @@ body.appbody .card{border-radius:var(--card-radius);background-color:var(--card-
 .auth-back{justify-self:start;margin:0 0 4px;color:var(--ink);font-size:14px;font-weight:500;text-decoration:none}.auth-back:hover{text-decoration:underline}
 .auth-back:is(button){padding:0;border:0;background:none;font-family:Inter,sans-serif;cursor:pointer}
 .auth-hint{margin:-8px 2px 0;color:var(--muted);font-size:12px;line-height:1.4}
-.auth-otp{display:flex;justify-content:center;gap:clamp(6px,2vw,12px);margin:8px 0 12px}
-.auth-otp-input{width:clamp(38px,10vw,48px);min-width:0;min-height:48px;height:52px;margin:0;padding:4px;text-align:center;font:600 21px 'IBM Plex Mono',monospace}
-.auth-theme-light .auth-otp-input{border:0;border-radius:10px;background:var(--card-surface,#e0e0e0);color:#40434a;box-shadow:inset 2px 2px 5px #babecb,inset -3px -3px 7px #ffffff73}
-.auth-theme-dark .auth-otp-input{border:0;border-radius:10px;background:#171717;color:#eee;box-shadow:inset 2px 5px 10px #050505}
-.auth-recovery-choice{gap:12px}
-.auth-recovery-option{display:grid;gap:5px;width:100%;padding:14px;text-align:left;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);border-radius:12px;background:transparent;color:var(--ink);cursor:pointer}
-.auth-recovery-option strong{font-size:14px}.auth-recovery-option span{font-size:12px;color:var(--muted)}
-.auth-theme-light .auth-recovery-option:hover{background:color-mix(in srgb,var(--card-surface,#e0e0e0) 76%,#fff)}
-.auth-theme-dark .auth-recovery-option{border-color:#3a3a3a;background:#1c1c1c}
-.auth-theme-dark .auth-recovery-option:hover{background:#242424}
-@media(max-width:520px){.auth-otp{gap:6px}.auth-otp-input{width:40px;height:46px;min-height:46px}.auth-layout{padding-bottom:12px}}
+@media(max-width:520px){.auth-layout{padding-bottom:12px}}
 
 /* Relieve neumórfico compartido para los controles de botón. Se respetan las
    dimensiones definidas por cada componente (iconos, pasos y pestañas). */
@@ -227,9 +217,6 @@ body.appbody .auth-theme-dark .auth-footer button{color:var(--button-ink)}
 body.appbody .auth-social .social-button{background:#fff;border:1px solid #e8e8e8;box-shadow:var(--button-shadow)}
 body.appbody[data-theme="dark"] .auth-social .social-button{background:#212121;border-color:#212121}
 body.appbody .profile-actions .btn{box-shadow:var(--button-shadow)}
-body.appbody .auth-recovery-option{background-color:var(--button-face);color:var(--button-ink);border-color:var(--button-border);box-shadow:var(--button-shadow)}
-body.appbody .auth-theme-dark .auth-recovery-option{background-color:var(--button-face);border-color:var(--button-border)}
-body.appbody .auth-recovery-option:hover,body.appbody .auth-theme-dark .auth-recovery-option:hover{background-color:var(--button-face);box-shadow:var(--button-shadow-active)}
 /* Controles que solo muestran un símbolo se mantienen como iconos, sin placa neumórfica. */
 body.appbody .settings-hamburger{background:transparent;border:0;border-radius:0;box-shadow:none}
 body.appbody .settings-hamburger:active{box-shadow:none;transform:scale(.96)}

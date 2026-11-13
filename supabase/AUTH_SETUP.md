@@ -1,23 +1,21 @@
-# Acceso con usuario y recuperación SMS
+# Acceso con usuario y contraseña, sin SMS
 
-El socio inicia sesión con su nombre de usuario y contraseña; el correo queda como dato de contacto opcional. La recuperación ahora pide solo el teléfono asociado a Supabase Auth, envía un código por SMS y permite elegir una contraseña nueva. No se pide completar o verificar el teléfono al volver a iniciar sesión en una cuenta existente.
+El registro y el inicio de sesión de Batmon usan usuario y contraseña. No requieren habilitar **Phone Auth**, confirmar teléfonos ni contratar un proveedor SMS. El teléfono boliviano de 8 dígitos se guarda en `profiles.recovery_phone` solo para la recuperación de contraseña.
 
-## Configuración necesaria en Supabase
+## Aplicar cambios
 
-1. Ejecuta `migrations/0008_username_sms_recovery.sql` en el SQL Editor del proyecto, después de las migraciones anteriores.
-2. En **Authentication → Providers → Phone**, habilita el proveedor Teléfono y permite registros nuevos. Desactiva **Confirm phone** para que el alta vincule el número sin enviar un código SMS.
-3. La recuperación actual sí envía un código SMS para comprobar que la persona controla el número antes de cambiar la contraseña. Para usar esa recuperación, configura un proveedor SMS en **Authentication → SMS Provider** y una plantilla que incluya `{{ .Code }}`. Supabase usa el largo y los límites de OTP configurados en Auth; la interfaz está preparada para códigos de seis dígitos.
-4. Despliega las funciones de Edge. `supabase/config.toml` desactiva la validación de JWT de estas dos funciones porque deben aceptar solicitudes antes de iniciar sesión; las contraseñas se validan contra Supabase Auth y el secreto de servidor nunca llega al navegador.
+1. Ejecuta `migrations/0009_username_auth_without_sms.sql` en Supabase SQL Editor, después de las migraciones anteriores.
+2. Despliega estas funciones Edge:
 
 ```powershell
+supabase functions deploy username-signup
 supabase functions deploy username-login
 supabase functions deploy account-recovery
 ```
 
-Las funciones leen `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (o las claves equivalentes que Supabase inyecta en Edge Functions). No copies la clave `service_role`/secret a `.env` del frontend.
+3. Confirma que las Edge Functions tengan `SUPABASE_URL`, la clave pública (`SUPABASE_ANON_KEY` o `SUPABASE_PUBLISHABLE_KEYS`) y una clave secreta de servidor (`SUPABASE_SERVICE_ROLE_KEY` o `SUPABASE_SECRET_KEYS`). La clave secreta solo se usa en el servidor.
+4. Phone Auth y el proveedor SMS pueden quedar desactivados. Google OAuth es independiente y sigue requiriendo su configuración de proveedor si se quiere ofrecer ese botón.
 
-## Cuentas existentes
+`username-signup` crea una cuenta Email/Password confirmada por servidor con un alias interno derivado del nombre de usuario, inicia la sesión y devuelve los tokens a la aplicación. El correo opcional real se guarda como dato de contacto en el perfil; el alias no se muestra en el perfil ni en el panel admin. `username-login` conserva compatibilidad con cuentas antiguas de teléfono y con el acceso previo por correo.
 
-Las cuentas previas todavía pueden entrar con su correo y contraseña durante la migración. Si falta información de perfil, aparece un aviso de bienvenida que se cierra con **Aceptar**; ya no bloquea el acceso para pedir teléfono o carnet. La recuperación por SMS funciona para números vinculados a la cuenta en Supabase Auth. Si una cuenta de Google/correo aún no tiene teléfono asociado, debe seguir entrando con ese proveedor hasta que se habilite una forma de vincular un teléfono.
-
-Las nuevas cuentas usan usuario, carnet, teléfono y contraseña; el correo es opcional. El registro se confirma por código SMS.
+La recuperación pide el teléfono de 8 dígitos y una contraseña nueva. No se envía un SMS. Quien controle o conozca ese número puede cambiar la contraseña, así que esta recuperación no verifica que la persona sea titular de la línea. Para cuentas antiguas, la migración completa `recovery_phone` cuando el teléfono Auth tiene formato `+591` más 8 dígitos.
