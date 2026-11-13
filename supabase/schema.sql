@@ -15,16 +15,29 @@ exception when duplicate_object then null; end $$;
 create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   full_name  text not null default '',
+  username text,
+  carnet_number text,
+  contact_email text,
   role       text not null default 'member' check (role in ('member','admin')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint profiles_username_format check (username is null or username ~ '^[a-z0-9_.-]{3,24}$'),
+  constraint profiles_carnet_length check (carnet_number is null or length(trim(carnet_number)) between 3 and 32)
 );
+create unique index if not exists profiles_username_unique on public.profiles (lower(username)) where username is not null;
+create unique index if not exists profiles_carnet_unique on public.profiles (upper(trim(carnet_number))) where carnet_number is not null;
 
 -- Crea el profile automáticamente al crear un usuario en Auth
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, full_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email,'@',1)));
+  insert into public.profiles (id, full_name, username, carnet_number, contact_email)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), nullif(split_part(coalesce(new.email, new.phone, ''),'@',1), ''), 'Socio Batmon'),
+    nullif(lower(trim(new.raw_user_meta_data->>'username')), ''),
+    nullif(upper(trim(new.raw_user_meta_data->>'carnet_number')), ''),
+    nullif(trim(new.raw_user_meta_data->>'contact_email'), '')
+  );
   return new;
 end $$;
 drop trigger if exists on_auth_user_created on auth.users;
@@ -53,6 +66,7 @@ create table if not exists public.memberships (
   period      date not null default date_trunc('month', current_date)::date, -- mes que se paga
   amount_bs   numeric(8,2) not null default 200,
   status      public.membership_status not null default 'pending',
+  payment_method text not null default 'qr' check (payment_method in ('qr','cash')),
   proof_path  text,                       -- ruta en storage: <user_id>/<archivo>
   created_at  timestamptz not null default now(),
   approved_at timestamptz,
@@ -87,6 +101,33 @@ create policy profiles_update_own on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 revoke update on public.profiles from authenticated;
 grant update (full_name) on public.profiles to authenticated;   -- role NO editable por el usuario
+
+create or replace function public.complete_member_identity(
+  p_username text, p_carnet_number text, p_contact_email text default null
+)
+returns void language plpgsql security definer set search_path = public, auth as $$
+declare
+  current_user_id uuid := auth.uid();
+  normalized_username text := lower(trim(p_username));
+  normalized_carnet text := upper(trim(p_carnet_number));
+begin
+  if current_user_id is null then raise exception 'Debes iniciar sesión.'; end if;
+  if normalized_username is null or normalized_username !~ '^[a-z0-9_.-]{3,24}$' then
+    raise exception 'El usuario debe tener entre 3 y 24 caracteres: letras, números, punto, guion o guion bajo.';
+  end if;
+  if normalized_carnet is null or length(normalized_carnet) not between 3 and 32 then raise exception 'Revisa el número de carnet.'; end if;
+  if not exists (select 1 from auth.users where id=current_user_id and phone is not null and phone_confirmed_at is not null) then
+    raise exception 'Primero verifica tu teléfono por SMS.';
+  end if;
+  update public.profiles
+  set username=coalesce(username,normalized_username), carnet_number=coalesce(carnet_number,normalized_carnet),
+      contact_email=coalesce(nullif(trim(p_contact_email),''),contact_email)
+  where id=current_user_id and (username is null or username=normalized_username)
+    and (carnet_number is null or carnet_number=normalized_carnet);
+  if not found then raise exception 'El usuario o carnet ya está asociado a otra cuenta.'; end if;
+end $$;
+revoke all on function public.complete_member_identity(text,text,text) from public,anon;
+grant execute on function public.complete_member_identity(text,text,text) to authenticated;
 
 -- activities: solo las propias (admin solo lectura)
 drop policy if exists activities_select on public.activities;

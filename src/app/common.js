@@ -1,3 +1,5 @@
+import './hamster-loader.css';
+
 // Utilidades compartidas por app.js / running.js / plyo.js / admin.js
 export const fmt = (n, d = 1) => (n === null || n === undefined || n === '' ? '—' : (Math.round(Number(n) * 10 ** d) / 10 ** d).toLocaleString('es-BO'));
 export const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); // fecha local, no UTC
@@ -7,6 +9,15 @@ export const weekStart = (from = new Date()) => { const d = new Date(from); d.se
 export const paceStr = (km, min) => { if (!km || !min) return '—'; const p = min / km; let m = Math.floor(p), s = Math.round((p - m) * 60); if (s === 60) { m++; s = 0; } return `${m}:${String(s).padStart(2, '0')} /km`; };
 export const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
 export const imgSrc = (e) => (e?.images?.[0] ? `/exercises/${e.images[0]}` : null);
+
+export const loadingMarkup = () => `<div class="loading-state" role="status" aria-live="polite"><div class="wheel-and-hamster" role="img" aria-label="Hámster naranja corriendo en una rueda"><div class="wheel"></div><div class="hamster"><div class="hamster__body"><div class="hamster__head"><div class="hamster__ear"></div><div class="hamster__eye"></div><div class="hamster__nose"></div></div><div class="hamster__limb hamster__limb--fr"></div><div class="hamster__limb hamster__limb--fl"></div><div class="hamster__limb hamster__limb--br"></div><div class="hamster__limb hamster__limb--bl"></div><div class="hamster__tail"></div></div></div><div class="spoke"></div></div><span class="loading-label">Cargando…</span></div>`;
+
+export function showDelayedLoading(target, delay = 1000) {
+  if (target.querySelector('.loading-state')) return () => {};
+  let active = true;
+  const timer = setTimeout(() => { if (active) target.innerHTML = loadingMarkup(); }, delay);
+  return () => { active = false; clearTimeout(timer); };
+}
 
 export const LEVEL = { beginner: 'Principiante', intermediate: 'Intermedio', expert: 'Avanzado' };
 export const RUN_TYPE = { easy: 'Suave', long: 'Largo', tempo: 'Tempo', intervals: 'Series', race: 'Carrera', recovery: 'Recuperación' };

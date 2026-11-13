@@ -1,6 +1,6 @@
 import './app.css';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify } from './common.js';
+import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading } from './common.js';
 import baseCatalog from '../data/plyometrics.json';
 import translations from '../data/plyometrics_es.json';
 import trainingCatalog from '../data/training_exercises.json';
@@ -33,14 +33,14 @@ async function pagos() {
   }));
   const pending = mems.filter((m) => m.status === 'pending');
   const rest = mems.filter((m) => m.status !== 'pending');
-  const proof = (m) => (urls[m.id] ? `<button class="link" data-proof="${m.id}">Ver comprobante</button>` : 'Sin comprobante');
+  const proof = (m) => (urls[m.id] ? `<button class="link" data-proof="${m.id}">Ver comprobante</button>` : m.payment_method === 'cash' ? 'Solicitud de pago en efectivo' : 'Sin comprobante');
   const btn = (a, id, t, cls = '') => `<button class="btn sm ${cls}" data-a="${a}" data-id="${id}">${t}</button>`;
 
   $('#body').innerHTML = `
     <h2>Pendientes (${pending.length})</h2>
-    <div class="admin-cards">${pending.length ? pending.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)}</span><div>${proof(m)}</div><div class="quick-actions">${btn('approved', m.id, 'Aprobar')}${btn('rejected', m.id, 'Rechazar', 'ghost')}</div></article>`).join('') : '<p class="card muted">No hay pagos pendientes.</p>'}</div>
+    <div class="admin-cards">${pending.length ? pending.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)} · Método: ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'}</span><div>${proof(m)}</div><div class="quick-actions">${btn('approved', m.id, 'Aprobar')}${btn('rejected', m.id, 'Rechazar', 'ghost')}</div></article>`).join('') : '<p class="card muted">No hay pagos pendientes.</p>'}</div>
     <h2>Historial</h2>
-    <div class="admin-cards">${rest.length ? rest.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)} · <span class="pill ${m.status}">${STATUS[m.status]}</span></span><div>${proof(m)}</div><div class="quick-actions"><button class="btn sm ghost" data-a="pending" data-id="${m.id}">Reabrir</button><button class="btn sm ghost" data-a="delete" data-id="${m.id}">Borrar</button></div></article>`).join('') : '<p class="card muted">Sin historial.</p>'}</div>`;
+    <div class="admin-cards">${rest.length ? rest.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)} · ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'} · <span class="pill ${m.status}">${STATUS[m.status]}</span></span><div>${proof(m)}</div><div class="quick-actions"><button class="btn sm ghost" data-a="pending" data-id="${m.id}">Reabrir</button><button class="btn sm ghost" data-a="delete" data-id="${m.id}">Borrar</button></div></article>`).join('') : '<p class="card muted">Sin historial.</p>'}</div>`;
 
   $('#body').querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => {
     const id = b.dataset.proof; const overlay = document.createElement('div'); overlay.className = 'proof-viewer';
@@ -194,23 +194,30 @@ const SECTIONS = { pagos, socios, modulos, ejercicios };
 function route() {
   const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + t));
-  $('#body').innerHTML = '<p class="muted center">Cargando…</p>';
-  SECTIONS[t]().catch((e) => { $('#body').innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
+  const stopLoading=showDelayedLoading($('#body'));
+  SECTIONS[t]().then(stopLoading).catch((e) => { stopLoading();$('#body').innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
 async function init() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { location.href = '/app.html'; return; }
-  const { data: appearance } = await supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle();
-  const theme = appearance?.theme_policy === 'choice' ? localStorage.getItem(`batmon_theme_${session.user.id}`) || 'light' : appearance?.theme_policy || 'light';
-  document.body.dataset.theme = theme;
-  me = await getProfile(session.user.id);
-  if (me?.role !== 'admin') { view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para administradores.</p>'; return; }
-  view.innerHTML = '<div id="body"></div>';
-  $('#tabs').hidden = false;
-  $('#tabs').innerHTML = TABS.map(([h, t]) => `<a href="#${h}">${t}</a>`).join('');
-  window.addEventListener('hashchange', route);
-  route();
+  const stopLoading=showDelayedLoading(view);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { stopLoading();location.href = '/app.html'; return; }
+    const { data: appearance } = await supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle();
+    const theme = appearance?.theme_policy === 'choice' ? localStorage.getItem(`batmon_theme_${session.user.id}`) || 'light' : appearance?.theme_policy || 'light';
+    document.body.dataset.theme = theme;
+    me = await getProfile(session.user.id);
+    if (me?.role !== 'admin') { stopLoading();view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para administradores.</p>'; return; }
+    stopLoading();
+    view.innerHTML = '<div id="body"></div>';
+    $('#tabs').hidden = false;
+    $('#tabs').innerHTML = TABS.map(([h, t]) => `<a href="#${h}">${t}</a>`).join('');
+    window.addEventListener('hashchange', route);
+    route();
+  } catch (error) {
+    stopLoading();
+    view.innerHTML = `<p class="msg">No se pudo cargar Administración: ${esc(error.message)}</p>`;
+  }
 }
 void monthStart;
 init();
