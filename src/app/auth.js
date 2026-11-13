@@ -4,7 +4,9 @@ const OTP_LENGTH = 6;
 const userPattern = '^[a-zA-Z0-9_.-]{3,24}$';
 
 function themeName() {
-  return document.body.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  // Al entrar sin sesión todavía no conocemos la preferencia guardada del usuario.
+  // La pantalla de acceso empieza en claro para que fondo y tarjeta no se contradigan.
+  return document.body.dataset.theme || 'light';
 }
 
 function inputField(id, label, type = 'text', attrs = '') {
@@ -55,15 +57,20 @@ function validPhone(phone) {
 }
 
 function digitsError(error) {
+  const message = String(error?.message || '');
+  if (/phone_provider_disabled|phone signups are disabled/i.test(message)) {
+    return 'El registro con teléfono está desactivado en Supabase. Activa Autenticación → Proveedores → Teléfono y permite los registros nuevos por teléfono.';
+  }
   if (error?.message?.includes('FunctionsFetchError') || error?.message?.includes('Failed to fetch')) {
     return 'No se pudo conectar con la verificación SMS. Revisa la configuración del servidor.';
   }
-  return error?.message || 'Ocurrió un error. Inténtalo de nuevo.';
+  return message || 'Ocurrió un error. Inténtalo de nuevo.';
 }
 
 export function showLogin(view, signup = false) {
   $('#tabs').hidden = true;
   const theme = themeName();
+  document.body.dataset.theme = theme;
   view.innerHTML = `
     <section class="auth-layout"><a class="auth-back" href="/" aria-label="Volver a la página principal">← Volver</a><h1>Bienvenido<br>al Crowd</h1><p class="muted">${signup ? 'Crea tu cuenta de socio.' : 'Ingresa con tu usuario.'}</p>
     <form id="lf" class="auth-card auth-theme-${theme}">

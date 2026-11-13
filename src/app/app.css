@@ -240,3 +240,5 @@ body.appbody .stepper button,body.appbody button[data-act="rmex"]{background:tra
 body.appbody .stepper button:active,body.appbody button[data-act="rmex"]:active{background:transparent;box-shadow:none;transform:scale(.92)}
 body.appbody button.link{padding:0;background:transparent;color:var(--ink);border:0;border-radius:0;box-shadow:none}
 body.appbody button.link:active{background:transparent;box-shadow:none;transform:none}
+/* iOS Safari aplica zoom al enfocar campos con texto menor a 16 px. */
+body.appbody .auth-input{font-size:16px}
