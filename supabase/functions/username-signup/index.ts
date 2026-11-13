@@ -37,8 +37,16 @@ Deno.serve(async (request) => {
     });
 
     if (createError || !created.user) {
-      const duplicate = /already|registered|unique|duplicate/i.test(createError?.message || '');
-      return json({ error: duplicate ? 'Ese usuario, carnet o número ya está registrado.' : 'No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.' }, duplicate ? 409 : 400);
+      const authError = createError?.message || '';
+      const duplicate = /already|registered|unique|duplicate/i.test(authError);
+      const schemaNotReady = /database error|schema cache|column .* does not exist|relation .* does not exist/i.test(authError);
+      const errorMessage = duplicate
+        ? 'Ese usuario, carnet o número ya está registrado.'
+        : schemaNotReady
+          ? 'Falta actualizar la base de datos de Batmon. Ejecuta las migraciones 0008 y 0009 en Supabase.'
+          : 'No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.';
+      console.error('No se pudo crear usuario Auth:', authError);
+      return json({ error: errorMessage }, duplicate ? 409 : schemaNotReady ? 503 : 400);
     }
 
     const { data: signedIn, error: signInError } = await publicClient().auth.signInWithPassword({ email, password });

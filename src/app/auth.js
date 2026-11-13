@@ -13,10 +13,23 @@ function inputField(id, label, type = 'text', attrs = '') {
 
 function friendlySignupError(error) {
   const message = String(error?.message || '');
-  if (/FunctionsFetchError|Failed to fetch|not deployed/i.test(message)) {
-    return 'No se pudo conectar con el registro. Verifica que username-signup esté desplegada en Supabase.';
+  if (/FunctionsFetchError|Failed to fetch/i.test(message)) {
+    return 'No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.';
   }
   return message || 'No se pudo crear la cuenta. Inténtalo de nuevo.';
+}
+
+async function edgeFunctionError(error, fallback) {
+  try {
+    const response = error?.context;
+    if (response && typeof response.clone === 'function') {
+      const body = await response.clone().json();
+      if (typeof body?.error === 'string' && body.error.trim()) return body.error;
+    }
+  } catch { /* Si la respuesta no es JSON, usar el mensaje general. */ }
+  const message = String(error?.message || '');
+  if (/FunctionsFetchError|Failed to fetch/i.test(message)) return 'No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.';
+  return fallback;
 }
 
 export function showLogin(view, signup = false) {
@@ -61,7 +74,8 @@ export function showLogin(view, signup = false) {
         };
         if (!/^\d{8}$/.test(payload.recovery_phone)) throw new Error('Escribe tu número de teléfono de 8 dígitos.');
         const { data, error } = await supabase.functions.invoke('username-signup', { body: payload });
-        if (error || !data?.access_token || !data?.refresh_token) throw new Error(data?.error || friendlySignupError(error));
+        if (error) throw new Error(await edgeFunctionError(error, 'No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.'));
+        if (!data?.access_token || !data?.refresh_token) throw new Error(data?.error || 'El registro no devolvió una sesión. Inténtalo de nuevo.');
         const { error: sessionError } = await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
         if (sessionError) throw sessionError;
         return;
@@ -76,9 +90,8 @@ export function showLogin(view, signup = false) {
         return;
       }
       const { data, error } = await supabase.functions.invoke('username-login', { body: { username, password } });
-      if (error || !data?.access_token || !data?.refresh_token) {
-        throw new Error(error ? 'No se pudo iniciar sesión por usuario. Verifica que username-login esté desplegada.' : data?.error || 'Usuario o contraseña incorrectos.');
-      }
+      if (error) throw new Error(await edgeFunctionError(error, 'No se pudo iniciar sesión. Revisa tu usuario y contraseña.'));
+      if (!data?.access_token || !data?.refresh_token) throw new Error(data?.error || 'Usuario o contraseña incorrectos.');
       const { error: sessionError } = await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
       if (sessionError) throw sessionError;
     } catch (error) {
@@ -100,7 +113,7 @@ export function showLogin(view, signup = false) {
 }
 
 function showRecovery(view) {
-  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe tu usuario y el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
+  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
   $('#recovery-login', view).onclick = () => showLogin(view);
   $('#recovery-form', view).onsubmit = async (event) => {
     event.preventDefault();
@@ -112,10 +125,12 @@ function showRecovery(view) {
     if (password !== $('#confirm-password', view).value) { message.textContent = 'Las contraseñas no coinciden.'; return; }
     button.disabled = true;
     const { data, error } = await supabase.functions.invoke('account-recovery', {
-      body: { action: 'change', username, phone, new_password: password },
+      body: { action: 'change', phone, new_password: password },
     });
     if (error || !data?.ok) {
-      message.textContent = data?.error || 'No se pudo cambiar la contraseña. Revisa el número e inténtalo de nuevo.';
+      message.textContent = error
+        ? await edgeFunctionError(error, 'No se pudo cambiar la contraseña. Revisa el número e inténtalo de nuevo.')
+        : data?.error || 'No se pudo cambiar la contraseña. Revisa el número e inténtalo de nuevo.';
       button.disabled = false;
       return;
     }
