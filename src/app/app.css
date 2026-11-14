@@ -130,6 +130,7 @@ body.appbody .card{border-radius:var(--card-radius);background-color:var(--card-
 
 /* Interruptor día/noche para el tema del usuario. */
 .theme-preference{margin:4px 0 18px}.theme-setting-title{margin:22px 0 10px!important;color:var(--ink)!important;font-size:14px!important;letter-spacing:.04em!important;text-transform:none!important}
+.profile-settings{display:grid;gap:12px}.profile-settings>.link{justify-self:start}.profile-settings>h1{margin:0}.settings-my-data{width:100%;margin:0;text-align:center}.profile-settings .theme-preference{margin:0}
 .theme-switch{--toggle-size:30px;--container-width:5.625em;--container-height:2.5em;--container-radius:6.25em;--container-light-bg:#3d7eae;--container-night-bg:#1d1f2c;--circle-container-diameter:3.375em;--sun-moon-diameter:2.125em;--sun-bg:#ecca2f;--moon-bg:#c4c9d1;--spot-color:#959db1;--circle-container-offset:calc((var(--circle-container-diameter) - var(--container-height))/2 * -1);--stars-color:#fff;--clouds-color:#f3fdff;--back-clouds-color:#aacadf;--transition:.5s cubic-bezier(0,-.02,.4,1.25);--circle-transition:.3s cubic-bezier(0,-.02,.35,1.17);display:inline-flex;width:max-content;margin:4px 0 0;cursor:pointer;font-size:var(--toggle-size)}
 .theme-switch,.theme-switch *,.theme-switch *::before,.theme-switch *::after{box-sizing:border-box;margin:0;padding:0;font-size:var(--toggle-size)}
 .theme-switch__checkbox{position:absolute;width:1px;height:1px;min-height:0;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;opacity:0}
