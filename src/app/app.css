@@ -281,7 +281,8 @@ body.appbody[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="radi
   box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555;
 }
 body.appbody .auth-field{height:52px;border-radius:15px;background:transparent;box-shadow:none}
-body.appbody .auth-input{height:100%;min-height:0;padding:11px 14px 11px 46px;border-radius:15px;background:#ccc;box-shadow:inset 2px 5px 10px rgb(0 0 0 / 22%)}
+body.appbody .auth-input{height:100%;min-height:0;padding:11px 14px;border-radius:15px;background:#ccc;box-shadow:inset 2px 5px 10px rgb(0 0 0 / 22%)}
+body.appbody .auth-field .auth-input{padding-left:54px!important}
 body.appbody[data-theme="light"] .auth-input:focus{background:#fff;box-shadow:8px 8px 24px #96969666,-8px -8px 24px #fff}
 body.appbody[data-theme="dark"] .auth-input{background:#171717;color:#fff;box-shadow:inset 2px 5px 10px #050505}
 body.appbody[data-theme="dark"] .auth-input:focus{background:#202020;box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555}
