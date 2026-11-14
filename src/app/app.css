@@ -248,3 +248,40 @@ body.appbody .profile-menu-wrap .settings-hamburger:active{appearance:none;backg
 body.appbody .profile-menu-wrap .settings-hamburger:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:50%;}
 /* iOS Safari aplica zoom al enfocar campos con texto menor a 16 px. */
 body.appbody .auth-input{font-size:16px}
+
+/* Campos de formulario con la misma silueta en los dos temas. */
+body.appbody :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),select,textarea){
+  min-height:48px;
+  padding:12px 16px;
+  border:0;
+  border-radius:15px;
+  outline:none;
+  background:#ccc;
+  color:var(--ink);
+  box-shadow:inset 2px 5px 10px rgb(0 0 0 / 22%);
+  transition:background-color .25s ease,box-shadow .25s ease,transform .25s ease;
+}
+body.appbody[data-theme="light"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),select,textarea){
+  background:#ccc;
+  color:#151515;
+}
+body.appbody[data-theme="light"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),select,textarea):focus{
+  background:#fff;
+  transform:scale(1.02);
+  box-shadow:8px 8px 24px #96969666,-8px -8px 24px #fff;
+}
+body.appbody[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),select,textarea){
+  background:#171717;
+  color:#fff;
+  box-shadow:inset 2px 5px 10px #050505;
+}
+body.appbody[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),select,textarea):focus{
+  background:#202020;
+  transform:scale(1.02);
+  box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555;
+}
+body.appbody .auth-field{height:52px;border-radius:15px;background:transparent;box-shadow:none}
+body.appbody .auth-input{height:100%;min-height:0;padding:11px 14px 11px 46px;border-radius:15px;background:#ccc;box-shadow:inset 2px 5px 10px rgb(0 0 0 / 22%)}
+body.appbody[data-theme="light"] .auth-input:focus{background:#fff;box-shadow:8px 8px 24px #96969666,-8px -8px 24px #fff}
+body.appbody[data-theme="dark"] .auth-input{background:#171717;color:#fff;box-shadow:inset 2px 5px 10px #050505}
+body.appbody[data-theme="dark"] .auth-input:focus{background:#202020;box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555}
