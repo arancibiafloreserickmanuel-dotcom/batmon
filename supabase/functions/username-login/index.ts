@@ -5,15 +5,24 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
 
   try {
-    const { username: rawUsername, password } = await request.json();
-    const username = normalizeUsername(rawUsername);
-    if (!/^[a-z0-9_.-]{3,24}$/.test(username) || typeof password !== 'string' || password.length < 1 || password.length > 256) {
+    const payload = await request.json();
+    const identifier = typeof payload?.username === 'string' ? payload.username.trim() : '';
+    const username = normalizeUsername(identifier);
+    const isEmail = identifier.includes('@');
+    const validIdentifier = isEmail
+      ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier) && identifier.length <= 254
+      : /^[a-z0-9_.-]{3,24}$/.test(username);
+    const password = payload?.password;
+    if (!validIdentifier || typeof password !== 'string' || password.length < 1 || password.length > 256) {
       return json({ error: 'Usuario o contraseña incorrectos.' }, 401);
     }
     if (!anonKey) return json({ error: 'La autenticación no está configurada.' }, 503);
 
     const admin = adminClient();
-    const { data: profile } = await admin.from('profiles').select('id').eq('username', username).maybeSingle();
+    const profileQuery = admin.from('profiles').select('id,username');
+    const { data: profile } = isEmail
+      ? await profileQuery.eq('contact_email', identifier.toLowerCase()).maybeSingle()
+      : await profileQuery.eq('username', username).maybeSingle();
     if (!profile) return json({ error: 'Usuario o contraseña incorrectos.' }, 401);
 
     const { data: account, error: accountError } = await admin.auth.admin.getUserById(profile.id);

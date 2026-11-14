@@ -244,8 +244,12 @@ body.appbody .profile-media-tabs button.on{color:var(--ink);border-bottom-color:
 body.appbody .profile-media-tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
 body.appbody .profile-menu-wrap .settings-hamburger,
 body.appbody .profile-menu-wrap .settings-hamburger:hover,
-body.appbody .profile-menu-wrap .settings-hamburger:active{appearance:none;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;transform:none!important;}
-body.appbody .profile-menu-wrap .settings-hamburger:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:50%;}
+body.appbody .profile-menu-wrap .settings-hamburger:active,
+body.appbody .profile-tools .settings-hamburger,
+body.appbody .profile-tools .settings-hamburger:hover,
+body.appbody .profile-tools .settings-hamburger:active{appearance:none;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;transform:none!important;}
+body.appbody .profile-menu-wrap .settings-hamburger:focus-visible,
+body.appbody .profile-tools .settings-hamburger:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:50%;}
 body.appbody .profile-tools{display:flex;align-items:flex-start;gap:10px}
 body.appbody .profile-tools .notifications-open{position:relative;display:grid;width:40px;height:40px;margin:0;padding:0;place-items:center;border:0!important;border-radius:0!important;background:transparent!important;color:var(--ink);box-shadow:none!important;cursor:pointer}
 body.appbody .notifications-open .bell{display:block;width:18px;height:20px;fill:currentColor}

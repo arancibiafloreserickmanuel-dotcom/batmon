@@ -45,7 +45,7 @@ export function showLogin(view, signup = false) {
     <form id="lf" class="auth-card auth-theme-${theme}">
       <p class="auth-title">${signup ? 'Crear cuenta' : 'Iniciar sesión'}</p>
       ${signup ? inputField('nm', 'Nombre completo', 'text', 'autocomplete="name" maxlength="100" required') : ''}
-      ${signup ? inputField('username', 'Usuario', 'text', `autocomplete="username" autocapitalize="none" minlength="3" maxlength="24" pattern="${userPattern}" required`) : inputField('username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}
+      ${signup ? inputField('username', 'Usuario', 'text', `autocomplete="username" autocapitalize="none" minlength="3" maxlength="24" pattern="${userPattern}" required`) : inputField('username', 'Usuario o correo electrónico', 'text', 'autocomplete="username" autocapitalize="none" required')}
       ${signup ? inputField('carnet', 'Número de carnet', 'text', 'autocomplete="off" maxlength="32" required') : ''}
       ${signup ? `${inputField('phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}<small class="auth-hint">Lo usaremos para recuperar tu contraseña. No enviaremos SMS.</small>` : ''}
       ${signup ? inputField('em', 'Correo electrónico (opcional)', 'email', 'autocomplete="email"') : ''}
@@ -87,17 +87,19 @@ export function showLogin(view, signup = false) {
 
       const username = $('#username', view).value.trim();
       const password = $('#pw', view).value;
-      if (username.includes('@')) {
-        // Cuentas antiguas pueden usar correo y contraseña si alguna vez la configuraron.
-        const { error } = await supabase.auth.signInWithPassword({ email: username, password });
-        if (error) throw new Error('No se pudo entrar con esa contraseña. Si esta cuenta se creó con Google, entra con el botón Google; después puedes configurar usuario y contraseña en Perfil → Configuración.');
+      const { data, error } = await supabase.functions.invoke('username-login', { body: { username, password } });
+      if (!error && data?.access_token && data?.refresh_token) {
+        const { error: sessionError } = await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
+        if (sessionError) throw sessionError;
         return;
       }
-      const { data, error } = await supabase.functions.invoke('username-login', { body: { username, password } });
-      if (error) throw new Error(await edgeFunctionError(error, 'No se pudo iniciar sesión. Revisa tu usuario y contraseña.'));
-      if (!data?.access_token || !data?.refresh_token) throw new Error(data?.error || 'Usuario o contraseña incorrectos.');
-      const { error: sessionError } = await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
-      if (sessionError) throw sessionError;
+      if (username.includes('@')) {
+        // Admite correos vinculados al usuario nuevo y cuentas heredadas de acceso por email.
+        const { error: emailError } = await supabase.auth.signInWithPassword({ email: username, password });
+        if (!emailError) return;
+      }
+      if (error) throw new Error(await edgeFunctionError(error, 'No se pudo iniciar sesión. Revisa tu usuario/correo y contraseña.'));
+      throw new Error(data?.error || 'Usuario/correo o contraseña incorrectos.');
     } catch (error) {
       message.textContent = signup ? friendlySignupError(error) : error.message || 'Usuario o contraseña incorrectos.';
       button.disabled = false;
