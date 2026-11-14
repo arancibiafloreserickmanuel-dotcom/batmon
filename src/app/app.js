@@ -105,9 +105,17 @@ function buildUnifiedCalendar() {
         <div class="cal10__month" id="cal10-month">Noviembre</div>
         <div class="cal10__year" id="cal10-year">2026</div>
       </div>
-      <div class="cal10__nav">
-        <button type="button" class="cal10__nav-btn" id="cal10-prev" aria-label="Mes anterior">‹</button>
-        <button type="button" class="cal10__nav-btn" id="cal10-next" aria-label="Mes siguiente">›</button>
+      <div class="cal10__actions">
+        <div class="cal10__nav">
+          <button type="button" class="cal10__nav-btn" id="cal10-prev" aria-label="Mes anterior">‹</button>
+          <button type="button" class="cal10__nav-btn" id="cal10-next" aria-label="Mes siguiente">›</button>
+        </div>
+        <button type="button" class="cal10__bell-btn" id="cal10-bell" aria-label="Notificaciones">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -117,12 +125,6 @@ function buildUnifiedCalendar() {
     </div>
 
     <div class="cal10__grid" id="cal10Grid"></div>
-
-    <div class="cal10__pull-zone" id="cal10-pull-zone">
-      <button type="button" class="cal10__pull-tab" id="cal10-pull-btn" aria-label="Desplegable del calendario">
-        <span class="cal10__pull-bar"></span>
-      </button>
-    </div>
 
     <div class="cal10__drawer" id="cal10-drawer">
       <div class="cal10__footer" id="cal10-footer">
@@ -135,6 +137,12 @@ function buildUnifiedCalendar() {
         <button type="button" class="cal10__toggle" data-filter="week">Semana</button>
         <button type="button" class="cal10__toggle" data-filter="month">Mes</button>
       </div>
+    </div>
+
+    <div class="cal10__pull-zone" id="cal10-pull-zone">
+      <button type="button" class="cal10__pull-tab" id="cal10-pull-btn" aria-label="Desplegable del calendario">
+        <span class="cal10__pull-bar"></span>
+      </button>
     </div>
   </section>`;
 }

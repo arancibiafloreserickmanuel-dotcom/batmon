@@ -84,9 +84,13 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.
 
 ## Inicio — calendario unificado mobile-first cal10 (14 nov)
-- Calendario neumórfico con sombras y luces duales exactas (`--shadow-out`, `--shadow-in`), fondo adaptado y selección con círculo en relieve suave (difuminado neumórfico con aro sutil) tal como el snippet cal10.
+- Calendario neumórfico con fondo y color idéntico a las cards de la app, texto y fecha en blanco.
+- Altura reducida y compacta, celdas de 34px y espaciados optimizados.
+- Celda seleccionada con círculo negro sólido sin colores morados.
+- Campana de notificaciones agregada a la derecha de los botones de navegación en la cabecera.
+- Barra tiradora de despliegue posicionada hasta el fondo (abajo de la semana cuando está encogido y abajo de los eventos cuando se despliega), con mayor margen vertical en modo encogido.
 - Modo encogido (Semana): muestra únicamente la fila de 7 días de la semana activa y la barra tiradora inferior, sin botones ni eventos visibles.
-- Modo desplegado (Mes): al pulsar o arrastrar la barra se muestra el mes completo y abajo el drawer con los eventos/planes del periodo y los toggles Día / Semana / Mes (que filtran los eventos de ese día, semana o mes).
+- Modo desplegado (Mes): muestra el mes completo y abajo el drawer con los eventos/planes del periodo y los toggles Día / Semana / Mes (que filtran los eventos de ese día, semana o mes).
 - Sin punto en el día 12 y puntos de actividad exclusivos para registros reales.
 - Tarjeta de descanso separada ("Descansa, [Nombre]") ubicada abajo fuera del calendario, con acceso directo a Registrar entrenamiento.
 - Archivos: `src/app/app.js`, `src/app/app.css`.

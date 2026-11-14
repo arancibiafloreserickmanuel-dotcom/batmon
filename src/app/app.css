@@ -84,70 +84,87 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .admin-tabs a{min-height:54px}
 /* ── Neumorphic Calendar cal10 ── */
 .cal10 {
-  --bg: #e0e5ec;
-  --light: #ffffff;
-  --dark: #a3b1c6;
-  --text: #4a5568;
-  --text2: #8595ad;
-  --text3: #b0bcce;
-  --accent: #6d5dfc;
-  --accent-l: #8a7cff;
+  --bg: var(--card-surface, #212121);
+  --light: rgba(255, 255, 255, 0.08);
+  --dark: rgba(0, 0, 0, 0.45);
+  --text: var(--ink, #ffffff);
+  --text2: var(--muted, #b0b0b8);
+  --text3: color-mix(in srgb, var(--muted, #b0b0b8) 60%, transparent);
+  --accent: var(--ink, #ffffff);
   --red: #fc5d7c;
   --green: #4ecda6;
-  --amber: #fcb15d;
-  --shadow-out: 8px 8px 16px var(--dark), -8px -8px 16px var(--light);
-  --shadow-out-sm: 5px 5px 10px var(--dark), -5px -5px 10px var(--light);
-  --shadow-in: inset 5px 5px 10px var(--dark), inset -5px -5px 10px var(--light);
-  --shadow-in-sm: inset 3px 3px 6px var(--dark), inset -3px -3px 6px var(--light);
+  --shadow-out: 5px 5px 12px var(--dark), -5px -5px 12px var(--light);
+  --shadow-out-sm: 3px 3px 7px var(--dark), -3px -3px 7px var(--light);
+  --shadow-in: inset 3px 3px 7px var(--dark), inset -3px -3px 7px var(--light);
+  --shadow-in-sm: inset 2px 2px 4px var(--dark), inset -2px -2px 4px var(--light);
   font-family: 'Inter', sans-serif;
   background: var(--bg);
-  border-radius: 28px;
-  padding: 22px 18px 14px;
+  border-radius: var(--card-radius, 20px);
+  padding: 14px 14px 8px;
   box-shadow: var(--shadow-out);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   color: var(--text);
   user-select: none;
+  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
 }
 body.appbody[data-theme="dark"] .cal10 {
-  --bg: #1c1c1f;
-  --light: #2b2b30;
-  --dark: #101012;
-  --text: #e6e6ec;
-  --text2: #9e9ea8;
-  --text3: #6b6b78;
-  --accent: #8a7cff;
-  --accent-l: #afa5ff;
+  --bg: #212121;
+  --light: #2c2c2c;
+  --dark: #121212;
+  --text: #ffffff;
+  --text2: #b4b4bc;
+  --text3: #6e6e78;
+  --accent: #ffffff;
+  --shadow-out: 5px 5px 12px var(--dark), -5px -5px 12px var(--light);
+  --shadow-out-sm: 3px 3px 6px var(--dark), -3px -3px 6px var(--light);
+  --shadow-in: inset 3px 3px 6px var(--dark), inset -3px -3px 6px var(--light);
+  --shadow-in-sm: inset 2px 2px 4px var(--dark), inset -2px -2px 4px var(--light);
+}
+body.appbody[data-theme="light"] .cal10 {
+  --bg: #e0e0e0;
+  --light: #ffffff;
+  --dark: #bebebe;
+  --text: #10100e;
+  --text2: #52524d;
+  --text3: #8a8a84;
+  --accent: #10100e;
   --shadow-out: 6px 6px 14px var(--dark), -6px -6px 14px var(--light);
   --shadow-out-sm: 4px 4px 8px var(--dark), -4px -4px 8px var(--light);
   --shadow-in: inset 4px 4px 8px var(--dark), inset -4px -4px 8px var(--light);
-  --shadow-in-sm: inset 2px 2px 5px var(--dark), inset -2px -2px 5px var(--light);
+  --shadow-in-sm: inset 2px 2px 4px var(--dark), inset -2px -2px 4px var(--light);
 }
 .cal10__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 8px;
+  padding: 0 2px;
 }
 .cal10__month {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
 }
 .cal10__year {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text3);
   letter-spacing: .08em;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+.cal10__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .cal10__nav {
   display: flex;
-  gap: 10px;
+  gap: 6px;
 }
 .cal10__nav-btn {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
@@ -155,22 +172,38 @@ body.appbody[data-theme="dark"] .cal10 {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--accent);
-  font-size: 18px;
+  color: var(--text);
+  font-size: 15px;
   font-weight: 800;
-  transition: box-shadow .18s, color .18s;
+  transition: box-shadow .18s;
   border: 0;
+  padding: 0;
 }
-.cal10__nav-btn:hover { color: var(--accent-l); }
 .cal10__nav-btn:active { box-shadow: var(--shadow-in-sm); }
+.cal10__bell-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--shadow-out-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  border: 0;
+  padding: 0;
+  transition: box-shadow .18s;
+}
+.cal10__bell-btn:active { box-shadow: var(--shadow-in-sm); }
 .cal10__dow {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 .cal10__dw {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--text3);
   letter-spacing: .05em;
@@ -178,16 +211,17 @@ body.appbody[data-theme="dark"] .cal10 {
 .cal10__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 3px;
 }
 .cal10__cell {
   aspect-ratio: 1;
+  min-height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
   cursor: pointer;
   position: relative;
@@ -196,159 +230,118 @@ body.appbody[data-theme="dark"] .cal10 {
 }
 .cal10__cell:hover {
   box-shadow: var(--shadow-in-sm);
-  color: var(--accent);
 }
 .cal10__cell.other {
   color: var(--text3);
-  opacity: .45;
+  opacity: .4;
   pointer-events: none;
 }
-.cal10__cell.today {
+.cal10__cell.today:not(.selected) {
   box-shadow: var(--shadow-in);
-  color: var(--accent);
-  font-weight: 900;
+  font-weight: 800;
 }
 .cal10__cell.selected {
-  box-shadow: var(--shadow-out-sm);
-  color: var(--accent);
-  font-weight: 900;
-  transform: scale(1.04);
-}
-.cal10__cell.selected::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  opacity: 0.25;
+  background: #0a0a0a;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .15);
+  transform: scale(1.05);
 }
 .cal10.is-collapsed .cal10__cell--hidden {
   display: none;
 }
 .cal10__dot {
   position: absolute;
-  bottom: 5px;
-  width: 5px;
-  height: 5px;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-}
-.cal10__dot--a { background: var(--accent); }
-.cal10__dot--r { background: var(--red); }
-.cal10__dot--g { background: var(--green); }
-.cal10__pull-zone {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-  cursor: pointer;
-  padding: 4px 0 0;
-  touch-action: none;
-}
-.cal10__pull-tab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 14px;
-  background: var(--bg);
-  box-shadow: var(--shadow-out-sm);
-  border-radius: 12px;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
-  transition: box-shadow .18s;
-}
-.cal10__pull-tab:active { box-shadow: var(--shadow-in-sm); }
-.cal10__pull-bar {
-  width: 26px;
-  height: 3px;
-  border-radius: 99px;
-  background: var(--text3);
+  background: var(--green);
 }
 .cal10__drawer {
-  margin-top: 18px;
-  padding-top: 14px;
+  margin-top: 10px;
+  padding-top: 6px;
 }
 .cal10__footer {
-  padding: 18px;
-  border-radius: 22px;
+  padding: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow-in);
   background: var(--bg);
+  margin-bottom: 8px;
 }
 .cal10__footer-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: .15em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--text3);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .cal10__ev {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 0;
+  gap: 10px;
+  padding: 6px 0;
 }
 .cal10__ev + .cal10__ev {
   border-top: 1px solid color-mix(in srgb, var(--text3) 25%, transparent);
 }
 .cal10__ev-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 .cal10__ev-body { flex: 1; min-width: 0; }
 .cal10__ev-name {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .cal10__ev-time {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
   color: var(--text2);
   margin-top: 1px;
 }
 .cal10__ev-pill {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 4px 9px;
+  padding: 3px 7px;
   border-radius: 20px;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
   flex-shrink: 0;
+  color: var(--green);
 }
-.cal10__ev-pill--a { color: var(--accent); }
 .cal10__ev-pill--r { color: var(--red); }
-.cal10__ev-pill--g { color: var(--green); }
 .cal10__ev-empty {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text2);
   text-align: center;
-  padding: 10px 0;
+  padding: 8px 0;
 }
 .cal10__toggles {
   display: flex;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 6px;
+  margin-top: 8px;
 }
 .cal10__toggle {
   flex: 1;
-  padding: 10px;
-  border-radius: 14px;
+  padding: 7px 10px;
+  border-radius: 12px;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--text2);
   cursor: pointer;
@@ -356,17 +349,47 @@ body.appbody[data-theme="dark"] .cal10 {
   user-select: none;
   border: 0;
 }
-.cal10__toggle:hover { color: var(--accent); }
+.cal10__toggle:hover { color: var(--text); }
 .cal10__toggle.active {
   box-shadow: var(--shadow-in-sm);
-  color: var(--accent);
+  color: var(--text);
+}
+.cal10__pull-zone {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  padding: 2px 0;
+  touch-action: none;
+}
+.cal10__pull-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow-out-sm);
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  transition: box-shadow .18s;
+}
+.cal10__pull-tab:active { box-shadow: var(--shadow-in-sm); }
+.cal10__pull-bar {
+  width: 24px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--text3);
 }
 
 /* ── Tarjeta de descanso separada abajo ── */
 .rest-card {
   text-align: center;
-  padding: 24px 16px 20px;
-  margin-bottom: 16px;
+  padding: 20px 14px 16px;
+  margin-bottom: 14px;
 }
 .cal-rest-halo {
   width: 90px;
