@@ -126,16 +126,9 @@ function weekStrip(activeDays = new Set()) {
 
   return `<section class="week-cal" aria-label="Semana actual. Hoy es ${todayLabel}.">
     <div class="week-cal-top">
-      <button class="week-cal-dropdown-trigger" type="button" id="cal-dropdown-btn" aria-label="Desplegable de fecha">
-        <svg class="week-cal-ring" width="22" height="22" viewBox="0 0 36 36" aria-hidden="true">
-          <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" opacity="0.22" stroke-width="3.6" />
-          <path class="ring-fg" stroke-dasharray="35, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#22c55e" stroke-width="3.6" stroke-linecap="round" />
-        </svg>
+      <div class="week-cal-title-wrap">
         <span class="week-cal-title">${dateTitle}</span>
-        <svg class="week-cal-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
-      </button>
+      </div>
       <button class="week-cal-bell" type="button" aria-label="Notificaciones">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -144,20 +137,194 @@ function weekStrip(activeDays = new Set()) {
       </button>
     </div>
     <div class="week-cal-row">${days}</div>
+    <div class="week-cal-expand" id="week-cal-expand" style="display:none;"></div>
     <div class="week-cal-pull">
-      <button type="button" class="week-cal-pull-handle" id="week-cal-pull-btn" aria-label="Desplegable">
+      <button type="button" class="week-cal-pull-handle" id="week-cal-pull-btn" aria-label="Desplegable del calendario" aria-expanded="false">
         <span class="week-cal-pull-bar"></span>
       </button>
     </div>
   </section>`;
 }
 
+function setupWeeklyCalendar(view, acts = [], ws = [], plan = {}) {
+  const pullBtn = view.querySelector('#week-cal-pull-btn');
+  const expandBox = view.querySelector('#week-cal-expand');
+  if (!pullBtn || !expandBox) return;
+
+  let isOpen = false;
+  let viewDate = new Date();
+  let selectedIso = today();
+
+  const toggleOpen = () => {
+    isOpen = !isOpen;
+    expandBox.style.display = isOpen ? 'block' : 'none';
+    pullBtn.classList.toggle('is-open', isOpen);
+    pullBtn.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen) renderMonthGrid();
+  };
+
+  pullBtn.onclick = toggleOpen;
+
+  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const dayLabelsFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  function renderMonthGrid() {
+    const y = viewDate.getFullYear();
+    const m = viewDate.getMonth();
+    const firstDayIndex = new Date(y, m, 1).getDay(); // 0 domingo
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevDaysInMonth = new Date(y, m, 0).getDate();
+
+    let cellsHtml = '';
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      cellsHtml += `<div class="cal10__cell other">${prevDaysInMonth - i}</div>`;
+    }
+
+    const todayIso = today();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dObj = new Date(y, m, day);
+      const cellIso = iso(dObj);
+      const isToday = cellIso === todayIso;
+      const isSel = cellIso === selectedIso;
+
+      const hasAct = acts.some((a) => a.performed_on === cellIso);
+      const hasWork = ws.some((w) => w.performed_on === cellIso);
+      const dotHtml = hasAct
+        ? '<span class="cal10__dot cal10__dot--g"></span>'
+        : hasWork
+        ? '<span class="cal10__dot cal10__dot--a"></span>'
+        : '';
+
+      cellsHtml += `<div class="cal10__cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" data-iso="${cellIso}">${day}${dotHtml}</div>`;
+    }
+
+    const totalCells = (firstDayIndex + daysInMonth);
+    const nextCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let j = 1; j <= nextCells; j++) {
+      cellsHtml += `<div class="cal10__cell other">${j}</div>`;
+    }
+
+    const selDateObj = new Date(selectedIso + 'T12:00:00');
+    const selDayName = dayLabelsFull[selDateObj.getDay()];
+    const selMonthName = monthNames[selDateObj.getMonth()];
+    const footerLabel = selectedIso === todayIso
+      ? `Hoy · ${selDayName} ${selDateObj.getDate()} de ${selMonthName}`
+      : `${selDayName} · ${selDateObj.getDate()} de ${selMonthName} ${selDateObj.getFullYear()}`;
+
+    const dayActs = acts.filter((a) => a.performed_on === selectedIso);
+    const dayWs = ws.filter((w) => w.performed_on === selectedIso);
+    const dayPlanRows = plan?.[selDayName] || [];
+
+    let eventsHtml = '';
+    if (dayActs.length || dayWs.length) {
+      eventsHtml += dayActs.map((a) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">${a.discipline === 'running' ? '🏃' : a.discipline === 'cycling' ? '🚴' : '🏊'}</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">${DISC[a.discipline] || a.discipline}</div>
+            <div class="cal10__ev-time">${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--g">Hecho</div>
+        </div>
+      `).join('');
+
+      eventsHtml += dayWs.map((w) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">${w.kind === 'plyometrics' ? '⚡' : '🏋️'}</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">${w.kind === 'plyometrics' ? 'Pliometría' : 'Entrenamiento'}</div>
+            <div class="cal10__ev-time">${w.workout_sets?.length || 0} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''}</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--a">Sesión</div>
+        </div>
+      `).join('');
+    }
+
+    if (dayPlanRows.length) {
+      eventsHtml += dayPlanRows.map((p) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">📋</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">Plan: ${p.exercise_id ? p.exercise_id.replace(/-/g, ' ') : 'Ejercicio'}</div>
+            <div class="cal10__ev-time">${p.sets ? `${p.sets} series` : ''} ${p.reps ? `× ${p.reps} reps` : ''}</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--r">Plan</div>
+        </div>
+      `).join('');
+    }
+
+    if (!eventsHtml) {
+      eventsHtml = `<div class="cal10__ev-empty">Sin actividades registradas ni plan para este día.</div>`;
+    }
+
+    expandBox.innerHTML = `
+      <div class="cal10">
+        <div class="cal10__widget">
+          <div class="cal10__head">
+            <div class="cal10__month-wrap">
+              <div class="cal10__month">${monthNames[m]}</div>
+              <div class="cal10__year">${y}</div>
+            </div>
+            <div class="cal10__nav">
+              <button type="button" class="cal10__nav-btn" id="cal10-prev" aria-label="Mes anterior">‹</button>
+              <button type="button" class="cal10__nav-btn" id="cal10-next" aria-label="Mes siguiente">›</button>
+            </div>
+          </div>
+
+          <div class="cal10__dow">
+            <div class="cal10__dw">D</div><div class="cal10__dw">L</div><div class="cal10__dw">M</div>
+            <div class="cal10__dw">M</div><div class="cal10__dw">J</div><div class="cal10__dw">V</div><div class="cal10__dw">S</div>
+          </div>
+
+          <div class="cal10__grid" id="cal10Grid">${cellsHtml}</div>
+
+          <div class="cal10__footer">
+            <div class="cal10__footer-label">${footerLabel}</div>
+            <div class="cal10__events-list">${eventsHtml}</div>
+          </div>
+
+          <div class="cal10__toggles">
+            <div class="cal10__toggle active" data-view="month">Mes</div>
+            <div class="cal10__toggle" data-view="week">Semana</div>
+            <div class="cal10__toggle" data-view="day">Día</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const prevBtn = expandBox.querySelector('#cal10-prev');
+    const nextBtn = expandBox.querySelector('#cal10-next');
+    if (prevBtn) prevBtn.onclick = () => { viewDate.setMonth(viewDate.getMonth() - 1); renderMonthGrid(); };
+    if (nextBtn) nextBtn.onclick = () => { viewDate.setMonth(viewDate.getMonth() + 1); renderMonthGrid(); };
+
+    expandBox.querySelectorAll('#cal10Grid .cal10__cell:not(.other)').forEach((cell) => {
+      cell.onclick = () => {
+        if (cell.dataset.iso) {
+          selectedIso = cell.dataset.iso;
+          renderMonthGrid();
+        }
+      };
+    });
+
+    expandBox.querySelectorAll('.cal10__toggle').forEach((t) => {
+      t.onclick = () => {
+        expandBox.querySelectorAll('.cal10__toggle').forEach((x) => x.classList.remove('active'));
+        t.classList.add('active');
+        if (t.dataset.view === 'week') {
+          toggleOpen();
+        }
+      };
+    });
+  }
+}
+
 /* ---------------- Inicio ---------------- */
 async function renderHome(v) {
-  const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }] = await Promise.all([
+  const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }, { data: planRow }] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(200),
-    supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id)').order('performed_on', { ascending: false }).limit(100),
+    supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id, exercise_id, reps, weight_kg)').order('performed_on', { ascending: false }).limit(100),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
+    supabase.from('training_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
   ]);
   const ws0 = weekStart();
   const km = (d) => acts.filter((a) => a.discipline === d && a.performed_on >= ws0).reduce((s, a) => s + Number(a.distance_km), 0);
@@ -182,6 +349,7 @@ async function renderHome(v) {
     ${ctx.modules.running ? `<div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>` : ''}
     ${ctx.modules.plyo && ws.some((w) => w.kind === 'plyometrics') ? `<div class="card"><span class="muted">Última sesión de pliometría</span><br>${(() => { const recent = ws.find((w) => w.kind === 'plyometrics'); return recent ? `<b>${recent.performed_on}</b> · ${recent.workout_sets.length} series${recent.duration_min ? ' · ' + fmt(recent.duration_min, 0) + ' min' : ''}` : ''; })()}</div>` : ''}
     <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
+  setupWeeklyCalendar(v, acts, ws, planRow?.plan);
   clearTimeout(homeDayTimer);
   const nextMidnight = new Date();
   nextMidnight.setHours(24, 0, 5, 0);

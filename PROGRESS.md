@@ -83,6 +83,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Admin → Socios → Eliminar: borra archivos de storage del socio y luego el RPC.
 - Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.
 
-## Inicio — calendario semanal (14 nov)
-- En Inicio, el saludo "Hola, …" se reemplazó por un calendario semanal compacto y sutil mobile-first: fecha actual centrada con selector desplegable (anillo de progreso y chevron), campana de notificaciones, fila de días limpia y disimulada (sin cuadradotes) con el día de hoy destacado en círculo, indicadores de actividades completadas (punto verde) y lengüeta inferior para el desplegable. Se actualiza al pasar la medianoche.
+## Inicio — calendario semanal y desplegable mensual cal10 (14 nov)
+- En Inicio, cabecera de fecha simplificada como texto limpio (sin botón, sin flecha hacia abajo ni círculo de progreso).
+- Calendario semanal compacto mobile-first con días LUN-DOM, día actual destacado en círculo e indicadores de actividad.
+- Desplegable interactivo cal10 activado mediante la lengüeta inferior: navegación mensual por año/mes, días con dots de actividad, selector de fechas y lista de planificaciones/actividades vinculadas a la fecha seleccionada (actividades realizadas + ejercicios del plan semanal).
 - Archivos: `src/app/app.js`, `src/app/app.css`.
