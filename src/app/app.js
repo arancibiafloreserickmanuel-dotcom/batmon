@@ -4,7 +4,7 @@ import { fmt, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading } 
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
-import { showLogin, showProfileSetup, hasMemberIdentity } from './auth.js';
+import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles } from './auth.js';
 
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
@@ -242,6 +242,7 @@ function renderProfileSettings(v) {
 /* ---------------- Arranque: sesión persistente ---------------- */
 $('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}"><span class="tab-icon">${icon}</span><span>${t}</span></a>`).join('');
 window.addEventListener('hashchange', route);
+enablePasswordToggles(view);
 let booted = null;
 supabase.auth.onAuthStateChange((_ev, session) => {
   if (!session) { booted = null; ctx = null; showLogin(view); return; }

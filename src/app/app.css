@@ -285,3 +285,10 @@ body.appbody .auth-input{height:100%;min-height:0;padding:11px 14px 11px 46px;bo
 body.appbody[data-theme="light"] .auth-input:focus{background:#fff;box-shadow:8px 8px 24px #96969666,-8px -8px 24px #fff}
 body.appbody[data-theme="dark"] .auth-input{background:#171717;color:#fff;box-shadow:inset 2px 5px 10px #050505}
 body.appbody[data-theme="dark"] .auth-input:focus{background:#202020;box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555}
+
+/* ojo de contraseña */
+.auth-field,.pw-wrap{position:relative}.pw-wrap{display:block}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;background:none;border:0;cursor:pointer;color:#777;padding:0}
+.pw-eye svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pw-eye.on{color:#0d0d0c}body[data-theme="dark"] .pw-eye.on{color:#fff}
+input[type="password"][data-eye],input[type="text"][data-eye]{padding-right:46px}

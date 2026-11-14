@@ -175,3 +175,28 @@ export function showProfileSetup(view, user, profile = {}, onDone = () => {}) {
     onDone();
   };
 }
+
+// Botón "ojo" para ver/ocultar cualquier campo de contraseña que aparezca en la vista.
+export function enablePasswordToggles(root) {
+  const eye = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const add = () => root.querySelectorAll('input[type="password"]:not([data-eye])').forEach((input) => {
+    input.dataset.eye = '1';
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'pw-eye'; button.innerHTML = eye;
+    button.setAttribute('aria-label', 'Mostrar contraseña');
+    button.onclick = () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.classList.toggle('on', show);
+      button.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    };
+    let host = input.parentElement;
+    if (!host.classList.contains('auth-field')) {
+      host = document.createElement('span'); host.className = 'pw-wrap';
+      input.replaceWith(host); host.appendChild(input);
+    }
+    host.appendChild(button);
+  });
+  new MutationObserver(add).observe(root, { childList: true, subtree: true });
+  add();
+}
