@@ -241,5 +241,9 @@ body.appbody .profile-media-tabs{border:0;background:transparent;}
 body.appbody .profile-media-tabs button{border-bottom:2px solid transparent!important;}
 body.appbody .profile-media-tabs button.on{color:var(--ink);border-bottom-color:var(--ink)!important;}
 body.appbody .profile-media-tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+body.appbody .profile-menu-wrap .settings-hamburger,
+body.appbody .profile-menu-wrap .settings-hamburger:hover,
+body.appbody .profile-menu-wrap .settings-hamburger:active{appearance:none;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;transform:none!important;}
+body.appbody .profile-menu-wrap .settings-hamburger:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:50%;}
 /* iOS Safari aplica zoom al enfocar campos con texto menor a 16 px. */
 body.appbody .auth-input{font-size:16px}
