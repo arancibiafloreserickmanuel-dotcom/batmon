@@ -139,12 +139,38 @@ function showRecovery(view) {
   };
 }
 
-export function hasMemberIdentity(_user, profile) {
+export function hasMemberIdentity(profile) {
   return Boolean(profile?.username && profile?.carnet_number && profile?.recovery_phone);
 }
 
-export function showIdentitySetup(view, _user, _profile = {}, onAccept = () => {}) {
+// Primer ingreso (p. ej. con Google): pide nombre, usuario, carnet, teléfono y contraseña. Solo aparece si faltan datos.
+export function showProfileSetup(view, user, profile = {}, onDone = () => {}) {
   $('#tabs').hidden = true;
-  view.innerHTML = `<section class="auth-layout"><h1>Tu cuenta</h1><section class="auth-card auth-theme-${themeName()}"><p class="auth-title">¡Bienvenido al Crowd!</p><p class="muted">Tu sesión está lista. Ya puedes entrar a la comunidad.</p><button class="auth-submit" id="identity-accept" type="button">Aceptar</button></section></section>`;
-  $('#identity-accept', view).onclick = onAccept;
+  const v = (x) => String(x ?? '').replace(/"/g, '&quot;');
+  view.innerHTML = `<section class="auth-layout"><h1>Completa<br>tu perfil</h1><p class="muted">Es la primera vez que entras. Estos datos se guardan con tu cuenta (${v(user?.email || '')}).</p>
+    <form id="setup-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Tus datos</p>
+    ${inputField('su-name', 'Nombre completo', 'text', `autocomplete="name" maxlength="100" value="${v(profile.full_name)}" required`)}
+    ${inputField('su-user', 'Usuario', 'text', `autocomplete="username" autocapitalize="none" minlength="3" maxlength="24" pattern="${userPattern}" value="${v(profile.username)}" required`)}
+    ${inputField('su-carnet', 'Número de carnet', 'text', `autocomplete="off" maxlength="32" value="${v(profile.carnet_number)}" required`)}
+    ${inputField('su-phone', 'Número de teléfono (8 dígitos)', 'tel', `autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" value="${v(profile.recovery_phone)}" required`)}
+    <small class="auth-hint">Solo sirve para recuperar tu contraseña. No enviamos SMS.</small>
+    ${inputField('su-mail', 'Correo de contacto (opcional)', 'email', `autocomplete="email" value="${v(profile.contact_email)}"`)}
+    ${inputField('su-pass', 'Crea una contraseña', 'password', 'minlength="8" autocomplete="new-password" required')}
+    <small class="auth-hint">Con tu usuario y esta contraseña podrás entrar sin Google.</small>
+    <p class="auth-msg" id="su-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Guardar y entrar</button>
+    <div class="auth-footer"><button class="auth-forgot" type="button" id="su-out">Cerrar sesión</button></div></form></section>`;
+  $('#su-out', view).onclick = () => supabase.auth.signOut();
+  $('#setup-form', view).onsubmit = async (event) => {
+    event.preventDefault();
+    const button = $('.auth-submit', view); const msg = $('#su-msg', view);
+    button.disabled = true; msg.textContent = 'Guardando…';
+    const { error } = await supabase.rpc('update_my_account', {
+      p_full_name: $('#su-name', view).value, p_username: $('#su-user', view).value, p_carnet_number: $('#su-carnet', view).value,
+      p_recovery_phone: $('#su-phone', view).value, p_contact_email: $('#su-mail', view).value,
+    });
+    if (error) { msg.textContent = /update_my_account/i.test(error.message) && /function|schema/i.test(error.message) ? 'Falta aplicar la migración 0011 en Supabase.' : error.message; button.disabled = false; return; }
+    const { error: pwError } = await supabase.auth.updateUser({ password: $('#su-pass', view).value });
+    if (pwError) { msg.textContent = 'Datos guardados, pero la contraseña no se pudo guardar: ' + pwError.message + ' Puedes crearla luego en Perfil → Configuración.'; await new Promise((r) => setTimeout(r, 2500)); }
+    onDone();
+  };
 }

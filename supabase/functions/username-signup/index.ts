@@ -22,6 +22,11 @@ Deno.serve(async (request) => {
 
     const email = authEmailForUsername(username);
     const admin = adminClient();
+    // Comprobación previa: si no, el trigger falla y Auth devuelve un "Database error" confuso.
+    for (const [column, value, label] of [['username', username, 'usuario'], ['carnet_number', carnet, 'carnet'], ['recovery_phone', phone, 'número']]) {
+      const { data: taken } = await admin.from('profiles').select('id').eq(column, value).maybeSingle();
+      if (taken) return json({ error: `Ese ${label} ya está registrado en otra cuenta.` }, 409);
+    }
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,

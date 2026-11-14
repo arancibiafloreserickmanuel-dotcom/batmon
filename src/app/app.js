@@ -4,7 +4,7 @@ import { fmt, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading } 
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
-import { showLogin, showIdentitySetup, hasMemberIdentity } from './auth.js';
+import { showLogin, showProfileSetup, hasMemberIdentity } from './auth.js';
 
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
@@ -54,16 +54,10 @@ async function boot(user) {
   const modules = Object.fromEntries(Object.keys(globals).map(key => [key, globals[key] && members[key] !== false]));
   ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules, themePolicy: appearance?.theme_policy || 'choice' };
   applyTheme();
-  const identityNoticeKey = `batmon_identity_notice_${user.id}`;
-  if (!hasMemberIdentity(user, profile) && localStorage.getItem(identityNoticeKey) !== 'accepted') {
+  if (!hasMemberIdentity(profile)) {
     $('#tabs').hidden = true;
     stopLoading();
-    showIdentitySetup(view, user, profile || {}, () => {
-      localStorage.setItem(identityNoticeKey, 'accepted');
-      $('#tabs').hidden = false;
-      renderTabs();
-      route();
-    });
+    showProfileSetup(view, user, profile || {}, () => boot(user));
     return;
   }
   $('#tabs').hidden = false;
@@ -217,28 +211,25 @@ function renderProfileSettings(v) {
   v.innerHTML=`<div class="profile-settings"><button class="link" id="settings-back">← Volver al perfil</button><h1>Configuración</h1><section class="theme-preference"><h2 class="theme-setting-title">Tema</h2><label class="theme-switch" aria-label="Cambiar entre tema claro de día y tema oscuro de noche"><input id="user-theme" class="theme-switch__checkbox" type="checkbox" ${isDark?'checked':''} ${forced?'disabled':''}><span class="theme-switch__container" aria-hidden="true"><span class="theme-switch__clouds"></span><span class="theme-switch__stars-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 55" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M135.831 3.00688C135.055 3.85027 134.111 4.29946 133 4.35447C134.111 4.40947 135.055 4.85867 135.831 5.71123C136.607 6.55462 136.996 7.56303 136.996 8.72727C136.996 7.95722 137.172 7.25134 137.525 6.59129C137.886 5.93124 138.372 5.39954 138.98 5.00535C139.598 4.60199 140.268 4.39114 141 4.35447C139.88 4.2903 138.936 3.85027 138.16 3.00688C137.384 2.16348 136.996 1.16425 136.996 0C136.996 1.16425 136.607 2.16348 135.831 3.00688ZM31 23.3545C32.1114 23.2995 33.0551 22.8503 33.8313 22.0069C34.6075 21.1635 34.9956 20.1642 34.9956 19C34.9956 20.1642 35.3837 21.1635 36.1599 22.0069C36.9361 22.8503 37.8798 23.2903 39 23.3545C38.2679 23.3911 37.5976 23.602 36.9802 24.0053C36.3716 24.3995 35.8864 24.9312 35.5248 25.5913C35.172 26.2513 34.9956 26.9572 34.9956 27.7273C34.9956 26.563 34.6075 25.5546 33.8313 24.7112C33.0551 23.8587 32.1114 23.4095 31 23.3545ZM0 36.3545C1.11136 36.2995 2.05513 35.8503 2.83131 35.0069C3.6075 34.1635 3.99559 33.1642 3.99559 32C3.99559 33.1642 4.38368 34.1635 5.15987 35.0069C5.93605 35.8503 6.87982 36.2903 8 36.3545C7.26792 36.3911 6.59757 36.602 5.98015 37.0053C5.37155 37.3995 4.88644 37.9312 4.52481 38.5913C4.172 39.2513 3.99559 39.9572 3.99559 40.7273C3.99559 39.563 3.6075 38.5546 2.83131 37.7112C2.05513 36.8587 1.11136 36.4095 0 36.3545ZM56.8313 24.0069C56.0551 24.8503 55.1114 25.2995 54 25.3545C55.1114 25.4095 56.0551 25.8587 56.8313 26.7112C57.6075 27.5546 57.9956 28.563 57.9956 29.7273C57.9956 28.9572 58.172 28.2513 58.5248 27.5913C58.8864 26.9312 59.3716 26.3995 59.9802 26.0053C60.5976 25.602 61.2679 25.3911 62 25.3545C60.8798 25.2903 59.9361 24.8503 59.1599 24.0069C58.3837 23.1635 57.9956 22.1642 57.9956 21C57.9956 22.1642 58.3837 23.1635 59.1599 24.0069C59.9361 24.8503 60.8798 25.2903 62 25.3545ZM81 25.3545C82.1114 25.2995 83.0551 24.8503 83.8313 24.0069C84.6075 23.1635 84.9956 22.1642 84.9956 21C84.9956 22.1642 85.3837 23.1635 86.1599 24.0069C86.9361 24.8503 87.8798 25.2903 89 25.3545C88.2679 25.3911 87.5976 25.602 86.9802 26.0053C86.3716 26.3995 85.8864 26.9312 85.5248 27.5913C85.172 28.2513 84.9956 28.9572 84.9956 29.7273C84.9956 28.563 85.172 28.2513 85.5248 27.5913ZM136 36.3545C137.111 36.2995 138.055 35.8503 138.831 35.0069C139.607 34.1635 139.996 33.1642 139.996 32C139.996 33.1642 140.384 34.1635 141.16 35.0069C141.936 35.8503 142.88 36.2903 144 36.3545C143.268 36.3911 142.598 36.602 141.98 37.0053C141.372 37.3995 140.886 37.9312 140.525 38.5913C140.172 39.2513 139.996 39.9572 139.996 40.7273C139.996 39.563 139.607 38.5546 138.831 37.7112C138.055 36.8587 137.111 36.4095 136 36.3545ZM101.831 49.0069C101.055 49.8503 100.111 50.2995 99 50.3545C100.111 50.4095 101.055 50.8587 101.831 51.7112C102.607 52.5546 102.996 53.563 102.996 54.7273C102.996 53.9572 103.172 53.2513 103.525 52.5913C103.886 51.9312 104.372 51.3995 104.98 51.0053C105.598 50.602 106.268 50.3911 107 50.3545C105.88 50.2903 104.936 49.8503 104.16 49.0069C103.384 48.1635 102.996 47.1642 102.996 46C102.996 47.1642 102.607 48.1635 101.831 49.0069Z" fill="currentColor"/></svg></span><span class="theme-switch__circle-container"><span class="theme-switch__sun-moon-container"><span class="theme-switch__moon"><i class="theme-switch__spot"></i><i class="theme-switch__spot"></i><i class="theme-switch__spot"></i></span></span></span></span></label></section>${ctx.isAdmin?'<a class="btn ghost settings-admin" href="/admin.html">Administración</a>':''}<button id="settings-logout" class="btn ghost settings-logout">Cerrar sesión</button></div>`;
   $('#settings-back',v).onclick=()=>renderProfile(v);
   $('#user-theme',v).onchange=e=>{const theme=e.target.checked?'dark':'light';localStorage.setItem(`batmon_theme_${ctx.user.id}`,theme);applyTheme(theme);};
-  const accountAccess = document.createElement('form');
-  accountAccess.id = 'account-login-form';
-  accountAccess.className = 'card account-login-settings';
-  accountAccess.innerHTML = `<h2>Acceso con usuario</h2><p class="muted">Configura un usuario y una contraseña para entrar sin Google.</p><label for="account-username">Usuario</label><input id="account-username" value="${esc(ctx.profile?.username || '')}" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_.-]{3,24}" autocomplete="username" required ${ctx.profile?.username ? 'readonly' : ''}><label for="account-password">Nueva contraseña</label><input id="account-password" type="password" minlength="8" autocomplete="new-password" placeholder="Al menos 8 caracteres" required><button class="btn ghost" type="submit">Guardar acceso</button><p class="msg" id="account-login-msg" aria-live="polite"></p>`;
-  $('#settings-back',v).insertAdjacentElement('afterend', accountAccess);
-  $('#account-login-form',v).onsubmit=async e=>{
-    e.preventDefault();
-    const button=$('#account-login-form button');
-    const msg=$('#account-login-msg');
-    const username=$('#account-username').value.trim().toLowerCase();
-    const password=$('#account-password').value;
-    button.disabled=true;
-    msg.textContent='Guardando acceso…';
-    const {error:identityError}=await supabase.rpc('set_my_login_username',{p_username:username});
-    if(identityError){msg.textContent=/duplicate|unique/i.test(identityError.message)?'Ese usuario ya está ocupado. Elige otro.':identityError.message.includes('function')?'Falta aplicar la migración 0010 en Supabase.':identityError.message;button.disabled=false;return;}
-    ctx.profile.username=username;
-    $('#account-username').readOnly=true;
-    const {error:passwordError}=await supabase.auth.updateUser({password});
-    if(passwordError){msg.textContent=`Usuario guardado; no se pudo actualizar la contraseña: ${passwordError.message}`;button.disabled=false;return;}
-    $('#account-password').value='';
-    msg.textContent='Acceso guardado. Ya puedes usar ese usuario y contraseña.';
+  const pf=ctx.profile||{};const at=x=>esc(x||'');
+  const accountForm=document.createElement('div');
+  accountForm.innerHTML=`<form id="account-data-form" class="card account-login-settings"><h2>Mis datos</h2><label for="ad-name">Nombre completo</label><input id="ad-name" value="${at(pf.full_name)}" maxlength="100" required><label for="ad-user">Usuario</label><input id="ad-user" value="${at(pf.username)}" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_.-]{3,24}" autocomplete="username" required><label for="ad-carnet">Carnet</label><input id="ad-carnet" value="${at(pf.carnet_number)}" maxlength="32" required><label for="ad-phone">Teléfono (8 dígitos, para recuperar contraseña)</label><input id="ad-phone" value="${at(pf.recovery_phone)}" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required><label for="ad-mail">Correo de contacto (opcional)</label><input id="ad-mail" type="email" value="${at(pf.contact_email)}"><button class="btn ghost" type="submit">Guardar datos</button><p class="msg" id="ad-msg" aria-live="polite"></p></form><form id="account-pass-form" class="card account-login-settings"><h2>Cambiar contraseña</h2><label for="ap-new">Nueva contraseña</label><input id="ap-new" type="password" minlength="8" autocomplete="new-password" placeholder="Al menos 8 caracteres" required><button class="btn ghost" type="submit">Cambiar contraseña</button><p class="msg" id="ap-msg" aria-live="polite"></p></form>`;
+  $('#settings-back',v).insertAdjacentElement('afterend', accountForm);
+  $('#account-data-form',v).onsubmit=async e=>{
+    e.preventDefault();const msg=$('#ad-msg',v);const button=$('#account-data-form button',v);button.disabled=true;msg.className='msg';msg.textContent='Guardando…';
+    const row={p_full_name:$('#ad-name',v).value,p_username:$('#ad-user',v).value,p_carnet_number:$('#ad-carnet',v).value,p_recovery_phone:$('#ad-phone',v).value,p_contact_email:$('#ad-mail',v).value};
+    const {error}=await supabase.rpc('update_my_account',row);
     button.disabled=false;
+    if(error){msg.textContent=error.message;return;}
+    const {data:fresh}=await supabase.from('profiles').select('*').eq('id',ctx.user.id).single();if(fresh)ctx.profile=fresh;
+    msg.className='msg ok';msg.textContent='Datos guardados.';
+  };
+  $('#account-pass-form',v).onsubmit=async e=>{
+    e.preventDefault();const msg=$('#ap-msg',v);const button=$('#account-pass-form button',v);button.disabled=true;msg.className='msg';
+    const {error}=await supabase.auth.updateUser({password:$('#ap-new',v).value});
+    button.disabled=false;
+    if(error){msg.textContent=error.message;return;}
+    $('#ap-new',v).value='';msg.className='msg ok';msg.textContent='Contraseña actualizada.';
   };
   $('#settings-logout',v).onclick=async()=>{if(window.confirm('¿Seguro que quieres cerrar sesión?')) await supabase.auth.signOut();};
 }

@@ -1,0 +1,26 @@
+Sin hacerme preguntas (salvo si necesitas algo que solo yo tengo, como una verificación de Google), haz lo siguiente. Ya tengo sesión iniciada en Supabase, GitHub, Vercel y Google en este Chrome. Proyecto Supabase `batmon-crowd` (https://kzuuqborlrvvgibksgwk.supabase.co). App: https://batmon.vercel.app. Repo base RAW: https://raw.githubusercontent.com/arancibiafloreserickmanuel-dotcom/batmon/main
+
+PASO 1 — MIGRACIONES. En Supabase > SQL Editor ejecuta cada archivo COMPLETO, sin modificarlo, confirmando "Success" antes del siguiente (si falla uno, copia el error exacto y detente). Primero comprueba cuáles faltan:
+select to_regclass('public.site_settings') is not null as m0006, exists(select 1 from information_schema.columns where table_name='memberships' and column_name='payment_method') as m0007, exists(select 1 from information_schema.columns where table_name='profiles' and column_name='username') as m0008, exists(select 1 from information_schema.columns where table_name='profiles' and column_name='recovery_phone') as m0009, exists(select 1 from pg_proc where proname='set_my_login_username') as m0010;
+Aplica en orden SOLO las que den false, desde .../supabase/migrations/: 0006_theme_settings.sql, 0007_membership_payment_methods.sql, 0008_username_sms_recovery.sql, 0009_username_auth_without_sms.sql, 0010_admin_account_password_login.sql. (Si faltaran 0003, 0004 o 0005, aplícalas antes.) Y SIEMPRE aplica al final: 0011_account_self_service_and_safe_delete.sql
+Verifica: select proname from pg_proc where proname in ('update_my_account','admin_delete_user','admin_member_overview'); → 3 filas. select conname, confdeltype from pg_constraint where conname='memberships_approved_by_fkey'; → confdeltype = 'n' (set null). select tablename, rowsecurity from pg_tables where schemaname='public'; → todas true.
+
+PASO 2 — EDGE FUNCTIONS. Despliega/actualiza con "Verify JWT" DESACTIVADO, copiando el código EXACTO de los archivos RAW: username-signup, username-login y account-recovery (.../supabase/functions/<nombre>/index.ts). Importan ../_shared/auth.ts (mismo repo): si el panel no admite carpeta compartida, usa la Supabase CLI (`npx supabase functions deploy <nombre> --project-ref kzuuqborlrvvgibksgwk`) o inlinea auth.ts. Comprueba en Edge Functions > Secrets que existen SUPABASE_URL, la clave pública y la clave secreta de servidor, SIN mostrarlas ni copiarlas en tu respuesta.
+
+PASO 3 — INICIO DE SESIÓN CON GOOGLE.
+a) Google Cloud Console (console.cloud.google.com): usa o crea un proyecto "Batmon Crowd". APIs y servicios > Pantalla de consentimiento OAuth: tipo Externo, nombre "Batmon Crowd", correo de asistencia y de contacto = mi correo de Google, ámbitos básicos (email, profile, openid); publícala en "En producción" (o, si no se puede, agrega mi correo y los de prueba que yo te diga como usuarios de prueba).
+b) Credenciales > Crear credenciales > ID de cliente OAuth > Aplicación web, nombre "Batmon Web". Orígenes JavaScript autorizados: https://batmon.vercel.app  (y http://localhost:5173). URI de redirección autorizados: https://kzuuqborlrvvgibksgwk.supabase.co/auth/v1/callback
+c) Copia el Client ID y el Client Secret directamente de Google a Supabase (sin escribirlos en el chat): Supabase > Authentication > Providers > Google: activar, pegar ambos, guardar. Deja "Skip nonce checks" desactivado.
+d) Supabase > Authentication > URL Configuration: Site URL = https://batmon.vercel.app ; Redirect URLs: https://batmon.vercel.app/** y http://localhost:5173/** .
+e) Deja Email/Password habilitado. NO habilites Phone ni configures SMS.
+
+PASO 4 — ESPERA el deploy de Vercel del último commit de main (Ready).
+
+PASO 5 — PRUEBAS en https://batmon.vercel.app/app.html:
+a) "Entrar con Google" con mi cuenta de Google original (la admin). Debe aparecer SIEMPRE una pantalla "Completa tu perfil" si esa cuenta no tiene usuario/carnet/teléfono: pídeme los datos que falten (usuario, carnet, teléfono de 8 dígitos, contraseña) o, si no puedes esperar, deja la pantalla abierta y repórtamelo; NO inventes mis datos. Si el usuario "erick" ya existe (otra cuenta socio), esa pantalla lo rechazará con "ya pertenece a otra cuenta": propónme otro usuario, no borres nada.
+b) Tras guardar: cierra sesión y entra con usuario + contraseña; confirma que aparece Administración.
+c) Perfil > Configuración: cambia el nombre y vuelve a dejarlo; cambia la contraseña de prueba y revierte si puedes. Confirma que "Mis datos" y "Cambiar contraseña" funcionan.
+d) Registro normal: en ventana de incógnito crea la cuenta de prueba usuario "prueba_tmp", teléfono 7xxxxxxx; intenta registrar otra con el MISMO carnet → debe decir "Ese carnet ya está registrado en otra cuenta".
+e) Recuperación: usuario + teléfono incorrecto → rechaza; correcto → cambia; cuenta admin → "debe entrar con Google".
+f) Admin > Socios > Ver datos de "prueba_tmp" > Eliminar socio (escribe ELIMINAR). Verifica en SQL que ya no existe en profiles ni en auth.users y que usuario/carnet/teléfono quedaron libres: select count(*) from public.profiles where username='prueba_tmp'; → 0.
+No uses la service_role key en pantalla. No borres cuentas reales. REPORTE: lista ✅/❌ por paso con el error exacto de lo que falle.

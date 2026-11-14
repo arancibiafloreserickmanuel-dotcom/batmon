@@ -75,3 +75,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 
 ## Correr local
 `npm install` → `npm run dev` → `/app.html`, `/admin.html`.
+
+## Cuentas y acceso (13 nov)
+- Migración 0011: `update_my_account` (el usuario edita nombre/usuario/carnet/teléfono/correo; también la usa el formulario de primer ingreso), FK `memberships.approved_by` ahora `on delete set null` (antes impedía borrar a un admin), políticas de borrado de storage para admin, `admin_delete_user` borra sesiones + ejercicios propios y la cuenta (cascada); no permite borrar al único admin.
+- App: si falta usuario/carnet/teléfono (p. ej. 1.ª vez con Google) aparece `showProfileSetup` (src/app/auth.js) y no se puede entrar sin completarlo. Perfil → Configuración: "Mis datos" y "Cambiar contraseña" para todos (admin incluido).
+- Recuperación de contraseña: usuario + teléfono de 8 dígitos (sin SMS); cuentas admin deben entrar con Google. Sin límite de intentos (pendiente).
+- Admin → Socios → Eliminar: borra archivos de storage del socio y luego el RPC.
+- Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.

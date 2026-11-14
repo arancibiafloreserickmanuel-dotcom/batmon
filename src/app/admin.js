@@ -110,7 +110,14 @@ async function detalle(u) {
   };
   const rm = $('#rmuser', m); if (rm) rm.onclick = async () => {
     if (!(await confirmDialog(`Se borrará la cuenta de ${u.full_name} y todos sus datos.`, 'Eliminar socio'))) return;
-    const { error } = await supabase.rpc('admin_delete_user', { target: u.id }); if (error) notify(error.message); else refresh();
+    const gone = [];
+    for (const bucket of ['receipts', 'profile-media']) {
+      const { data: files } = await supabase.storage.from(bucket).list(u.id, { limit: 1000 });
+      const paths = (files || []).map((f) => `${u.id}/${f.name}`);
+      if (paths.length) { const { error: rmError } = await supabase.storage.from(bucket).remove(paths); if (rmError) gone.push(rmError.message); }
+    }
+    const { error } = await supabase.rpc('admin_delete_user', { target: u.id });
+    if (error) notify(error.message); else { notify(gone.length ? 'Cuenta borrada; algunos archivos no se pudieron borrar: ' + gone[0] : 'Cuenta y datos eliminados.', gone.length ? undefined : 'success'); refresh(); }
   };
 }
 
