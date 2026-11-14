@@ -176,19 +176,19 @@ async function renderProfile(v) {
   const mediaView = localStorage.getItem(mediaKey) || 'posts';
   const moduleKey = `profile_module_${ctx.user.id}`;
   const selectedModule = localStorage.getItem(moduleKey) || 'all';
+  const moduleActivities = activities.filter(a=>selectedModule==='all'||a.discipline===selectedModule);
+  const moduleWorkouts = workouts.filter(w=>selectedModule==='all'||(selectedModule==='plyo'&&w.kind==='plyometrics')||(selectedModule==='training'&&w.kind==='training'));
   const range = period === 'day' ? 1 : period === 'month' ? 30 : 7;
   const from = new Date(todayDate); from.setDate(from.getDate() - range + 1);
   const dateKey = d => new Date(d).toISOString().slice(0,10);
   const days = Array.from({length: period === 'week' ? 7 : period === 'day' ? 1 : 30}, (_, i) => { const d = new Date(from); d.setDate(d.getDate()+i); return dateKey(d); });
-  const values = days.map(d => activities.filter(a => a.performed_on === d).length + workouts.filter(w => w.performed_on === d).length);
+  const values = days.map(d => moduleActivities.filter(a => a.performed_on === d).length + moduleWorkouts.filter(w => w.performed_on === d).length);
   const max = Math.max(1, ...values);
   const km = activities.reduce((s,a)=>s+Number(a.distance_km||0),0);
   const initials = (ctx.profile?.full_name || 'BC').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
   const counts = selectedModule==='all'?{workouts:activities.length+workouts.length,km}:{workouts:workouts.filter(w=>selectedModule==='plyo'?w.kind==='plyometrics':selectedModule==='training'?w.kind==='training':false).length+activities.filter(a=>a.discipline===selectedModule).length,km:activities.filter(a=>a.discipline===selectedModule).reduce((s,a)=>s+Number(a.distance_km),0)};
   const friends = friendships.filter(f=>f.status==='accepted').length;
-  const moduleData = [['running','Running','running.png'],['plyo','Pliometría','plyo.png'],['training','Gym','training.png'],['swimming','Natación','swimming.png']];
-  const moduleActivities = activities.filter(a=>selectedModule==='all'||a.discipline===selectedModule);
-  const moduleWorkouts = workouts.filter(w=>selectedModule==='all'||(selectedModule==='plyo'&&w.kind==='plyometrics')||(selectedModule==='training'&&w.kind==='training'));
+  const moduleData = [['running','Running','running.png'],['cycling','Ciclismo','cycling.png'],['plyo','Pliometría','plyo.png'],['training','Gym','training.png'],['swimming','Natación','swimming.png']];
   v.innerHTML = `<section class="profile-page"><header class="profile-hero"><label for="avatar-file" class="profile-avatar">${avatarData?.signedUrl?`<img src="${avatarData.signedUrl}" alt="Foto de perfil">`:initials}<input hidden id="avatar-file" type="file" accept="image/*"></label><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>${esc(ctx.profile?.contact_email || '')}</span></div><div class="profile-menu-wrap"><button id="settings-open" class="settings-hamburger" aria-label="Abrir configuración"><span class="line1"></span><span class="line2"></span><span class="line3"></span></button></div></header>
     <div class="profile-counts"><div><b>${counts.workouts}</b><span>Entrenos</span></div><div><b>${fmt(counts.km,0)}</b><span>Km</span></div><div><b>${friends}</b><span>Amigos</span></div></div>
     <div class="profile-actions"><button id="edit-profile" class="btn ghost">Editar perfil</button><button id="membership-open" class="btn ghost">Membresía</button></div>
