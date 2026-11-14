@@ -246,6 +246,15 @@ body.appbody .profile-menu-wrap .settings-hamburger,
 body.appbody .profile-menu-wrap .settings-hamburger:hover,
 body.appbody .profile-menu-wrap .settings-hamburger:active{appearance:none;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;transform:none!important;}
 body.appbody .profile-menu-wrap .settings-hamburger:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:50%;}
+body.appbody .profile-tools{display:flex;align-items:flex-start;gap:10px}
+body.appbody .profile-tools .notifications-open{position:relative;display:grid;width:40px;height:40px;margin:0;padding:0;place-items:center;border:0!important;border-radius:0!important;background:transparent!important;color:var(--ink);box-shadow:none!important;cursor:pointer}
+body.appbody .notifications-open .bell{display:block;width:18px;height:20px;fill:currentColor}
+body.appbody .notifications-open:hover .bell{animation:bellRing .9s both}
+body.appbody .notifications-open:active{background:transparent!important;box-shadow:none!important;transform:scale(.94)}
+body.appbody .notifications-open:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:50%!important}
+.notification-badge{position:absolute;top:0;right:0;min-width:17px;height:17px;padding:0 4px;display:grid;place-items:center;border-radius:99px;background:#d92727;color:#fff;font:700 10px Inter,sans-serif}
+@keyframes bellRing{0%,100%{transform-origin:top}15%{transform:rotate(10deg)}30%{transform:rotate(-10deg)}45%{transform:rotate(5deg)}60%{transform:rotate(-5deg)}75%{transform:rotate(2deg)}}
+.community-notifications{display:grid;gap:10px}.community-notifications h1{margin:8px 0 0}.community-notifications>.muted{margin-top:-6px}.notifications-list{display:grid;gap:10px;margin-top:8px}.notification-card{display:grid;gap:8px;margin:0}.notification-card>b{font-size:15px}.notification-card>p{font-size:14px;line-height:1.5;color:var(--muted)}.notification-card>small{color:var(--muted);font-size:12px}.notification-kind{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.notification-card .btn{justify-self:start}
 /* iOS Safari aplica zoom al enfocar campos con texto menor a 16 px. */
 body.appbody .auth-input{font-size:16px}
 
