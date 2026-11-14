@@ -82,3 +82,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Recuperación de contraseña: usuario + teléfono de 8 dígitos (sin SMS); cuentas admin deben entrar con Google. Sin límite de intentos (pendiente).
 - Admin → Socios → Eliminar: borra archivos de storage del socio y luego el RPC.
 - Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.
+
+## Inicio — calendario semanal (14 nov)
+- En Inicio, el saludo "Hola, …" se reemplazó por un calendario semanal compacto y sutil mobile-first: fecha actual centrada con selector desplegable (anillo de progreso y chevron), campana de notificaciones, fila de días limpia y disimulada (sin cuadradotes) con el día de hoy destacado en círculo, indicadores de actividades completadas (punto verde) y lengüeta inferior para el desplegable. Se actualiza al pasar la medianoche.
+- Archivos: `src/app/app.js`, `src/app/app.css`.

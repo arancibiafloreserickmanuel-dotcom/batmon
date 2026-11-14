@@ -1,6 +1,6 @@
 import './app.css';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading } from './common.js';
+import { fmt, iso, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading } from './common.js';
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
@@ -95,6 +95,63 @@ function route() {
   Promise.resolve().then(()=>fn(view, ctx)).then(stopLoading).catch((e) => { stopLoading();view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
+let homeDayTimer = 0;
+
+function weekStrip(activeDays = new Set()) {
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const todayIso = today();
+  const days = labels.map((label, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const dayIso = iso(d);
+    const current = dayIso === todayIso;
+    const hasActivity = activeDays.has(dayIso);
+    return `<div class="week-cal-col${current ? ' is-today' : ''}${hasActivity ? ' has-activity' : ''}" data-date="${dayIso}" role="button" tabindex="0">
+      <span class="week-cal-name">${label}</span>
+      <span class="week-cal-num-wrap"><b class="week-cal-num">${d.getDate()}</b></span>
+      <span class="week-cal-dot-slot">${hasActivity ? '<span class="week-cal-dot"></span>' : ''}</span>
+    </div>`;
+  }).join('');
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  const month = new Intl.DateTimeFormat('es-BO', { month: 'long' });
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const now = new Date();
+  const dateTitle = `${now.getDate()} de ${cap(month.format(now))}`;
+  const todayLabel = `${labels[(now.getDay() + 6) % 7]} ${now.getDate()}`;
+
+  return `<section class="week-cal" aria-label="Semana actual. Hoy es ${todayLabel}.">
+    <div class="week-cal-top">
+      <button class="week-cal-dropdown-trigger" type="button" id="cal-dropdown-btn" aria-label="Desplegable de fecha">
+        <svg class="week-cal-ring" width="22" height="22" viewBox="0 0 36 36" aria-hidden="true">
+          <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" opacity="0.22" stroke-width="3.6" />
+          <path class="ring-fg" stroke-dasharray="35, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#22c55e" stroke-width="3.6" stroke-linecap="round" />
+        </svg>
+        <span class="week-cal-title">${dateTitle}</span>
+        <svg class="week-cal-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </button>
+      <button class="week-cal-bell" type="button" aria-label="Notificaciones">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="week-cal-row">${days}</div>
+    <div class="week-cal-pull">
+      <button type="button" class="week-cal-pull-handle" id="week-cal-pull-btn" aria-label="Desplegable">
+        <span class="week-cal-pull-bar"></span>
+      </button>
+    </div>
+  </section>`;
+}
+
 /* ---------------- Inicio ---------------- */
 async function renderHome(v) {
   const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }] = await Promise.all([
@@ -108,13 +165,14 @@ async function renderHome(v) {
   const cur = mems[0];
   const plyoWeek = ws.filter((w) => w.kind === 'plyometrics' && w.performed_on >= ws0).length;
   const trainingWeek = ws.filter((w) => w.kind === 'training' && w.performed_on >= ws0).length;
+  const activeDays = new Set([...acts.map((a) => a.performed_on), ...ws.map((w) => w.performed_on)]);
 
   const seenKey = `batmon_membership_status_${ctx.user.id}`;
   const previousStatus = localStorage.getItem(seenKey);
   if (cur?.status) localStorage.setItem(seenKey, cur.status);
   const statusNotice = previousStatus && cur?.status && previousStatus !== cur.status && ['approved', 'rejected'].includes(cur.status)
     ? `<div class="card ${cur.status === 'approved' ? 'okbox' : 'warn'}">${cur.status === 'approved' ? '¡Tu pago fue aprobado! Ya puedes registrar entrenamientos.' : 'Tu pago fue rechazado. Revisa el comprobante y vuelve a enviarlo desde Membresía.'}</div>` : '';
-  v.innerHTML = `<h1>Hola, ${esc(ctx.profile?.full_name || '')}</h1><p class="muted">Tu semana en el Crowd</p>${statusNotice}
+  v.innerHTML = `${weekStrip(activeDays)}${statusNotice}
     ${ctx.isAdmin ? "" : !cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
     <div class="grid">
       ${ctx.modules.running ? `<div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div><div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div><div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>` : ''}
@@ -124,6 +182,12 @@ async function renderHome(v) {
     ${ctx.modules.running ? `<div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>` : ''}
     ${ctx.modules.plyo && ws.some((w) => w.kind === 'plyometrics') ? `<div class="card"><span class="muted">Última sesión de pliometría</span><br>${(() => { const recent = ws.find((w) => w.kind === 'plyometrics'); return recent ? `<b>${recent.performed_on}</b> · ${recent.workout_sets.length} series${recent.duration_min ? ' · ' + fmt(recent.duration_min, 0) + ' min' : ''}` : ''; })()}</div>` : ''}
     <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
+  clearTimeout(homeDayTimer);
+  const nextMidnight = new Date();
+  nextMidnight.setHours(24, 0, 5, 0);
+  homeDayTimer = setTimeout(() => {
+    if (ctx && (location.hash.slice(1) || 'inicio') === 'inicio') renderHome(v);
+  }, nextMidnight - Date.now());
 }
 
 /* ---------------- Membresía (pago por QR manual) ---------------- */
