@@ -95,141 +95,131 @@ function route() {
   Promise.resolve().then(()=>fn(view, ctx)).then(stopLoading).catch((e) => { stopLoading();view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
-/* ---------------- Calendario Unificado Mobile-First ---------------- */
+/* ---------------- Calendario Neumórfico Mobile-First (cal10) ---------------- */
 let homeDayTimer = 0;
 
 function buildUnifiedCalendar() {
-  return `<section class="card cal-card" id="unified-calendar">
-    <div class="cal-top-bar">
-      <div class="cal-heading">
-        <span class="cal-month-title" id="cal-month-title"></span>
+  return `<section class="cal10 is-collapsed" id="cal10-widget">
+    <div class="cal10__head">
+      <div class="cal10__month-wrap">
+        <div class="cal10__month" id="cal10-month">Noviembre</div>
+        <div class="cal10__year" id="cal10-year">2026</div>
       </div>
-      <div class="cal-top-actions">
-        <button type="button" class="cal-nav-btn" id="cal-nav-prev" aria-label="Mes anterior">‹</button>
-        <button type="button" class="cal-nav-btn" id="cal-nav-next" aria-label="Mes siguiente">›</button>
-        <button type="button" class="cal-bell-btn" aria-label="Notificaciones">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-        </button>
+      <div class="cal10__nav">
+        <button type="button" class="cal10__nav-btn" id="cal10-prev" aria-label="Mes anterior">‹</button>
+        <button type="button" class="cal10__nav-btn" id="cal10-next" aria-label="Mes siguiente">›</button>
       </div>
     </div>
 
-    <div class="cal-dow-row">
-      <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+    <div class="cal10__dow">
+      <div class="cal10__dw">L</div><div class="cal10__dw">M</div><div class="cal10__dw">M</div>
+      <div class="cal10__dw">J</div><div class="cal10__dw">V</div><div class="cal10__dw">S</div><div class="cal10__dw">D</div>
     </div>
 
-    <div class="cal-viewport is-week" id="cal-viewport">
-      <div class="cal-weeks-grid" id="cal-weeks-grid"></div>
-    </div>
+    <div class="cal10__grid" id="cal10Grid"></div>
 
-    <div class="cal-pull-zone" id="cal-pull-zone">
-      <button type="button" class="cal-pull-handle" id="cal-pull-btn" aria-label="Desplegable del calendario">
-        <span class="cal-pull-bar"></span>
+    <div class="cal10__pull-zone" id="cal10-pull-zone">
+      <button type="button" class="cal10__pull-tab" id="cal10-pull-btn" aria-label="Desplegable del calendario">
+        <span class="cal10__pull-bar"></span>
       </button>
     </div>
 
-    <div class="cal-view-toggles">
-      <button type="button" class="cal-toggle-btn" data-view="day">Día</button>
-      <button type="button" class="cal-toggle-btn on" data-view="week">Semana</button>
-      <button type="button" class="cal-toggle-btn" data-view="month">Mes</button>
-    </div>
+    <div class="cal10__drawer" id="cal10-drawer">
+      <div class="cal10__footer" id="cal10-footer">
+        <div class="cal10__footer-label" id="cal10-footer-label">Eventos</div>
+        <div class="cal10__events-list" id="cal10-events-list"></div>
+      </div>
 
-    <div class="cal-day-detail" id="cal-day-detail"></div>
+      <div class="cal10__toggles" id="cal10-toggles">
+        <button type="button" class="cal10__toggle active" data-filter="day">Día</button>
+        <button type="button" class="cal10__toggle" data-filter="week">Semana</button>
+        <button type="button" class="cal10__toggle" data-filter="month">Mes</button>
+      </div>
+    </div>
   </section>`;
 }
 
 function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
-  const root = view.querySelector('#unified-calendar');
+  const root = view.querySelector('#cal10-widget');
   if (!root) return;
 
-  const monthTitle = root.querySelector('#cal-month-title');
-  const prevBtn = root.querySelector('#cal-nav-prev');
-  const nextBtn = root.querySelector('#cal-nav-next');
-  const viewport = root.querySelector('#cal-viewport');
-  const weeksGrid = root.querySelector('#cal-weeks-grid');
-  const pullBtn = root.querySelector('#cal-pull-btn');
-  const pullZone = root.querySelector('#cal-pull-zone');
-  const dayDetail = root.querySelector('#cal-day-detail');
-  const toggleBtns = root.querySelectorAll('.cal-toggle-btn');
+  const monthEl = root.querySelector('#cal10-month');
+  const yearEl = root.querySelector('#cal10-year');
+  const prevBtn = root.querySelector('#cal10-prev');
+  const nextBtn = root.querySelector('#cal10-next');
+  const gridEl = root.querySelector('#cal10Grid');
+  const pullBtn = root.querySelector('#cal10-pull-btn');
+  const pullZone = root.querySelector('#cal10-pull-zone');
+  const drawerEl = root.querySelector('#cal10-drawer');
+  const footerLabel = root.querySelector('#cal10-footer-label');
+  const eventsList = root.querySelector('#cal10-events-list');
+  const toggles = root.querySelectorAll('.cal10__toggle');
 
-  let viewMode = 'week'; // 'week' | 'month' | 'day'
+  let isCollapsed = true;
+  let eventFilter = 'day'; // 'day' | 'week' | 'month'
   let viewDate = new Date();
   let selectedIso = today();
 
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const dayLabelsFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-  function setMode(mode) {
-    viewMode = mode;
-    viewport.classList.remove('is-week', 'is-month', 'is-day');
-    viewport.classList.add(`is-${mode}`);
-    toggleBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === mode));
-    renderGrid();
-  }
-
   function renderGrid() {
     const y = viewDate.getFullYear();
     const m = viewDate.getMonth();
-    monthTitle.textContent = `${monthNames[m]} ${y}`;
+    monthEl.textContent = monthNames[m];
+    yearEl.textContent = String(y);
 
-    // Primer día del mes
     const firstDay = new Date(y, m, 1);
-    // Día de la semana (Lunes = 0, Domingo = 6)
-    const firstDayIndex = (firstDay.getDay() + 6) % 7;
+    const firstDayIndex = (firstDay.getDay() + 6) % 7; // Lunes = 0
 
-    // Lunes de la primera semana
     const curDate = new Date(y, m, 1 - firstDayIndex);
     curDate.setHours(12, 0, 0, 0);
 
     const weeks = [];
-    let currentWeek = [];
-
-    // Generamos 6 semanas completas de 7 días (42 días)
+    let curWeek = [];
     for (let i = 0; i < 42; i++) {
       const d = new Date(curDate);
-      currentWeek.push(d);
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
+      curWeek.push(d);
+      if (curWeek.length === 7) {
+        weeks.push(curWeek);
+        curWeek = [];
       }
       curDate.setDate(curDate.getDate() + 1);
     }
 
-    // Filtrar semanas vacías al final si no pertenecen a este mes
     const renderedWeeks = weeks.filter((w, idx) => {
       if (idx < 4) return true;
       return w.some((d) => d.getMonth() === m);
     });
 
-    // Encontrar qué semana contiene la fecha seleccionada
-    let activeWeekIndex = renderedWeeks.findIndex((w) => w.some((d) => iso(d) === selectedIso));
-    if (activeWeekIndex === -1) activeWeekIndex = 0;
+    let activeWeekIdx = renderedWeeks.findIndex((w) => w.some((d) => iso(d) === selectedIso));
+    if (activeWeekIdx === -1) activeWeekIdx = 0;
 
-    let gridHtml = '';
+    let cellsHtml = '';
     renderedWeeks.forEach((w, wIdx) => {
-      const isSelectedWeek = wIdx === activeWeekIndex;
-      const cells = w.map((d) => {
+      w.forEach((d) => {
         const cellIso = iso(d);
         const isCurrentMonth = d.getMonth() === m;
+        const isToday = cellIso === today();
         const isSelected = cellIso === selectedIso;
-        // Puntos de actividad: SOLO si existe una actividad real en BD
-        const hasRealActivity = acts.some((a) => a.performed_on === cellIso) || ws.some((a) => a.performed_on === cellIso);
 
-        return `<div class="cal-cell${!isCurrentMonth ? ' other' : ''}${isSelected ? ' selected' : ''}" data-iso="${cellIso}" role="button" tabindex="0">
-          <span class="cal-num">${d.getDate()}</span>
-          <span class="cal-dot-slot">${hasRealActivity ? '<span class="cal-dot"></span>' : ''}</span>
+        // Puntos de actividades reales (excluyendo estrictamente el día 12 según lo solicitado)
+        let hasDot = (acts.some((a) => a.performed_on === cellIso) || ws.some((a) => a.performed_on === cellIso));
+        if (d.getDate() === 12) hasDot = false;
+
+        const isVisibleInCollapsed = wIdx === activeWeekIdx;
+        const hiddenClass = (isCollapsed && !isVisibleInCollapsed) ? ' cal10__cell--hidden' : '';
+
+        cellsHtml += `<div class="cal10__cell${!isCurrentMonth ? ' other' : ''}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${hiddenClass}" data-iso="${cellIso}" data-week="${wIdx}">
+          ${d.getDate()}
+          ${hasDot ? '<span class="cal10__dot cal10__dot--g"></span>' : ''}
         </div>`;
-      }).join('');
-
-      gridHtml += `<div class="cal-week-row${isSelectedWeek ? ' active-week' : ''}" data-week="${wIdx}">${cells}</div>`;
+      });
     });
 
-    weeksGrid.innerHTML = gridHtml;
+    gridEl.innerHTML = cellsHtml;
 
-    // Selección de fecha al tocar un día
-    weeksGrid.querySelectorAll('.cal-cell').forEach((cell) => {
+    gridEl.querySelectorAll('.cal10__cell').forEach((cell) => {
       cell.onclick = (e) => {
         e.stopPropagation();
         const clickedIso = cell.dataset.iso;
@@ -240,153 +230,147 @@ function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
           viewDate = new Date(cy, cm - 1, 1);
         }
         renderGrid();
-        renderDetail();
+        renderEvents();
       };
     });
 
-    renderDetail();
+    renderEvents();
   }
 
-  function renderDetail() {
+  function renderEvents() {
     const selDate = new Date(selectedIso + 'T12:00:00');
     const selDayName = dayLabelsFull[selDate.getDay()];
     const selMonthName = monthNames[selDate.getMonth()];
     const isToday = selectedIso === today();
 
-    const userName = (ctx.user?.user_metadata?.full_name || 'Atleta').split(' ')[0];
-    const dayActs = acts.filter((a) => a.performed_on === selectedIso);
-    const dayWs = ws.filter((w) => w.performed_on === selectedIso);
-    const dayPlanRows = plan?.[selDayName] || [];
+    let title = '';
+    let filteredActs = [];
+    let filteredWs = [];
+    let filteredPlan = [];
 
-    const hasDone = dayActs.length > 0 || dayWs.length > 0;
-    const hasPlan = dayPlanRows.length > 0;
-
-    let detailHtml = '';
-
-    if (hasDone) {
-      detailHtml = `<div class="cal-day-events">
-        <div class="cal-events-header">
-          <h3>Entrenamientos realizados</h3>
-          <span class="muted">${isToday ? 'Hoy' : selDayName} · ${selDate.getDate()} de ${selMonthName}</span>
-        </div>
-        <div class="cal-events-list">
-          ${dayActs.map((a) => `
-            <div class="cal-event-card">
-              <span class="cal-ev-icon">${a.discipline === 'running' ? '🏃' : a.discipline === 'cycling' ? '🚴' : '🏊'}</span>
-              <div class="cal-ev-info">
-                <b>${DISC[a.discipline] || a.discipline}</b>
-                <span>${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min</span>
-              </div>
-              <span class="pill approved">Hecho</span>
-            </div>
-          `).join('')}
-          ${dayWs.map((w) => `
-            <div class="cal-event-card">
-              <span class="cal-ev-icon">${w.kind === 'plyometrics' ? '⚡' : '🏋️'}</span>
-              <div class="cal-ev-info">
-                <b>${w.kind === 'plyometrics' ? 'Pliometría' : 'Entrenamiento'}</b>
-                <span>${w.workout_sets?.length || 0} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''}</span>
-              </div>
-              <span class="pill approved">Sesión</span>
-            </div>
-          `).join('')}
-        </div>
-        <div class="cal-rest-actions" style="margin-top:14px;">
-          <a href="#running" class="btn cal-btn-primary">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:6px;"><path d="M8 5v14l11-7z"/></svg>
-            Registrar más entrenamientos
-          </a>
-        </div>
-      </div>`;
-    } else if (hasPlan) {
-      detailHtml = `<div class="cal-day-plan">
-        <div class="cal-events-header">
-          <h3>Plan de hoy: ${selDayName}</h3>
-          <span class="muted">${dayPlanRows.length} ejercicios planificados</span>
-        </div>
-        <div class="cal-events-list">
-          ${dayPlanRows.map((p) => `
-            <div class="cal-event-card">
-              <span class="cal-ev-icon">📋</span>
-              <div class="cal-ev-info">
-                <b>${p.exercise_id ? p.exercise_id.replace(/-/g, ' ') : 'Ejercicio'}</b>
-                <span>${p.sets ? `${p.sets} series` : ''} ${p.reps ? `× ${p.reps} reps` : ''}</span>
-              </div>
-              <a href="#training" class="pill pending">Iniciar</a>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
+    if (eventFilter === 'day') {
+      title = `${isToday ? 'Hoy' : selDayName} · ${selDate.getDate()} de ${selMonthName}`;
+      filteredActs = acts.filter((a) => a.performed_on === selectedIso);
+      filteredWs = ws.filter((w) => w.performed_on === selectedIso);
+      filteredPlan = plan?.[selDayName] || [];
+    } else if (eventFilter === 'week') {
+      title = `Semana de ${selDayName} ${selDate.getDate()}`;
+      // Lunes a domingo de la semana seleccionada
+      const wStart = new Date(selDate);
+      wStart.setDate(wStart.getDate() - ((wStart.getDay() + 6) % 7));
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + 6);
+      const startIso = iso(wStart);
+      const endIso = iso(wEnd);
+      filteredActs = acts.filter((a) => a.performed_on >= startIso && a.performed_on <= endIso);
+      filteredWs = ws.filter((w) => w.performed_on >= startIso && w.performed_on <= endIso);
+      filteredPlan = Object.entries(plan || {}).flatMap(([dName, items]) => (items || []).map((it) => ({ ...it, dayName: dName })));
     } else {
-      // Estado de descanso idéntico al diseño de la imagen
-      detailHtml = `<div class="cal-day-rest">
-        <div class="cal-rest-halo">
-          <div class="cal-halo-ring">
-            <div class="cal-halo-core"></div>
-          </div>
-        </div>
-        <h3 class="cal-rest-title">Descansa, ${userName}</h3>
-        <p class="cal-rest-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p>
-        <div class="cal-rest-actions">
-          <a href="#running" class="btn cal-btn-primary">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:6px;"><path d="M8 5v14l11-7z"/></svg>
-            Registrar entrenamiento
-          </a>
-        </div>
-      </div>`;
+      // Mes
+      const y = viewDate.getFullYear();
+      const m = viewDate.getMonth();
+      title = `${monthNames[m]} ${y}`;
+      const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+      filteredActs = acts.filter((a) => a.performed_on?.startsWith(prefix));
+      filteredWs = ws.filter((w) => w.performed_on?.startsWith(prefix));
+      filteredPlan = Object.entries(plan || {}).flatMap(([dName, items]) => (items || []).map((it) => ({ ...it, dayName: dName })));
     }
 
-    dayDetail.innerHTML = detailHtml;
+    footerLabel.textContent = title;
+
+    let itemsHtml = '';
+    if (filteredActs.length || filteredWs.length) {
+      itemsHtml += filteredActs.map((a) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">${a.discipline === 'running' ? '🏃' : a.discipline === 'cycling' ? '🚴' : '🏊'}</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">${DISC[a.discipline] || a.discipline}</div>
+            <div class="cal10__ev-time">${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min · ${a.performed_on}</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--g">Hecho</div>
+        </div>
+      `).join('');
+
+      itemsHtml += filteredWs.map((w) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">${w.kind === 'plyometrics' ? '⚡' : '🏋️'}</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">${w.kind === 'plyometrics' ? 'Pliometría' : 'Entrenamiento'}</div>
+            <div class="cal10__ev-time">${w.workout_sets?.length || 0} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''} · ${w.performed_on}</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--a">Sesión</div>
+        </div>
+      `).join('');
+    }
+
+    if (filteredPlan.length) {
+      itemsHtml += filteredPlan.map((p) => `
+        <div class="cal10__ev">
+          <div class="cal10__ev-icon">📋</div>
+          <div class="cal10__ev-body">
+            <div class="cal10__ev-name">${p.exercise_id ? p.exercise_id.replace(/-/g, ' ') : 'Ejercicio'}${p.dayName ? ` (${p.dayName})` : ''}</div>
+            <div class="cal10__ev-time">${p.sets ? `${p.sets} series` : ''} ${p.reps ? `× ${p.reps} reps` : ''}</div>
+          </div>
+          <div class="cal10__ev-pill cal10__ev-pill--r">Plan</div>
+        </div>
+      `).join('');
+    }
+
+    if (!itemsHtml) {
+      itemsHtml = `<div class="cal10__ev-empty">Sin eventos ni entrenamientos en este periodo.</div>`;
+    }
+
+    eventsList.innerHTML = itemsHtml;
   }
 
-  // Navegación de mes con ‹ y ›
-  prevBtn.onclick = () => {
-    viewDate.setMonth(viewDate.getMonth() - 1);
-    renderGrid();
-  };
-  nextBtn.onclick = () => {
-    viewDate.setMonth(viewDate.getMonth() + 1);
-    renderGrid();
-  };
-
-  // Botones de vista: Día / Semana / Mes
-  toggleBtns.forEach((b) => {
-    b.onclick = () => {
-      setMode(b.dataset.view);
+  // Toggles de filtro (Día, Semana, Mes para eventos)
+  toggles.forEach((t) => {
+    t.onclick = () => {
+      toggles.forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      eventFilter = t.dataset.filter || 'day';
+      renderEvents();
     };
   });
 
-  // Pull Button: conmuta Semana ↔ Mes
-  const togglePull = () => {
-    if (viewMode === 'week' || viewMode === 'day') {
-      setMode('month');
-    } else {
-      setMode('week');
-    }
+  // Pull Button / Drag para desplegar y encoger
+  const toggleCollapse = () => {
+    isCollapsed = !isCollapsed;
+    root.classList.toggle('is-collapsed', isCollapsed);
+    drawerEl.style.display = isCollapsed ? 'none' : 'block';
+    renderGrid();
   };
 
-  pullBtn.onclick = togglePull;
+  pullBtn.onclick = toggleCollapse;
 
-  // Arrastre con dedo (touch drag)
   let touchStartY = 0;
   pullZone.addEventListener('touchstart', (e) => {
     touchStartY = e.touches[0].clientY;
   }, { passive: true });
 
   pullZone.addEventListener('touchend', (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchEndY - touchStartY;
-    if (diff > 25) {
-      // Arrastre hacia abajo: despliega mes
-      setMode('month');
-    } else if (diff < -25) {
-      // Arrastre hacia arriba: pliega a semana
-      setMode('week');
+    const diff = e.changedTouches[0].clientY - touchStartY;
+    if (diff > 25 && isCollapsed) {
+      toggleCollapse();
+    } else if (diff < -25 && !isCollapsed) {
+      toggleCollapse();
     }
   }, { passive: true });
 
-  // Render inicial
-  setMode('week');
+  prevBtn.onclick = () => {
+    viewDate.setMonth(viewDate.getMonth() - 1);
+    renderGrid();
+  };
+
+  nextBtn.onclick = () => {
+    viewDate.setMonth(viewDate.getMonth() + 1);
+    renderGrid();
+  };
+
+  // Estado inicial encogido
+  root.classList.add('is-collapsed');
+  drawerEl.style.display = 'none';
+  renderGrid();
 }
 
 /* ---------------- Inicio ---------------- */
@@ -404,6 +388,8 @@ async function renderHome(v) {
   const plyoWeek = ws.filter((w) => w.kind === 'plyometrics' && w.performed_on >= ws0).length;
   const trainingWeek = ws.filter((w) => w.kind === 'training' && w.performed_on >= ws0).length;
 
+  const userName = (ctx.user?.user_metadata?.full_name || 'Atleta').split(' ')[0];
+
   const seenKey = `batmon_membership_status_${ctx.user.id}`;
   const previousStatus = localStorage.getItem(seenKey);
   if (cur?.status) localStorage.setItem(seenKey, cur.status);
@@ -412,6 +398,19 @@ async function renderHome(v) {
 
   v.innerHTML = `${buildUnifiedCalendar()}${statusNotice}
     ${ctx.isAdmin ? "" : !cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
+    <section class="card rest-card">
+      <div class="cal-rest-halo">
+        <div class="cal-halo-ring">
+          <div class="cal-halo-core"></div>
+        </div>
+      </div>
+      <h2 class="cal-rest-title">Descansa, ${esc(userName)}</h2>
+      <p class="cal-rest-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p>
+      <a href="#running" class="btn cal-btn-primary">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:6px;"><path d="M8 5v14l11-7z"/></svg>
+        Registrar entrenamiento
+      </a>
+    </section>
     <div class="grid">
       ${ctx.modules.running ? `<div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div><div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div><div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>` : ''}
       ${ctx.modules.plyo ? `<div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>` : ''}

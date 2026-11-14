@@ -83,12 +83,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Admin → Socios → Eliminar: borra archivos de storage del socio y luego el RPC.
 - Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.
 
-## Inicio — calendario unificado mobile-first (14 nov)
-- Unificación en un solo componente de calendario (sin duplicación de fechas ni widgets anidados).
-- Cabecera única con Mes y Año, controles de navegación ‹ › y campana de notificaciones.
-- Fila fija de días LUN-DOM con números en color normal (sin colores rojos arbitrarios) y día seleccionado cubierto con círculo nítido.
-- Dots de actividad exclusivos para fechas con actividades reales registradas en Supabase (cero puntos inventados).
-- Despliegue interactivo Semana ↔ Mes: en modo Semana muestra únicamente los 7 días actuales; al pulsar o arrastrar (touch drag) la barra inferior hacia abajo se expande fluidamente mostrando todas las semanas del mes.
-- Toggles funcionales (Día / Semana / Mes).
-- Tarjeta de detalle y planificación del día: muestra "Descansa, [Nombre]" con botón directo "Registrar entrenamiento", o la lista de sesiones completadas y ejercicios planificados para el día seleccionado.
+## Inicio — calendario unificado mobile-first cal10 (14 nov)
+- Calendario neumórfico con sombras y luces duales exactas (`--shadow-out`, `--shadow-in`), fondo adaptado y selección con círculo en relieve suave (difuminado neumórfico con aro sutil) tal como el snippet cal10.
+- Modo encogido (Semana): muestra únicamente la fila de 7 días de la semana activa y la barra tiradora inferior, sin botones ni eventos visibles.
+- Modo desplegado (Mes): al pulsar o arrastrar la barra se muestra el mes completo y abajo el drawer con los eventos/planes del periodo y los toggles Día / Semana / Mes (que filtran los eventos de ese día, semana o mes).
+- Sin punto en el día 12 y puntos de actividad exclusivos para registros reales.
+- Tarjeta de descanso separada ("Descansa, [Nombre]") ubicada abajo fuera del calendario, con acceso directo a Registrar entrenamiento.
 - Archivos: `src/app/app.js`, `src/app/app.css`.
