@@ -120,6 +120,7 @@ function showRecovery(view) {
     const button = $('.auth-submit', view);
     const message = $('#recovery-msg', view);
     const phone = $('#recovery-phone', view).value.replace(/\D/g, '');
+    const username = $('#recovery-username', view).value.trim().toLowerCase();
     const password = $('#new-password', view).value;
     if (!/^\d{8}$/.test(phone)) { message.textContent = 'El número debe tener exactamente 8 dígitos.'; return; }
     if (password !== $('#confirm-password', view).value) { message.textContent = 'Las contraseñas no coinciden.'; return; }
