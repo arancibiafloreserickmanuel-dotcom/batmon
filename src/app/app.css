@@ -227,5 +227,19 @@ body.appbody .stepper button,body.appbody button[data-act="rmex"]{background:tra
 body.appbody .stepper button:active,body.appbody button[data-act="rmex"]:active{background:transparent;box-shadow:none;transform:scale(.92)}
 body.appbody button.link{padding:0;background:transparent;color:var(--ink);border:0;border-radius:0;box-shadow:none}
 body.appbody button.link:active{background:transparent;box-shadow:none;transform:none}
+/* Perfil: navegación de módulos y contenido sin placas ni relieve de botón. */
+body.appbody .profile-highlights .module-highlight,
+body.appbody .profile-media-tabs button{appearance:none;min-height:0;margin:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;transform:none;color:var(--muted);}
+body.appbody .profile-highlights .module-highlight:hover,
+body.appbody .profile-highlights .module-highlight:active,
+body.appbody .profile-media-tabs button:hover,
+body.appbody .profile-media-tabs button:active{background:transparent!important;box-shadow:none!important;transform:none!important;}
+body.appbody .profile-highlights .module-highlight>span{background:transparent;box-shadow:none;border-radius:50%;}
+body.appbody .profile-highlights .module-highlight.selected{color:var(--ink);}
+body.appbody .profile-highlights .module-highlight.selected>span{outline:2px solid var(--ink);outline-offset:2px;}
+body.appbody .profile-media-tabs{border:0;background:transparent;}
+body.appbody .profile-media-tabs button{border-bottom:2px solid transparent!important;}
+body.appbody .profile-media-tabs button.on{color:var(--ink);border-bottom-color:var(--ink)!important;}
+body.appbody .profile-media-tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
 /* iOS Safari aplica zoom al enfocar campos con texto menor a 16 px. */
 body.appbody .auth-input{font-size:16px}
