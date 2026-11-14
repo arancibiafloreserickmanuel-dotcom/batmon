@@ -11,6 +11,10 @@ function inputField(id, label, type = 'text', attrs = '') {
   return `<div class="auth-field"><input id="${id}" class="auth-input" type="${type}" placeholder=" " ${attrs}><svg class="auth-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><label class="auth-label" for="${id}">${label}</label></div>`;
 }
 
+function backMarkup(label) {
+  return `<span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">${label}</span>`;
+}
+
 function friendlySignupError(error) {
   const message = String(error?.message || '');
   if (/FunctionsFetchError|Failed to fetch/i.test(message)) {
@@ -37,7 +41,7 @@ export function showLogin(view, signup = false) {
   const theme = themeName();
   document.body.dataset.theme = theme;
   view.innerHTML = `
-    <section class="auth-layout"><a class="auth-back" href="/" aria-label="Volver a la página principal">← Volver</a><h1>Bienvenido<br>al Crowd</h1><p class="muted">${signup ? 'Crea tu cuenta de socio.' : 'Ingresa con tu usuario.'}</p>
+    <section class="auth-layout"><a class="auth-back animated-back" href="/" aria-label="Volver a la página principal">${backMarkup('Volver')}</a><h1>Bienvenido<br>al Crowd</h1><p class="muted">${signup ? 'Crea tu cuenta de socio.' : 'Ingresa con tu usuario.'}</p>
     <form id="lf" class="auth-card auth-theme-${theme}">
       <p class="auth-title">${signup ? 'Crear cuenta' : 'Iniciar sesión'}</p>
       ${signup ? inputField('nm', 'Nombre completo', 'text', 'autocomplete="name" maxlength="100" required') : ''}
@@ -113,7 +117,7 @@ export function showLogin(view, signup = false) {
 }
 
 function showRecovery(view) {
-  view.innerHTML = `<section class="auth-layout"><button class="auth-back" id="recovery-login" type="button">← Volver al inicio de sesión</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe tu usuario y el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos. Si tu cuenta admin se creó con Google, entra con Google y configura una contraseña en Perfil → Configuración.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
+  view.innerHTML = `<section class="auth-layout"><button class="auth-back animated-back" id="recovery-login" type="button">${backMarkup('Volver al inicio de sesión')}</button><h1>Recuperar<br>contraseña</h1><p class="muted">Escribe tu usuario y el número de 8 dígitos registrado y elige una contraseña nueva.</p><form id="recovery-form" class="auth-card auth-theme-${themeName()}"><p class="auth-title">Verifica tu número</p>${inputField('recovery-username', 'Usuario', 'text', 'autocomplete="username" autocapitalize="none" required')}${inputField('recovery-phone', 'Número de teléfono (8 dígitos)', 'tel', 'autocomplete="tel-national" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required')}${inputField('new-password', 'Nueva contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}${inputField('confirm-password', 'Repite la contraseña', 'password', 'autocomplete="new-password" minlength="8" required')}<small class="auth-hint">No enviaremos mensajes ni códigos. Si tu cuenta admin se creó con Google, entra con Google y configura una contraseña en Perfil → Configuración.</small><p class="auth-msg" id="recovery-msg" aria-live="polite"></p><button class="auth-submit" type="submit">Cambiar contraseña</button></form></section>`;
   $('#recovery-login', view).onclick = () => showLogin(view);
   $('#recovery-form', view).onsubmit = async (event) => {
     event.preventDefault();
@@ -135,7 +139,7 @@ function showRecovery(view) {
       button.disabled = false;
       return;
     }
-    view.innerHTML = `<section class="auth-layout"><h1>Cuenta<br>recuperada</h1><section class="auth-card auth-theme-${themeName()}"><p class="auth-title">Contraseña actualizada</p><p class="muted">Ya puedes iniciar sesión con tu usuario y contraseña.</p><button class="auth-submit" id="recovery-done" type="button">Volver al inicio</button></section></section>`;
+    view.innerHTML = `<section class="auth-layout"><h1>Cuenta<br>recuperada</h1><section class="auth-card auth-theme-${themeName()}"><p class="auth-title">Contraseña actualizada</p><p class="muted">Ya puedes iniciar sesión con tu usuario y contraseña.</p><button class="auth-submit animated-back" id="recovery-done" type="button">${backMarkup('Volver al inicio')}</button></section></section>`;
     $('#recovery-done', view).onclick = () => showLogin(view);
   };
 }

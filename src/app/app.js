@@ -26,6 +26,12 @@ function applyTheme(preference) {
   document.body.dataset.theme = theme;
 }
 
+function decorateBackButton(button,label=button.textContent.replace(/^\s*←\s*/,'')) {
+  if(!button)return;
+  button.classList.add('animated-back');
+  button.innerHTML=`<span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">${esc(label)}</span>`;
+}
+
 /* ---------------- Login / registro / recuperación ---------------- */
 function showNewPassword() {
   view.innerHTML = `<h1>Nueva contraseña</h1><p class="muted">Elige una contraseña de al menos 6 caracteres.</p><form id="newpass" class="card"><label for="np">Contraseña nueva</label><input id="np" type="password" minlength="6" autocomplete="new-password" required><button class="btn" type="submit">Guardar contraseña</button><p class="msg" id="npm"></p></form>`;
@@ -140,6 +146,7 @@ async function renderMembership(v) {
       <div class="wallet-pocket"><svg viewBox="0 0 280 160" aria-hidden="true"><path d="M0 20C0 10 5 10 10 10c10 0 15 15 30 15h200c15 0 20-15 30-15 5 0 10 0 10 10v100c0 35-20 40-40 40H40C20 160 0 155 0 120Z" fill="#242424"/><path d="M8 22c0-6 4-6 7-6 8 0 12 13 25 13h200c13 0 17-13 25-13 3 0 7 0 7 6v98c0 30-17 32-32 32H40c-15 0-32-2-32-32Z" stroke="#a3a3a3" stroke-width="1.5" stroke-dasharray="6 4"/></svg><div class="wallet-pocket-content"><strong>200 Bs</strong><span>Membresía mensual</span><small>Elige tu forma de pago</small></div></div>
     </div></section>
     ${mems.length ? `<h2>Mis pagos</h2><div class="activity-list">${mems.map((m) => `<div class="card activity-card"><b>${m.period.slice(0, 7)} · ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'}</b><span class="pill ${m.status}">${STATUS[m.status]}</span></div>`).join('')}</div>` : ''}`;
+  decorateBackButton($('#membership-back',v));
   $('#membership-back',v).onclick=()=>renderProfile(v);
   if (!canPay) return;
   const openModal=(html)=>{const modal=document.createElement('div');modal.className='modal payment-modal';modal.innerHTML=`<section class="sheet payment-sheet" role="dialog" aria-modal="true">${html}</section>`;modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-payment-close]'))modal.remove();});document.body.append(modal);return modal;};
@@ -208,6 +215,7 @@ async function renderProfile(v) {
 
 async function renderNotifications(v) {
   v.innerHTML='<section class="community-notifications"><button class="link" id="notifications-back">← Volver al perfil</button><h1>Notificaciones</h1><p class="muted">Novedades y actividad de tu comunidad.</p><div id="notifications-list" class="notifications-list"><p class="muted">Cargando notificaciones…</p></div></section>';
+  decorateBackButton($('#notifications-back',v));
   $('#notifications-back',v).onclick=()=>renderProfile(v);
   const list=$('#notifications-list',v);
   const [{data:friendships=[],error:friendError},{data:directory=[],error:directoryError}]=await Promise.all([
@@ -229,6 +237,7 @@ async function renderNotifications(v) {
 function renderMyData(v) {
   const pf=ctx.profile||{};const at=x=>esc(x||'');
   v.innerHTML=`<div class="profile-settings"><button class="link" id="my-data-back">← Volver a Configuración</button><h1>Mis datos</h1><form id="account-data-form" class="card account-login-settings"><h2>Datos personales</h2><label for="ad-name">Nombre completo</label><input id="ad-name" value="${at(pf.full_name)}" maxlength="100" required><label for="ad-user">Usuario</label><input id="ad-user" value="${at(pf.username)}" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_.-]{3,24}" autocomplete="username" required><label for="ad-carnet">Carnet</label><input id="ad-carnet" value="${at(pf.carnet_number)}" maxlength="32" required><label for="ad-phone">Teléfono (8 dígitos, para recuperar contraseña)</label><input id="ad-phone" value="${at(pf.recovery_phone)}" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required><label for="ad-mail">Correo de contacto (opcional)</label><input id="ad-mail" type="email" value="${at(pf.contact_email)}"><button class="btn ghost" type="submit">Guardar datos</button><p class="msg" id="ad-msg" aria-live="polite"></p></form><form id="account-pass-form" class="card account-login-settings"><h2>Cambiar contraseña</h2><label for="ap-new">Nueva contraseña</label><input id="ap-new" type="password" minlength="8" autocomplete="new-password" placeholder="Al menos 8 caracteres" required><button class="btn ghost" type="submit">Cambiar contraseña</button><p class="msg" id="ap-msg" aria-live="polite"></p></form></div>`;
+  decorateBackButton($('#my-data-back',v));
   $('#my-data-back',v).onclick=()=>renderProfileSettings(v);
   $('#account-data-form',v).onsubmit=async e=>{
     e.preventDefault();const msg=$('#ad-msg',v);const button=$('#account-data-form button',v);button.disabled=true;msg.className='msg';msg.textContent='Guardando…';
@@ -253,11 +262,13 @@ function renderProfileSettings(v) {
   const forced=ctx.themePolicy!=='choice';
   const isDark=(forced?ctx.themePolicy:saved)==='dark';
   v.innerHTML=`<div class="profile-settings"><button class="link" id="settings-back">← Volver al perfil</button><h1>Configuración</h1><section class="theme-preference"><h2 class="theme-setting-title">Tema</h2><label class="theme-switch" aria-label="Cambiar entre tema claro de día y tema oscuro de noche"><input id="user-theme" class="theme-switch__checkbox" type="checkbox" ${isDark?'checked':''} ${forced?'disabled':''}><span class="theme-switch__container" aria-hidden="true"><span class="theme-switch__clouds"></span><span class="theme-switch__stars-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 55" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M135.831 3.00688C135.055 3.85027 134.111 4.29946 133 4.35447C134.111 4.40947 135.055 4.85867 135.831 5.71123C136.607 6.55462 136.996 7.56303 136.996 8.72727C136.996 7.95722 137.172 7.25134 137.525 6.59129C137.886 5.93124 138.372 5.39954 138.98 5.00535C139.598 4.60199 140.268 4.39114 141 4.35447C139.88 4.2903 138.936 3.85027 138.16 3.00688C137.384 2.16348 136.996 1.16425 136.996 0C136.996 1.16425 136.607 2.16348 135.831 3.00688ZM31 23.3545C32.1114 23.2995 33.0551 22.8503 33.8313 22.0069C34.6075 21.1635 34.9956 20.1642 34.9956 19C34.9956 20.1642 35.3837 21.1635 36.1599 22.0069C36.9361 22.8503 37.8798 23.2903 39 23.3545C38.2679 23.3911 37.5976 23.602 36.9802 24.0053C36.3716 24.3995 35.8864 24.9312 35.5248 25.5913C35.172 26.2513 34.9956 26.9572 34.9956 27.7273C34.9956 26.563 34.6075 25.5546 33.8313 24.7112C33.0551 23.8587 32.1114 23.4095 31 23.3545ZM0 36.3545C1.11136 36.2995 2.05513 35.8503 2.83131 35.0069C3.6075 34.1635 3.99559 33.1642 3.99559 32C3.99559 33.1642 4.38368 34.1635 5.15987 35.0069C5.93605 35.8503 6.87982 36.2903 8 36.3545C7.26792 36.3911 6.59757 36.602 5.98015 37.0053C5.37155 37.3995 4.88644 37.9312 4.52481 38.5913C4.172 39.2513 3.99559 39.9572 3.99559 40.7273C3.99559 39.563 3.6075 38.5546 2.83131 37.7112C2.05513 36.8587 1.11136 36.4095 0 36.3545ZM56.8313 24.0069C56.0551 24.8503 55.1114 25.2995 54 25.3545C55.1114 25.4095 56.0551 25.8587 56.8313 26.7112C57.6075 27.5546 57.9956 28.563 57.9956 29.7273C57.9956 28.9572 58.172 28.2513 58.5248 27.5913C58.8864 26.9312 59.3716 26.3995 59.9802 26.0053C60.5976 25.602 61.2679 25.3911 62 25.3545C60.8798 25.2903 59.9361 24.8503 59.1599 24.0069C58.3837 23.1635 57.9956 22.1642 57.9956 21C57.9956 22.1642 58.3837 23.1635 59.1599 24.0069C59.9361 24.8503 60.8798 25.2903 62 25.3545ZM81 25.3545C82.1114 25.2995 83.0551 24.8503 83.8313 24.0069C84.6075 23.1635 84.9956 22.1642 84.9956 21C84.9956 22.1642 85.3837 23.1635 86.1599 24.0069C86.9361 24.8503 87.8798 25.2903 89 25.3545C88.2679 25.3911 87.5976 25.602 86.9802 26.0053C86.3716 26.3995 85.8864 26.9312 85.5248 27.5913C85.172 28.2513 84.9956 28.9572 84.9956 29.7273C84.9956 28.563 85.172 28.2513 85.5248 27.5913ZM136 36.3545C137.111 36.2995 138.055 35.8503 138.831 35.0069C139.607 34.1635 139.996 33.1642 139.996 32C139.996 33.1642 140.384 34.1635 141.16 35.0069C141.936 35.8503 142.88 36.2903 144 36.3545C143.268 36.3911 142.598 36.602 141.98 37.0053C141.372 37.3995 140.886 37.9312 140.525 38.5913C140.172 39.2513 139.996 39.9572 139.996 40.7273C139.996 39.563 139.607 38.5546 138.831 37.7112C138.055 36.8587 137.111 36.4095 136 36.3545ZM101.831 49.0069C101.055 49.8503 100.111 50.2995 99 50.3545C100.111 50.4095 101.055 50.8587 101.831 51.7112C102.607 52.5546 102.996 53.563 102.996 54.7273C102.996 53.9572 103.172 53.2513 103.525 52.5913C103.886 51.9312 104.372 51.3995 104.98 51.0053C105.598 50.602 106.268 50.3911 107 50.3545C105.88 50.2903 104.936 49.8503 104.16 49.0069C103.384 48.1635 102.996 47.1642 102.996 46C102.996 47.1642 102.607 48.1635 101.831 49.0069Z" fill="currentColor"/></svg></span><span class="theme-switch__circle-container"><span class="theme-switch__sun-moon-container"><span class="theme-switch__moon"><i class="theme-switch__spot"></i><i class="theme-switch__spot"></i><i class="theme-switch__spot"></i></span></span></span></span></label></section>${ctx.isAdmin?'<a class="btn ghost settings-admin" href="/admin.html">Administración</a>':''}<button id="settings-logout" class="btn ghost settings-logout">Cerrar sesión</button></div>`;
+  decorateBackButton($('#settings-back',v));
   $('#settings-back',v).onclick=()=>renderProfile(v);
   $('#user-theme',v).onchange=e=>{const theme=e.target.checked?'dark':'light';localStorage.setItem(`batmon_theme_${ctx.user.id}`,theme);applyTheme(theme);};
   const dataButton=document.createElement('button');dataButton.type='button';dataButton.id='settings-my-data';dataButton.className='btn ghost settings-my-data';dataButton.textContent='Mis datos';
   $('h1',v).insertAdjacentElement('afterend',dataButton);
   dataButton.onclick=()=>renderMyData(v);
+  decorateBackButton($('#settings-logout',v),'Cerrar sesión');
   $('#settings-logout',v).onclick=async()=>{if(window.confirm('¿Seguro que quieres cerrar sesión?')) await supabase.auth.signOut();};
 }
 

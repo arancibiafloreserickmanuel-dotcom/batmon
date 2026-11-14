@@ -296,6 +296,22 @@ body.appbody[data-theme="light"] .auth-input:focus{background:#fff;box-shadow:8p
 body.appbody[data-theme="dark"] .auth-input{background:#171717;color:#fff;box-shadow:inset 2px 5px 10px #050505}
 body.appbody[data-theme="dark"] .auth-input:focus{background:#202020;box-shadow:inset 2px 5px 10px #050505,0 0 0 1px #555}
 
+/* Botón compacto animado para volver y salir, con el relieve compartido. */
+body.appbody[data-theme="light"]{--back-sweep:#090909;--back-sweep-icon:#fff;--back-sweep-label:#fff}
+body.appbody[data-theme="dark"]{--back-sweep:#fff;--back-sweep-icon:#090909;--back-sweep-label:#090909}
+body.appbody :is(button,a).animated-back{position:relative;display:inline-flex;width:max-content;min-width:132px;height:42px;min-height:42px;align-items:center;justify-content:center;overflow:hidden;margin:0;padding:4px 14px 4px 42px;border:1px solid var(--button-border);border-radius:12px;background:var(--button-face);color:var(--button-ink);box-shadow:var(--button-shadow);font:600 12px Inter,sans-serif;letter-spacing:.01em;text-decoration:none;cursor:pointer;transition:box-shadow .25s ease,transform .25s ease}
+body.appbody .animated-back-sweep{position:absolute;z-index:1;top:4px;left:4px;display:grid;width:32px;height:32px;place-items:center;overflow:hidden;border-radius:9px;background:var(--back-sweep);transition:width .4s ease}
+body.appbody .animated-back-sweep svg{display:block;width:18px;height:18px;flex:0 0 18px;fill:var(--back-sweep-icon)}
+body.appbody .animated-back-label{position:relative;z-index:2;white-space:nowrap;color:var(--button-ink);transition:color .25s ease}
+body.appbody :is(button,a).animated-back:hover .animated-back-sweep{width:calc(100% - 8px)}
+body.appbody :is(button,a).animated-back:hover .animated-back-label{color:var(--back-sweep-label)}
+body.appbody :is(button,a).animated-back:active{transform:scale(.98);box-shadow:var(--button-shadow-active)}
+body.appbody :is(button,a).animated-back:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+body.appbody .animated-back.settings-logout{width:100%;justify-content:flex-start;padding-left:48px}
+body.appbody .animated-back.settings-logout .animated-back-label{margin:auto}
+body.appbody .animated-back.auth-submit{margin:8px 0;padding-left:42px}
+@media(prefers-reduced-motion:reduce){body.appbody .animated-back,body.appbody .animated-back-sweep,body.appbody .animated-back-label{transition:none}}
+
 /* ojo de contraseña */
 .auth-field,.pw-wrap{position:relative}.pw-wrap{display:block}
 .pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;background:none;border:0;cursor:pointer;color:#777;padding:0}
