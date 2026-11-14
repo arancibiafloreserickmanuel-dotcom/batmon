@@ -314,6 +314,9 @@ body.appbody :is(button,a).animated-back:focus-visible{outline:2px solid var(--i
 body.appbody .animated-back.settings-logout{width:100%;justify-content:flex-start;padding-left:48px}
 body.appbody .animated-back.settings-logout .animated-back-label{margin:auto}
 body.appbody .animated-back.auth-submit{margin:8px 0;padding-left:42px}
+body.appbody #settings-logout{transition:background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+body.appbody #settings-logout:hover,body.appbody #settings-logout:focus-visible{background:#c62828!important;border-color:#c62828!important;color:#fff!important;box-shadow:0 4px 14px #c628284d!important}
+body.appbody #settings-logout:active{background:#a71919!important;border-color:#a71919!important;color:#fff!important;box-shadow:inset 0 2px 5px #680d0d!important}
 @media(prefers-reduced-motion:reduce){body.appbody .animated-back,body.appbody .animated-back-sweep,body.appbody .animated-back-label{transition:none}}
 
 /* ojo de contraseña */

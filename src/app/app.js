@@ -268,7 +268,6 @@ function renderProfileSettings(v) {
   const dataButton=document.createElement('button');dataButton.type='button';dataButton.id='settings-my-data';dataButton.className='btn ghost settings-my-data';dataButton.textContent='Mis datos';
   $('h1',v).insertAdjacentElement('afterend',dataButton);
   dataButton.onclick=()=>renderMyData(v);
-  decorateBackButton($('#settings-logout',v),'Cerrar sesión');
   $('#settings-logout',v).onclick=async()=>{if(window.confirm('¿Seguro que quieres cerrar sesión?')) await supabase.auth.signOut();};
 }
 
