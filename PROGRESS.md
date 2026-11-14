@@ -83,8 +83,12 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Admin → Socios → Eliminar: borra archivos de storage del socio y luego el RPC.
 - Google OAuth: configuración en PROMPT_CLAUDE_CHROME_4.md.
 
-## Inicio — calendario semanal y desplegable mensual cal10 (14 nov)
-- En Inicio, cabecera de fecha simplificada como texto limpio (sin botón, sin flecha hacia abajo ni círculo de progreso).
-- Calendario semanal compacto mobile-first con días LUN-DOM, día actual destacado en círculo e indicadores de actividad.
-- Desplegable interactivo cal10 activado mediante la lengüeta inferior: navegación mensual por año/mes, días con dots de actividad, selector de fechas y lista de planificaciones/actividades vinculadas a la fecha seleccionada (actividades realizadas + ejercicios del plan semanal).
+## Inicio — calendario unificado mobile-first (14 nov)
+- Unificación en un solo componente de calendario (sin duplicación de fechas ni widgets anidados).
+- Cabecera única con Mes y Año, controles de navegación ‹ › y campana de notificaciones.
+- Fila fija de días LUN-DOM con números en color normal (sin colores rojos arbitrarios) y día seleccionado cubierto con círculo nítido.
+- Dots de actividad exclusivos para fechas con actividades reales registradas en Supabase (cero puntos inventados).
+- Despliegue interactivo Semana ↔ Mes: en modo Semana muestra únicamente los 7 días actuales; al pulsar o arrastrar (touch drag) la barra inferior hacia abajo se expande fluidamente mostrando todas las semanas del mes.
+- Toggles funcionales (Día / Semana / Mes).
+- Tarjeta de detalle y planificación del día: muestra "Descansa, [Nombre]" con botón directo "Registrar entrenamiento", o la lista de sesiones completadas y ejercicios planificados para el día seleccionado.
 - Archivos: `src/app/app.js`, `src/app/app.css`.
