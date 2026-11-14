@@ -52,7 +52,7 @@ async function boot(user) {
   (globalRows || []).forEach(row => { globals[row.module_key] = row.enabled; });
   const members = Object.fromEntries((moduleRows || []).map(row => [row.module_key, row.enabled]));
   const modules = Object.fromEntries(Object.keys(globals).map(key => [key, globals[key] && members[key] !== false]));
-  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: membership?.status === 'approved', modules, themePolicy: appearance?.theme_policy || 'choice' };
+  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: profile?.role === 'admin' || membership?.status === 'approved', modules, themePolicy: appearance?.theme_policy || 'choice' };
   applyTheme();
   if (!hasMemberIdentity(profile)) {
     $('#tabs').hidden = true;
@@ -109,7 +109,7 @@ async function renderHome(v) {
   const statusNotice = previousStatus && cur?.status && previousStatus !== cur.status && ['approved', 'rejected'].includes(cur.status)
     ? `<div class="card ${cur.status === 'approved' ? 'okbox' : 'warn'}">${cur.status === 'approved' ? '¡Tu pago fue aprobado! Ya puedes registrar entrenamientos.' : 'Tu pago fue rechazado. Revisa el comprobante y vuelve a enviarlo desde Membresía.'}</div>` : '';
   v.innerHTML = `<h1>Hola, ${esc(ctx.profile?.full_name || '')}</h1><p class="muted">Tu semana en el Crowd</p>${statusNotice}
-    ${!cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
+    ${ctx.isAdmin ? "" : !cur || cur.status === 'rejected' ? `<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>` : cur.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : ''}
     <div class="grid">
       ${ctx.modules.running ? `<div class="card stat"><b>${fmt(km('running'))} km</b><span>Running · semana</span></div><div class="card stat"><b>${fmt(km('cycling'))} km</b><span>Ciclismo · semana</span></div><div class="card stat"><b>${fmt(km('swimming'))} km</b><span>Natación · semana</span></div>` : ''}
       ${ctx.modules.plyo ? `<div class="card stat"><b>${plyoWeek}</b><span>Pliometría · sesiones</span></div>` : ''}
