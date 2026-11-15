@@ -167,3 +167,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Los avatares están en `profile-media` privado. Nueva migración `0016_event_attendee_avatars.sql` permite leer solo archivos `avatar-*` de socios confirmados; debe aplicarse en Supabase antes de que aparezcan fotos ajenas. No se ejecutó SQL remoto.
 - Indicador de evento verde actualizado a verde oscuro. Hora de eventos del calendario formateada desde `event_date`.
 - Archivos: `src/app/app.js`, `src/app/app.css`, `supabase/migrations/0016_event_attendee_avatars.sql`. `npm run build` correcto; `git diff --check` limpio.
+
+## Animación compacta de volver/cerrar y cabecera admin (15 nov)
+- Se reutiliza la animación de volver en cierres de modales, en tamaño compacto; se mantienen tamaños normales en páginas completas.
+- Cabecera admin ordenada con marca ADMIN, nombre y avatar del administrador, y botón animado «Volver a la app», adaptado a móvil.
+- `npm run build` pasó; `git diff --check` limpio.

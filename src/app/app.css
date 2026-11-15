@@ -916,3 +916,27 @@ body.appbody .event-detail-close{position:absolute;z-index:3;top:20px;right:20px
 .event-attendee img,.event-attendee-initials{display:grid;width:42px;height:42px;place-items:center;overflow:hidden;border:1px solid var(--line);border-radius:50%;background:var(--card-surface);color:var(--ink);object-fit:cover;font-size:11px;font-weight:700;box-shadow:var(--card-shadow-a,3px 3px 7px #0002),var(--card-shadow-b,-3px -3px 7px #fff2);}
 .event-attendee small{display:block;width:100%;overflow:hidden;color:var(--muted);font-size:9px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap;}
 @media(min-width:560px){.event-detail-sheet{align-self:center;margin:auto;border-radius:20px;}}
+
+/* Versión compacta de la animación volver/cerrar para ventanas pequeñas. */
+body.appbody :is(button,a).animated-back-compact{min-width:88px;width:max-content;height:32px;min-height:32px;padding:3px 9px 3px 33px;border-radius:9px;font-size:10px;letter-spacing:0;}
+body.appbody .animated-back-compact .animated-back-sweep{top:3px;left:3px;width:24px;height:24px;border-radius:7px;}
+body.appbody .animated-back-compact .animated-back-sweep svg{width:14px;height:14px;flex-basis:14px;}
+body.appbody :is(button,a).animated-back-compact:hover .animated-back-sweep,
+body.appbody :is(button,a).animated-back-compact:focus-visible .animated-back-sweep{width:calc(100% - 6px);}
+body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:18px;right:18px;}
+
+/* Cabecera del administrador: marca, identidad y retorno a la app. */
+body.appbody .admin-header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:clamp(8px,2vw,18px);padding:9px clamp(12px,3vw,24px);min-height:62px;}
+.admin-brand{min-width:0;}
+.admin-brand span{font-family:Anton,sans-serif;font-size:17px;letter-spacing:.04em;}
+.admin-header-user{display:flex;min-width:0;align-items:center;gap:9px;justify-self:center;}
+.admin-header-user>div{display:grid;min-width:0;gap:2px;}
+.admin-header-user small{color:var(--muted);font:500 8px 'IBM Plex Mono',monospace;letter-spacing:.15em;}
+.admin-header-user b{max-width:clamp(74px,24vw,220px);overflow:hidden;color:var(--ink);font-size:12px;text-overflow:ellipsis;white-space:nowrap;}
+.admin-header-avatar{display:grid;width:36px;height:36px;flex:0 0 36px;place-items:center;overflow:hidden;border:1px solid var(--line);border-radius:50%;background:var(--card-surface);color:var(--ink);font:15px Anton,sans-serif;box-shadow:var(--card-shadow-a,3px 3px 7px #0002),var(--card-shadow-b,-3px -3px 7px #fff2);}
+.admin-header-avatar img{width:100%;height:100%;object-fit:cover;}
+body.appbody .admin-header-back{min-width:128px;height:38px;min-height:38px;padding:4px 10px 4px 40px;border-radius:11px;font-size:10px;letter-spacing:0;white-space:nowrap;}
+body.appbody .admin-header-back .animated-back-sweep{top:4px;left:4px;width:28px;height:28px;border-radius:8px;}
+body.appbody .admin-header-back .animated-back-sweep svg{width:16px;height:16px;flex-basis:16px;}
+body.appbody .admin-header-back:hover .animated-back-sweep,body.appbody .admin-header-back:focus-visible .animated-back-sweep{width:calc(100% - 8px);}
+@media(max-width:420px){body.appbody .admin-header{gap:7px;padding-inline:9px}.admin-brand{gap:6px}.admin-brand img{width:20px;height:20px}.admin-brand span{font-size:14px}.admin-header-user{gap:5px}.admin-header-avatar{width:30px;height:30px;flex-basis:30px}body.appbody .admin-header-user b{max-width:78px;font-size:10px}body.appbody .admin-header-back{min-width:106px;height:34px;min-height:34px;padding-left:34px;padding-right:7px;font-size:9px}body.appbody .admin-header-back .animated-back-sweep{top:3px;left:3px;width:26px;height:26px}}

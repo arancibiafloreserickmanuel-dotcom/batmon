@@ -17,10 +17,18 @@ const TABS = [
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
+function decorateAdminBackButton(button,label='Cerrar',compact=false){
+  if(!button)return;
+  button.classList.add('animated-back');
+  if(compact)button.classList.add('animated-back-compact');
+  button.innerHTML=`<span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">${esc(label)}</span>`;
+}
+
 function modal(html) {
   const m = document.createElement('div');
   m.className = 'modal';
   m.innerHTML = `<div class="sheet">${html}</div>`;
+  m.querySelectorAll('[data-close]').forEach(button=>decorateAdminBackButton(button,'Cerrar',true));
   m.onclick = (e) => { if (e.target === m) m.remove(); };
   document.body.appendChild(m);
   return m;
@@ -51,7 +59,8 @@ async function pagos() {
 
   $('#body').querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => {
     const id = b.dataset.proof; const overlay = document.createElement('div'); overlay.className = 'proof-viewer';
-    overlay.innerHTML = `<button type="button" class="btn" data-close>Cerrar</button><a class="btn ghost" href="${urls[id]}" target="_blank" rel="noopener">Abrir en pestaña</a><img src="${urls[id]}" alt="Comprobante de pago">`;
+    overlay.innerHTML = `<button type="button" class="link" data-close>Cerrar</button><a class="btn ghost" href="${urls[id]}" target="_blank" rel="noopener">Abrir en pestaña</a><img src="${urls[id]}" alt="Comprobante de pago">`;
+    decorateAdminBackButton(overlay.querySelector('[data-close]'),'Cerrar',true);
     overlay.onclick = (e) => { if (e.target === overlay || e.target.closest('[data-close]')) overlay.remove(); };
     document.body.append(overlay);
   }));
@@ -593,6 +602,18 @@ async function init() {
     document.body.dataset.theme = theme;
     me = await getProfile(session.user.id);
     if (me?.role !== 'admin') { stopLoading();view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para administradores.</p>'; return; }
+    const adminName=me.full_name||session.user.user_metadata?.full_name||'Administrador';
+    const nameNode=$('#admin-header-name');
+    const avatarNode=$('#admin-header-avatar');
+    if(nameNode)nameNode.textContent=adminName;
+    if(avatarNode){
+      const initials=adminName.split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
+      avatarNode.textContent=initials;
+      if(me.avatar_path){
+        const {data:avatar}=await supabase.storage.from('profile-media').createSignedUrl(me.avatar_path,3600);
+        if(avatar?.signedUrl)avatarNode.innerHTML=`<img src="${esc(avatar.signedUrl)}" alt="Foto de ${esc(adminName)}">`;
+      }
+    }
     stopLoading();
     view.innerHTML = '<div id="body"></div>';
     $('#tabs').hidden = false;
