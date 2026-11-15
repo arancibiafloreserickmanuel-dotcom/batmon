@@ -194,3 +194,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 ## Carrusel de complejos integrado al scroll móvil (15 nov)
 - En móvil, el carrusel queda sticky mientras el scroll vertical recorre su tramo; el avance vertical sincroniza las imágenes y al llegar a la última se libera la página para continuar normalmente.
 - Se conserva el gesto horizontal directo y el comportamiento de escritorio. Build correcto; pendiente validar en dispositivo táctil real.
+
+## Nueva primera imagen del carrusel (15 nov)
+- Se agregó la foto del futuro centro de entrenamiento como primera diapositiva. Se actualizaron los cinco indicadores y el resto de imágenes conserva su orden.
+- `npm run build` pasó; `git diff --check` limpio.

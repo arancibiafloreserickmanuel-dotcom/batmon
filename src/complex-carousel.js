@@ -16,6 +16,7 @@ import {
 } from 'three';
 
 const projects = [
+  { src: '/complex-training-center.png', label: 'Centro de entrenamiento Batmon Crowd' },
   { src: '/complex-running-group.png', label: 'Grupo corriendo' },
   { src: '/complex-team-coast.png', label: 'Equipo Batmon en la costa' },
   { src: '/complex-campaign.png', label: 'Campaña Nueva Piel Batmon Crowd' },
