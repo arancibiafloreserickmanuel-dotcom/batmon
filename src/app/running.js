@@ -1,5 +1,6 @@
 import { supabase, $, esc } from '../supabase.js';
 import { fmt, today, weekStart, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
+import { createRunningTracker } from './running-tracker.js';
 
 const DISCIPLINES = [{ v: 'running', t: 'Running' }, { v: 'cycling', t: 'Ciclismo' }, { v: 'swimming', t: 'Natación' }];
 
@@ -10,6 +11,7 @@ export async function renderRunning(view, ctx, discipline = 'running') {
   }
   let { data: acts = [] } = await supabase.from('activities').select('*')
     .order('performed_on', { ascending: false }).order('created_at', { ascending: false });
+  const tracker = discipline === 'running' ? createRunningTracker(ctx.user.id) : null;
   const sum = (arr) => arr.reduce((s, a) => s + Number(a.distance_km), 0);
   acts = acts.filter((a) => a.discipline === discipline);
   const runs = acts.filter((a) => a.discipline === 'running');
@@ -33,8 +35,10 @@ export async function renderRunning(view, ctx, discipline = 'running') {
   }
   const maxKm = Math.max(1, ...weeks.map((w) => w.km));
 
+  const liveMarkup = tracker ? `<section class="card run-live" aria-labelledby="run-live-title"><div class="profile-section-head"><div><span class="muted">Seguimiento GPS en primer plano</span><h2 id="run-live-title">Carrera rápida</h2></div><span class="run-gps-state" id="run-gps-state">${tracker.state?.gps_status || 'Preparada'}</span></div><div class="run-live-stats"><div><b id="run-live-time">00:00:00</b><span>Tiempo</span></div><div><b id="run-live-distance">${fmt(tracker.distanceKm(),2)} km</b><span>Distancia</span></div><div><b id="run-live-pace">—</b><span>Ritmo medio</span></div></div><svg class="run-route" id="run-route" viewBox="0 0 320 120" role="img" aria-label="Recorrido GPS registrado"><polyline points=""/></svg><p class="muted">Mantén esta pestaña abierta durante la carrera. El GPS requiere HTTPS y permiso de ubicación; el navegador puede suspenderlo en segundo plano.</p><div class="quick-actions" id="run-live-actions">${tracker.state?.status==='running'?'<button class="btn ghost" id="run-pause" type="button">Pausar</button><button class="btn" id="run-finish" type="button">Finalizar carrera</button>':tracker.state?.status==='paused'?'<button class="btn" id="run-resume" type="button">Reanudar</button><button class="btn ghost" id="run-finish" type="button">Finalizar carrera</button><button class="link" id="run-discard" type="button">Descartar</button>':'<button class="btn" id="run-start" type="button">Iniciar carrera</button>'}</div><p class="msg" id="run-live-msg" aria-live="polite"></p></section>` : '';
   view.innerHTML = `
     <h1>${DISC[discipline]}</h1>
+    ${liveMarkup}
     <div class="grid"><div class="card stat"><b>${fmt(week(discipline))} km</b><span>${DISC[discipline]} · semana</span></div><div class="card stat"><b>${fmt(month(discipline))} km</b><span>${DISC[discipline]} · mes</span></div></div>
     <div class="card"><span class="muted">Récords running</span><br>
       Más larga: ${longest ? `<b>${fmt(longest.distance_km)} km</b> (${longest.performed_on})` : '—'}<br>
@@ -64,6 +68,13 @@ export async function renderRunning(view, ctx, discipline = 'running') {
   const live = () => { const k = +$('#k').value, m = +$('#m').value, d = $('#d').value; $('#pv').textContent = k > 0 && m > 0 ? (d === 'running' ? `Ritmo: ${paceStr(k, m)}` : d === 'swimming' ? `Ritmo: ${fmt(m / (k * 10), 2)} min/100 m` : `Velocidad: ${fmt((k / m) * 60)} km/h`) : ''; };
   $('#k').oninput = live; $('#m').oninput = live;
   $('#d').onchange = live;
+
+  if(tracker){
+    const paint=()=>{if(!tracker.state)return;const seconds=tracker.elapsedSeconds(),distance=tracker.distanceKm();$('#run-live-time').textContent=`${String(Math.floor(seconds/3600)).padStart(2,'0')}:${String(Math.floor(seconds%3600/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('#run-live-distance').textContent=`${fmt(distance,2)} km`;$('#run-live-pace').textContent=distance>0?paceStr(distance,seconds/60):'—';$('#run-gps-state').textContent=tracker.state.gps_status;const pts=tracker.state.points||[];if(pts.length>1){const lats=pts.map(p=>p.lat),lons=pts.map(p=>p.lon),minLat=Math.min(...lats),maxLat=Math.max(...lats),minLon=Math.min(...lons),maxLon=Math.max(...lons);const coords=pts.map(p=>`${8+(maxLon===minLon?0:(p.lon-minLon)/(maxLon-minLon)*304)},${112-(maxLat===minLat?0:(p.lat-minLat)/(maxLat-minLat)*104)}`).join(' ');$('#run-route polyline').setAttribute('points',coords);}};
+    tracker.restore(paint,(message)=>{const msg=$('#run-live-msg');if(msg)msg.textContent=message;});
+    const rebindActions=()=>{const start=$('#run-start');if(start)start.onclick=()=>{const ok=tracker.start(paint,(message)=>{const msg=$('#run-live-msg');if(msg)msg.textContent=message;});if(ok)renderRunning(view,ctx,'running');};const pause=$('#run-pause');if(pause)pause.onclick=()=>{tracker.pause();renderRunning(view,ctx,'running');};const resume=$('#run-resume');if(resume)resume.onclick=()=>{tracker.resume(paint,(message)=>{const msg=$('#run-live-msg');if(msg)msg.textContent=message;});renderRunning(view,ctx,'running');};const discard=$('#run-discard');if(discard)discard.onclick=async()=>{if(await confirmDialog('¿Descartar la carrera sin guardarla?','Descartar carrera')){tracker.discard();renderRunning(view,ctx,'running');}};const finish=$('#run-finish');if(finish)finish.onclick=async()=>{if(!(await confirmDialog('¿Finalizar y guardar esta carrera?','Finalizar carrera')))return;if(tracker.distanceKm()<0.01){$('#run-live-msg').textContent='Registra al menos 10 metros de GPS antes de guardar.';return;}const result=tracker.finish();if(!result)return;const {error}=await supabase.from('activities').insert({discipline:'running',performed_on:today(),distance_km:Number(result.distance_km.toFixed(2)),duration_min:Number(result.duration_min.toFixed(1)),notes:'Carrera GPS',route_points:result.route_points,tracking_source:'gps'});if(error){tracker.reopenAfterSaveError();notify(`No se guardó la carrera. Aplica la migración 0013 y reintenta: ${error.message}`);renderRunning(view,ctx,'running');return;}tracker.discard();notify('Carrera guardada.','success');renderRunning(view,ctx,'running');};};
+    rebindActions();paint();
+  }
 
   $('#af').onsubmit = async (e) => {
     e.preventDefault();

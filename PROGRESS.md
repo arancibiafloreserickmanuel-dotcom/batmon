@@ -107,3 +107,11 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Migración 0012 (`events`, `event_rsvps`, `event_notifications`, bucket público `event-media`, RPC `send_event_reminder`). Endurecida en revisión: notificaciones solo permiten UPDATE de `is_read`, bucket limitado a imágenes ≤5 MB, recordatorio valida destino y evita duplicados.
 - App: calendario con eventos reales, confirmar/cancelar asistencia, notificaciones. Admin → Eventos: crear/editar, imagen, notificar, asistentes.
 - Pendiente: aplicar 0012 en Supabase y probar flujos (RSVP, notificación, recordatorio, imagen).
+
+## Auditoría integral + primera entrega Running/Pliometría (15 nov)
+- Diagnóstico del código real en `AUDITORIA_PLATAFORMA.md`: arquitectura Vite/JS vanilla + Supabase, inventario por áreas, funciones existentes, brechas y orden recomendado. Se conserva el calendario único de Inicio y Progreso dentro de Perfil.
+- Running: añadido tracker GPS foreground con iniciar/pausar/reanudar/finalizar, cronómetro, distancia/ritmo, trazo local de ruta y borrador persistente por usuario. El guardado de la actividad conserva los puntos GPS; ante fallo de BD queda pausada para reintentar.
+- Pliometría: nueva pestaña de evaluación manual para CMJ, SJ y Drop Jump, con mediciones e historial. No estima resultados ni simula sensores.
+- Nueva migración `supabase/migrations/0013_running_gps_track.sql`: columnas de ruta/fuente GPS y tabla/RLS para evaluaciones pliométricas. Está pendiente de aplicar por el usuario; no se ejecutó SQL contra Supabase.
+- Verificación local: `npm run build` (ejecutar de nuevo antes de integrar). Sin validación de GPS físico, sesión real, RLS o Supabase conectado en este entorno. GPS web requiere HTTPS/permisos y mantener la pestaña disponible.
+- Nota de auditoría: el historial de migraciones en este archivo contiene estados que no coinciden entre secciones (por ejemplo, 0012 se marca aplicada según reporte del usuario y más abajo pendiente). No se puede confirmar el estado remoto desde este repositorio; revisar con el listado de migraciones de Supabase antes de aplicar cualquier SQL.

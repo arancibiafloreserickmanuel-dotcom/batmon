@@ -36,15 +36,24 @@ export async function renderPlyo(view, ctx) {
   W = W || draft.get(DRAFT_KEY) || blankW();
 
   view.innerHTML = `<h1>Pliometría</h1>
-    <div class="tabs sub"><button data-s="new">Nueva sesión</button><button data-s="hist">Historial</button><button data-s="lib">Ejercicios (${catalog.length})</button></div>
+    <div class="tabs sub"><button data-s="new">Nueva sesión</button><button data-s="hist">Historial</button><button data-s="lib">Ejercicios (${catalog.length})</button><button data-s="eval">Evaluaciones</button></div>
     <div id="sub"></div>`;
   view.querySelectorAll('[data-s]').forEach((b) => { b.classList.toggle('on', b.dataset.s === sub); b.onclick = () => { sub = b.dataset.s; renderPlyo(view, ctx); }; });
   const box = $('#sub', view);
-  if (!catalog.length && sub !== 'hist') {
+  if (!catalog.length && sub !== 'hist' && sub !== 'eval') {
     box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y pulsa “Importar catálogo base”.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
     return;
   }
-  if (sub === 'new') builder(box, view, ctx); else if (sub === 'hist') await history(box); else library(box, view, ctx);
+  if (sub === 'new') builder(box, view, ctx); else if (sub === 'hist') await history(box); else if (sub === 'eval') await assessments(box, ctx); else library(box, view, ctx);
+}
+
+async function assessments(box, ctx) {
+  const {data:rows=[],error}=await supabase.from('plyo_assessments').select('*').eq('user_id',ctx.user.id).order('measured_on',{ascending:false}).limit(100);
+  if(error){box.innerHTML=`<div class="card warn">No se pudieron cargar las evaluaciones: ${esc(error.message)}. Si aparece que la tabla no existe, aplica la migración 0013.</div>`;return;}
+  box.innerHTML=`<div class="card"><h2>Registrar evaluación</h2><p class="muted">Ingresa resultados medidos con una plataforma de contacto, alfombra de salto u otra herramienta. No se estiman automáticamente.</p><form id="plyo-assessment-form"><label for="assessment-type">Prueba</label><select id="assessment-type"><option value="cmj">CMJ · Countermovement Jump</option><option value="sj">SJ · Squat Jump</option><option value="drop_jump">Drop Jump</option></select><label for="assessment-date">Fecha</label><input id="assessment-date" type="date" value="${today()}" max="${today()}" required><div class="row"><div><label for="assessment-height">Altura (cm)</label><input id="assessment-height" type="number" min="0" max="250" step="0.1" inputmode="decimal"></div><div><label for="assessment-flight">Vuelo (ms)</label><input id="assessment-flight" type="number" min="0" max="3000" step="1" inputmode="decimal"></div></div><div class="row"><div><label for="assessment-contact">Contacto (ms)</label><input id="assessment-contact" type="number" min="0" max="3000" step="1" inputmode="decimal"></div><div><label for="assessment-rsi">RSI (resultado medido)</label><input id="assessment-rsi" type="number" min="0" max="20" step="0.001" inputmode="decimal"></div></div><label for="assessment-notes">Notas</label><textarea id="assessment-notes" maxlength="500" rows="2"></textarea><button class="btn" type="submit">Guardar evaluación</button><p class="msg" id="assessment-msg"></p></form></div><h2>Evaluaciones anteriores</h2><div class="activity-list">${rows.map((r)=>`<article class="card"><b>${({cmj:'CMJ',sj:'SJ',drop_jump:'Drop Jump'})[r.test_type]}</b><span>${r.measured_on}</span><p>${r.jump_height_cm!==null?`Altura: ${fmt(r.jump_height_cm,1)} cm · `:''}${r.flight_time_ms!==null?`Vuelo: ${fmt(r.flight_time_ms,0)} ms · `:''}${r.contact_time_ms!==null?`Contacto: ${fmt(r.contact_time_ms,0)} ms · `:''}${r.rsi!==null?`RSI: ${fmt(r.rsi,3)}`:''}</p>${r.notes?`<p class="muted">${esc(r.notes)}</p>`:''}<button type="button" class="link" data-assessment-delete="${r.id}">Borrar evaluación</button></article>`).join('')||'<p class="card muted">Aún no hay evaluaciones registradas.</p>'}</div>`;
+  $('#assessment-type',box).onchange=e=>{const drop=e.target.value==='drop_jump';$('#assessment-contact',box).required=drop;$('#assessment-rsi',box).required=drop;};
+  $('#plyo-assessment-form',box).onsubmit=async(e)=>{e.preventDefault();const button=e.currentTarget.querySelector('[type=submit]'),msg=$('#assessment-msg',box);button.disabled=true;const val=(id)=>$('#'+id,box).value;const row={test_type:val('assessment-type'),measured_on:val('assessment-date'),jump_height_cm:num(val('assessment-height')),flight_time_ms:num(val('assessment-flight')),contact_time_ms:num(val('assessment-contact')),rsi:num(val('assessment-rsi')),notes:val('assessment-notes').trim()||null};if(!Object.values(row).some((value)=>typeof value==='number'&&value>0)){msg.textContent='Registra al menos una medición real.';button.disabled=false;return;}const {error:saveError}=await supabase.from('plyo_assessments').insert(row);if(saveError){msg.textContent='No se pudo guardar: '+saveError.message;button.disabled=false;return;}notify('Evaluación guardada.','success');await assessments(box,ctx);};
+  box.querySelectorAll('[data-assessment-delete]').forEach(button=>button.onclick=async()=>{if(!(await confirmDialog('¿Borrar esta evaluación?','Borrar evaluación')))return;const {error:deleteError}=await supabase.from('plyo_assessments').delete().eq('id',button.dataset.assessmentDelete).eq('user_id',ctx.user.id);if(deleteError)notify(deleteError.message);else await assessments(box,ctx);});
 }
 
 /* ---------------------------- Nueva sesión ---------------------------- */
