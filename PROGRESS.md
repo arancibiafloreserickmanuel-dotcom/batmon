@@ -198,3 +198,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 ## Nueva primera imagen del carrusel (15 nov)
 - Se agregó la foto del futuro centro de entrenamiento como primera diapositiva. Se actualizaron los cinco indicadores y el resto de imágenes conserva su orden.
 - `npm run build` pasó; `git diff --check` limpio.
+
+## Galería animada de indumentaria (15 nov)
+- Se reemplazó el bloque promocional bajo el carrusel por «Indumentaria» y una galería 3D de scroll inspirada en Curved Scroll Gallery, adaptada a Vite/Three.js y con el fondo original de la landing.
+- Las líneas NEW POLERA, NUEVA PIEL y BATMON CROWD animan con el desplazamiento. Se añadieron las cinco imágenes solicitadas en orden; las dos prendas PNG conservan transparencia y se muestran completas.
+- El enlace del menú ahora apunta a Indumentaria. `npm run build` pasó; `git diff --check` limpio. Pendiente revisar en teléfono real.

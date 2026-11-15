@@ -77,8 +77,20 @@ const carouselLoader = new IntersectionObserver(([entry]) => {
   });
 }, { rootMargin: '240px 0px' });
 if (carouselRoot) carouselLoader.observe(carouselRoot);
+const apparelRoot = document.getElementById('indumentaria');
+const apparelLoader = new IntersectionObserver(([entry]) => {
+  if (!entry.isIntersecting) return;
+  apparelLoader.disconnect();
+  import('./indumentaria-gallery.js').then(({ mountApparelGallery }) => {
+    if (!pageIsClosing) disposeApparelGallery = mountApparelGallery();
+  });
+}, { rootMargin: '240px 0px' });
+let disposeApparelGallery = () => {};
+if (apparelRoot) apparelLoader.observe(apparelRoot);
 window.addEventListener('pagehide', () => {
   pageIsClosing = true;
   carouselLoader.disconnect();
+  apparelLoader.disconnect();
   disposeComplexCarousel();
+  disposeApparelGallery();
 }, { once: true });

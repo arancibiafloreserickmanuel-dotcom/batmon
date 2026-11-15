@@ -21,7 +21,7 @@
     <nav class="bc-nav">
       <a href="#inicio">Club</a>
       <a href="#complejos">Complejos</a>
-      <a href="#membresia">Membresía</a>
+      <a href="#indumentaria">Indumentaria</a>
       <a href="#comunidad">Comunidad</a>
       <a href="#contacto">Contacto</a>
       <a href="app.html">Entrar</a>
@@ -69,18 +69,23 @@
       </div>
     </section>
 
-    <section id="membresia" class="membership">
-      <p class="reveal label dark">Membresía</p>
-      <div class="reveal cards">
-        <div class="bc-card">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 4 4 7v4h3v9h10v-9h3V7l-5-3-1.5 2h-3L9 4Z" stroke="#0d0d0c" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          <div class="t">Indumentaria</div>
-          <div class="d">Poleras y medias exclusivas Batmon Crowd.</div>
-        </div>
-        <div class="bc-card">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2" stroke="#0d0d0c" stroke-width="1.5"/><path d="M11 19h2" stroke="#0d0d0c" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <div class="t">App de Entrenamiento</div>
-          <div class="d">Controlá tus entrenamientos y seguí tu progreso.</div>
+    <section id="indumentaria" class="apparel-gallery" aria-labelledby="apparel-heading">
+      <div class="apparel-runway" id="apparel-runway">
+        <div class="apparel-stage" id="apparel-stage">
+          <div class="apparel-type">
+            <h2 id="apparel-heading" class="apparel-section-heading">INDUMENTARIA</h2>
+            <p class="apparel-title-top" aria-hidden="true">NEW POLERA</p>
+            <p class="apparel-title-middle"><span>NUEVA PIEL</span></p>
+            <p class="apparel-title-bottom" aria-hidden="true">BATMON CROWD</p>
+          </div>
+          <canvas id="apparel-canvas" aria-label="Galería de indumentaria Batmon Crowd"></canvas>
+          <div class="apparel-fallback" aria-label="Indumentaria Batmon Crowd">
+            <img src="/apparel-shirt-back.png" alt="Polera Batmon Crowd, vista posterior" />
+            <img src="/apparel-shirt-front.png" alt="Polera Batmon Crowd, vista frontal" />
+            <img src="/apparel-new-polera.png" alt="Nueva polera Batmon Crowd" />
+            <img src="/apparel-crowd-shirt.png" alt="Diseño de poleras Batmon Crowd" />
+            <img src="/apparel-run-punilla.png" alt="Polera Run Punilla" />
+          </div>
         </div>
       </div>
     </section>
