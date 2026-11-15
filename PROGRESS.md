@@ -156,3 +156,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Corregida navegación Admin: Pagos, Socios, Módulos, Ejercicios, Eventos y Retos tienen iconos SVG; nombres solo visibles en selección/hover, con círculo activo hundido y animación de vecinos.
 - Los checks de módulos globales, excepciones por socio y ficha de socio usan el control circular neumórfico con marca verde oscuro; estilos limitados a `.module-toggle`.
 - `npm run build` pasó; `git diff --check` limpio.
+
+## Checks compartidos en la app (15 nov)
+- Se extendió el diseño circular neumórfico con check verde oscuro a los checkbox de toda la app (planes, catálogo, notificación de eventos y otros formularios), conservando el switch ilustrado de tema.
+- Estados seleccionado, foco de teclado y deshabilitado quedan visibles; se mantienen eventos/valores nativos de cada input.
+- `npm run build` correcto; `git diff --check` limpio.

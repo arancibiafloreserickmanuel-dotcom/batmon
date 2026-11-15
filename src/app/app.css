@@ -847,6 +847,14 @@ body.appbody #settings-logout:active{background:#a71919!important;border-color:#
 .pw-eye.on{color:#0d0d0c}body[data-theme="dark"] .pw-eye.on{color:#fff}
 input[type="password"][data-eye],input[type="text"][data-eye]{padding-right:46px}
 
+/* Checkbox compartido en toda la app (excepto el switch ilustrado de tema). */
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox){appearance:none;-webkit-appearance:none;position:relative;display:inline-grid;flex:0 0 1.3em;width:1.3em;height:1.3em;min-width:1.3em;min-height:1.3em;margin:0 .18em 0 0;padding:0;place-content:center;vertical-align:middle;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);border-radius:50%;background:var(--button-face,#e8e8e8);box-shadow:var(--button-shadow,3px 3px 5px #c5c5c5,-3px -3px 5px #fff);color:#174a35;cursor:pointer;transition:box-shadow .25s ease,background-color .25s ease,transform .16s ease;}
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox)::after{content:"";width:.3em;height:.58em;border:solid #174a35;border-width:0 .14em .14em 0;opacity:0;transform:rotate(45deg) scale(.7);transition:opacity .16s ease,transform .16s ease;}
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox):checked{box-shadow:var(--button-shadow-active,inset 3px 3px 5px #c5c5c5,inset -3px -3px 5px #fff);}
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox):checked::after{opacity:1;transform:rotate(45deg) scale(1);}
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox):focus-visible{outline:2px solid var(--ink);outline-offset:4px;}
+body.appbody input[type="checkbox"]:not(.theme-switch__checkbox):disabled{cursor:not-allowed;opacity:.55;}
+
 /* Checks neumórficos exclusivos de Administración → Módulos. */
 body.appbody .module-toggle .module-check{position:relative;display:block;flex:0 0 1.3em;width:1.3em;height:1.3em;font-size:20px;}
 body.appbody .module-toggle .module-check>input{position:absolute;inset:0;z-index:2;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;opacity:0;cursor:pointer;}
