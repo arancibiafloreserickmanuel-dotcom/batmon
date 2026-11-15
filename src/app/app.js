@@ -80,13 +80,17 @@ async function boot(user) {
 
 function renderTabs() {
   $('#tabs').innerHTML = TABS.filter(([key]) => !['running', 'cycling', 'swimming', 'plyo', 'training'].includes(key) || ctx.modules[key])
-    .map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}"><span class="tab-icon">${icon}</span><span>${t}</span></a>`).join('');
+    .map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
 }
 
 function route() {
   if (!ctx) return;
   const tab = (location.hash.slice(1) || 'inicio');
-  document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + tab));
+  document.querySelectorAll('#tabs a').forEach((a) => {
+    const active = a.getAttribute('href') === '#' + tab;
+    a.classList.toggle('on', active);
+    a.setAttribute('aria-current', active ? 'page' : 'false');
+  });
   const moduleKey = { running: 'running', cycling: 'cycling', swimming: 'swimming', plyo: 'plyo', training: 'training' }[tab];
   if (moduleKey && !ctx.modules[moduleKey]) {
     view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
@@ -601,7 +605,7 @@ function renderProfileSettings(v) {
 }
 
 /* ---------------- Arranque: sesión persistente ---------------- */
-$('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}"><span class="tab-icon">${icon}</span><span>${t}</span></a>`).join('');
+$('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
 window.addEventListener('hashchange', route);
 enablePasswordToggles(view);
 let booted = null;

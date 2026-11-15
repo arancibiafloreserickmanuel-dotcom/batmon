@@ -847,23 +847,26 @@ body.appbody #settings-logout:active{background:#a71919!important;border-color:#
 .pw-eye.on{color:#0d0d0c}body[data-theme="dark"] .pw-eye.on{color:#fff}
 input[type="password"][data-eye],input[type="text"][data-eye]{padding-right:46px}
 
-/* Navegación inferior: expansión del icono y sus vecinos, adaptada al dock BATMON. */
-body.appbody .tabs.main{align-items:flex-end;gap:0;overflow:visible;padding:5px 8px calc(5px + env(safe-area-inset-bottom));}
-body.appbody .tabs.main a{position:relative;z-index:1;flex:1 1 0;width:auto;min-width:0;transform:scale(1);transform-origin:center bottom;transition:transform .22s cubic-bezier(.2,.75,.25,1),color .18s ease;}
-body.appbody .tabs.main a.on{transform:scale(1.08);z-index:2;}
-body.appbody .tabs.main .tab-icon{display:grid;place-items:center;transition:transform .22s cubic-bezier(.2,.75,.25,1);}
-body.appbody .tabs.main .tab-icon svg{width:24px;height:24px;stroke-width:1.8;}
-body.appbody .tabs.main a.on .tab-icon{transform:translateY(-1px);}
+/* Dock de navegación: relieve del calendario, iconos por defecto y etiquetas al enfocar. */
+body.appbody .tabs.main{left:50%;right:auto;bottom:calc(9px + env(safe-area-inset-bottom));width:min(720px,calc(100vw - 28px));max-width:720px;transform:translateX(-50%);align-items:center;justify-content:stretch;gap:2px;overflow:visible;padding:7px;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);border-radius:var(--card-radius,20px);background:var(--card-surface,#e0e0e0);box-shadow:var(--dock-shadow,6px 6px 14px #bebebe,-6px -6px 14px #fff);}
+body.appbody[data-theme="dark"] .tabs.main{--dock-shadow:5px 5px 12px #121212,-5px -5px 12px #2c2c2c;}
+body.appbody[data-theme="light"] .tabs.main{--dock-shadow:6px 6px 14px #bebebe,-6px -6px 14px #fff;}
+body.appbody .tabs.main a{position:relative;z-index:1;display:flex;flex:1 1 0;width:auto;min-width:0;min-height:58px;align-items:center;justify-content:center;gap:3px;overflow:visible;padding:5px 3px;border:0;border-radius:16px;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:0;text-align:center;transform:translateY(0);transition:flex-grow .24s cubic-bezier(.2,.75,.25,1),transform .24s cubic-bezier(.2,.75,.25,1),color .2s ease;}
+body.appbody .tabs.main .tab-icon{position:relative;z-index:1;display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;transition:transform .24s cubic-bezier(.2,.75,.25,1);}
+body.appbody .tabs.main .tab-icon svg{display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+body.appbody .tabs.main .tab-label{position:absolute;z-index:6;left:50%;bottom:calc(100% + 8px);max-width:none;padding:7px 10px;overflow:visible;border:1px solid var(--line);border-radius:10px;background:var(--card-surface,#e0e0e0);box-shadow:var(--dock-item-shadow,4px 4px 8px #bebebe,-4px -4px 8px #fff);color:var(--ink);font-size:11px;font-weight:600;line-height:1;white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,4px);transition:opacity .16s ease,transform .2s ease;}
+body.appbody .tabs.main a.on{flex-grow:1.05;color:var(--ink);font-weight:700;}
+body.appbody .tabs.main a.on::before{content:"";position:absolute;inset:8px 5px;border-radius:50%;background:var(--card-surface,#e0e0e0);box-shadow:var(--dock-item-shadow,4px 4px 8px #bebebe,-4px -4px 8px #fff);}
+body.appbody[data-theme="dark"] .tabs.main a.on::before{--dock-item-shadow:3px 3px 7px #121212,-3px -3px 7px #2c2c2c;}
+body.appbody .tabs.main a.on{transform:translateY(-2px);}
+body.appbody .tabs.main a.on .tab-icon{transform:scale(1.12);}
+body.appbody .tabs.main a.on .tab-label{opacity:1;transform:translate(-50%,0);}
 @media (hover:hover) and (pointer:fine){
-  body.appbody .tabs.main a:hover,
-  body.appbody .tabs.main a:focus-visible{transform:scale(1.38);z-index:5;}
-  body.appbody .tabs.main a:hover + a,
-  body.appbody .tabs.main a:has(+ a:hover),
-  body.appbody .tabs.main a:focus-visible + a,
-  body.appbody .tabs.main a:has(+ a:focus-visible){transform:scale(1.16);z-index:4;}
-  body.appbody .tabs.main a:hover + a + a,
-  body.appbody .tabs.main a:has(+ a + a:hover),
-  body.appbody .tabs.main a:focus-visible + a + a,
-  body.appbody .tabs.main a:has(+ a + a:focus-visible){transform:scale(1.06);z-index:3;}
+  body.appbody .tabs.main a:hover,body.appbody .tabs.main a:focus-visible{flex-grow:1.75;z-index:5;transform:translateY(-4px);color:var(--ink);}
+  body.appbody .tabs.main a:hover .tab-icon,body.appbody .tabs.main a:focus-visible .tab-icon{transform:scale(1.28);}
+  body.appbody .tabs.main a:hover .tab-label,body.appbody .tabs.main a:focus-visible .tab-label{opacity:1;transform:translate(-50%,0);}
+  body.appbody .tabs.main a:hover + a,body.appbody .tabs.main a:has(+ a:hover),body.appbody .tabs.main a:focus-visible + a,body.appbody .tabs.main a:has(+ a:focus-visible){flex-grow:1.25;transform:translateY(-1px);}
+  body.appbody .tabs.main a:hover + a + a,body.appbody .tabs.main a:has(+ a + a:hover),body.appbody .tabs.main a:focus-visible + a + a,body.appbody .tabs.main a:has(+ a + a:focus-visible){flex-grow:1.08;}
 }
-@media (prefers-reduced-motion:reduce){body.appbody .tabs.main a,body.appbody .tabs.main .tab-icon{transition:none}}
+@media(max-width:520px){body.appbody .tabs.main{width:calc(100vw - 20px);gap:0;padding:5px;border-radius:18px}body.appbody .tabs.main a{min-height:54px;padding-inline:1px}body.appbody .tabs.main .tab-icon{flex-basis:32px;width:32px;height:32px}body.appbody .tabs.main a.on{flex-grow:1.15}body.appbody .tabs.main a.on::before{inset:7px 2px}}
+@media (prefers-reduced-motion:reduce){body.appbody .tabs.main a,body.appbody .tabs.main .tab-icon,body.appbody .tabs.main .tab-label{transition:none}}

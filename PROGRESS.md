@@ -131,3 +131,9 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se renovaron los iconos de Pliometría y Entrenamiento para que representen mejor sus disciplinas.
 - Archivos: `src/app/app.js`, `src/app/app.css`. Compilación `npm run build` correcta; queda pendiente revisar visualmente en móvil y escritorio.
 - Las migraciones 0014 y 0015 siguen pendientes de aplicación según la última confirmación del usuario.
+
+## Dock BATMON: etiquetas y relieve (15 nov)
+- Ajustado según la referencia: en reposo se muestran solo iconos; etiqueta flotante al pasar/enfocar y para la página activa. La selección eleva el icono en una base circular con relieve.
+- La barra inferior ahora va en una cápsula con bordes y sombras parecidos al calendario, adaptados a tema claro/oscuro. Al pasar por una opción, aumenta su tamaño y el de las vecinas.
+- Se añadió `aria-current` a la pestaña activa; el cambio conserva navegación y rutas existentes.
+- Archivos: `src/app/app.js`, `src/app/app.css`. `npm run build` y `git diff --check` correctos.
