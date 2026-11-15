@@ -24,12 +24,14 @@ const projects = [
 
 export function mountComplexCarousel() {
   const root = document.getElementById('complex-carousel');
+  const scrollTrack = root?.parentElement;
   const canvas = document.getElementById('complex-canvas');
   if (!root || !canvas) return () => {};
 
   const buttons = [...root.querySelectorAll('[data-slide]')];
   const buttonClickHandlers = [];
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mobileViewport = window.matchMedia('(max-width: 760px)');
   const scene = new Scene();
   const camera = new PerspectiveCamera(53.4, 1, 0.1, 2000);
   camera.position.set(0, 0, 41.18);
@@ -259,8 +261,21 @@ export function mountComplexCarousel() {
     // once an end is reached, the browser keeps scrolling the page normally.
     const dominant = Math.abs(dx) > Math.abs(dy) ? dx : dy;
     if (!dominant) return;
+    // En móvil, el scroll vertical nativo recorre la sección fija y el progreso
+    // de esa sección mueve el carrusel; así el navegador puede continuar al final.
+    if (mobileViewport.matches && Math.abs(dy) >= Math.abs(dx)) return;
     if (!moveByPixels(dominant * 0.8)) return;
     event.preventDefault();
+  }
+
+  function onPageScroll() {
+    if (!mobileViewport.matches || !scrollTrack || !cards.length) return;
+    const trackRect = scrollTrack.getBoundingClientRect();
+    const stickyTop = window.innerHeight * 0.14;
+    const travel = Math.max(1, scrollTrack.clientHeight - root.clientHeight);
+    const progress = MathUtils.clamp((stickyTop - trackRect.top) / travel, 0, 1);
+    targetOffset = cards[0].center + (cards[cards.length - 1].center - cards[0].center) * progress;
+    if (reducedMotion.matches) offset = targetOffset;
   }
 
   function hitCard(clientX, clientY) {
@@ -284,6 +299,12 @@ export function mountComplexCarousel() {
     const dy = event.clientY - drag.y;
     if (!drag.moved && Math.max(Math.abs(dx), Math.abs(dy)) > 6) {
       const axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+      // El gesto vertical táctil queda al navegador: su scroll mueve el carrusel
+      // dentro del tramo sticky y conserva el desplazamiento fluido de la página.
+      if (axis === 'y' && drag.pointerType === 'touch' && mobileViewport.matches) {
+        drag = null;
+        return;
+      }
       // A mouse drag has no native page-scroll gesture; ignore vertical drags.
       // Touch and pen use vertical movement to advance slides, as the mouse
       // wheel does on desktop, then hand any excess movement to the page.
@@ -421,6 +442,8 @@ export function mountComplexCarousel() {
   visibilityObserver.observe(root);
 
   root.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('scroll', onPageScroll, { passive: true });
+  window.addEventListener('resize', onPageScroll, { passive: true });
   root.addEventListener('pointerdown', onPointerDown);
   root.addEventListener('pointermove', onPointerMove);
   root.addEventListener('pointerup', onPointerUp);
@@ -434,8 +457,10 @@ export function mountComplexCarousel() {
   });
   document.addEventListener('visibilitychange', onVisibilityChange);
   reducedMotion.addEventListener('change', onReducedMotionChange);
+  mobileViewport.addEventListener('change', onPageScroll);
 
   initialize();
+  onPageScroll();
 
   return () => {
     destroyed = true;
@@ -443,6 +468,8 @@ export function mountComplexCarousel() {
     resizeObserver.disconnect();
     visibilityObserver.disconnect();
     root.removeEventListener('wheel', onWheel);
+    window.removeEventListener('scroll', onPageScroll);
+    window.removeEventListener('resize', onPageScroll);
     root.removeEventListener('pointerdown', onPointerDown);
     root.removeEventListener('pointermove', onPointerMove);
     root.removeEventListener('pointerup', onPointerUp);
@@ -454,6 +481,7 @@ export function mountComplexCarousel() {
     });
     document.removeEventListener('visibilitychange', onVisibilityChange);
     reducedMotion.removeEventListener('change', onReducedMotionChange);
+    mobileViewport.removeEventListener('change', onPageScroll);
     cards.forEach(({ mesh }) => {
       scene.remove(mesh);
       mesh.geometry.dispose();

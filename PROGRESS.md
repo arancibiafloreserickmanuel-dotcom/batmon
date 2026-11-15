@@ -190,3 +190,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 ## Animación de entrada de imagen en móvil (15 nov)
 - La imagen de «En cada ruta, un Crowd» ahora inicia en aproximadamente el 48 % del ancho final en móvil, con límites para pantallas pequeñas, y crece progresivamente con el scroll.
 - El comportamiento y tamaño inicial de escritorio no cambiaron. Pendiente de confirmar en un teléfono real.
+
+## Carrusel de complejos integrado al scroll móvil (15 nov)
+- En móvil, el carrusel queda sticky mientras el scroll vertical recorre su tramo; el avance vertical sincroniza las imágenes y al llegar a la última se libera la página para continuar normalmente.
+- Se conserva el gesto horizontal directo y el comportamiento de escritorio. Build correcto; pendiente validar en dispositivo táctil real.
