@@ -186,3 +186,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - El seguimiento táctil identifica el dedo activo desde `touchstart`, ignora `touchend` de otros contactos y limpia/recupera el estado correctamente en `touchend`/`touchcancel`.
 - Coordenadas limitadas al canvas y sensibilidad táctil aumentada 20%; no se cambió radio, presets ni aspecto.
 - `npm run build` pasó; `git diff --check` limpio. Pendiente verificar físicamente en un teléfono.
+
+## Animación de entrada de imagen en móvil (15 nov)
+- La imagen de «En cada ruta, un Crowd» ahora inicia en aproximadamente el 48 % del ancho final en móvil, con límites para pantallas pequeñas, y crece progresivamente con el scroll.
+- El comportamiento y tamaño inicial de escritorio no cambiaron. Pendiente de confirmar en un teléfono real.

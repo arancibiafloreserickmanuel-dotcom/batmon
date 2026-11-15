@@ -45,7 +45,9 @@ function onScroll() {
   const maxW = mobile
     ? Math.max(260, window.innerWidth - 32)
     : Math.min(1000, Math.max(260, window.innerWidth - 96));
-  const minW = Math.min(320, maxW);
+  // En móvil el ancho inicial debe ser claramente menor para que el crecimiento
+  // al entrar en «En cada ruta, un Crowd» se perciba igual que en escritorio.
+  const minW = mobile ? Math.min(190, Math.max(140, maxW * 0.48)) : Math.min(320, maxW);
   const w = Math.round(minW + (maxW - minW) * p);
   visual.style.width = w + "px";
   visual.style.height = Math.round(w * (941 / 1672)) + "px";
