@@ -846,3 +846,24 @@ body.appbody #settings-logout:active{background:#a71919!important;border-color:#
 .pw-eye svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .pw-eye.on{color:#0d0d0c}body[data-theme="dark"] .pw-eye.on{color:#fff}
 input[type="password"][data-eye],input[type="text"][data-eye]{padding-right:46px}
+
+/* Navegación inferior: expansión del icono y sus vecinos, adaptada al dock BATMON. */
+body.appbody .tabs.main{align-items:flex-end;gap:0;overflow:visible;padding:5px 8px calc(5px + env(safe-area-inset-bottom));}
+body.appbody .tabs.main a{position:relative;z-index:1;flex:1 1 0;width:auto;min-width:0;transform:scale(1);transform-origin:center bottom;transition:transform .22s cubic-bezier(.2,.75,.25,1),color .18s ease;}
+body.appbody .tabs.main a.on{transform:scale(1.08);z-index:2;}
+body.appbody .tabs.main .tab-icon{display:grid;place-items:center;transition:transform .22s cubic-bezier(.2,.75,.25,1);}
+body.appbody .tabs.main .tab-icon svg{width:24px;height:24px;stroke-width:1.8;}
+body.appbody .tabs.main a.on .tab-icon{transform:translateY(-1px);}
+@media (hover:hover) and (pointer:fine){
+  body.appbody .tabs.main a:hover,
+  body.appbody .tabs.main a:focus-visible{transform:scale(1.38);z-index:5;}
+  body.appbody .tabs.main a:hover + a,
+  body.appbody .tabs.main a:has(+ a:hover),
+  body.appbody .tabs.main a:focus-visible + a,
+  body.appbody .tabs.main a:has(+ a:focus-visible){transform:scale(1.16);z-index:4;}
+  body.appbody .tabs.main a:hover + a + a,
+  body.appbody .tabs.main a:has(+ a + a:hover),
+  body.appbody .tabs.main a:focus-visible + a + a,
+  body.appbody .tabs.main a:has(+ a + a:focus-visible){transform:scale(1.06);z-index:3;}
+}
+@media (prefers-reduced-motion:reduce){body.appbody .tabs.main a,body.appbody .tabs.main .tab-icon{transition:none}}

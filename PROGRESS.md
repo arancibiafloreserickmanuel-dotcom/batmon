@@ -124,3 +124,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Nuevas migraciones `0014_club_community.sql` y `0015_club_challenges.sql`: ampliar claves de publicación a Ciclismo; añadir reacciones/comentarios y retos/participantes/RPC de clasificación con RLS. Pendientes de aplicar por el usuario; no se ejecutó SQL remoto.
 - Perfil: se conserva y no se duplicó Progreso. Natación, Ciclismo y Entrenamiento conservan sus páginas existentes; Running ahora presenta los registros de Ciclismo/Natación en vistas internas separadas.
 - Verificación: `npm run build` pasó el 15 nov y `git diff --check` no reportó errores. No se validó con sesión real, datos Supabase ni dispositivos.
+
+## Navegación inferior con efecto dock (15 nov)
+- Se aplicó la expansión del icono al pasar el cursor, con crecimiento gradual de los iconos vecinos y realce moderado de la pestaña activa.
+- En pantallas táctiles se resalta la opción activa sin depender de hover. Se respeta `prefers-reduced-motion`.
+- Se renovaron los iconos de Pliometría y Entrenamiento para que representen mejor sus disciplinas.
+- Archivos: `src/app/app.js`, `src/app/app.css`. Compilación `npm run build` correcta; queda pendiente revisar visualmente en móvil y escritorio.
+- Las migraciones 0014 y 0015 siguen pendientes de aplicación según la última confirmación del usuario.
