@@ -6,7 +6,7 @@ import translations from '../data/plyometrics_es.json';
 import trainingCatalog from '../data/training_exercises.json';
 
 const view = $('#view');
-const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios'], ['eventos', 'Eventos']];
+const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios'], ['eventos', 'Eventos'], ['retos', 'Retos']];
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
@@ -533,8 +533,38 @@ async function eventos() {
   });
 }
 
+async function retos() {
+  const {data:rows=[],error}=await supabase.from('club_challenges').select('*').order('starts_on',{ascending:false});
+  const body=$('#body');
+  if(error){body.innerHTML=`<h1>Retos del club</h1><div class="card warn">No se pudieron cargar. Aplica la migración 0015 cuando esté lista: ${esc(error.message)}</div>`;return;}
+  const disciplineLabel={running:'Running',cycling:'Ciclismo',swimming:'Natación',plyo:'Pliometría',training:'Entrenamiento'};
+  body.innerHTML=`<h1>Retos del club</h1><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p><form class="card admin-challenge-form" id="challenge-form"><input type="hidden" name="id"><label>Título<input name="title" maxlength="100" required></label><label>Descripción<textarea name="description" maxlength="500" rows="3"></textarea></label><div class="row"><label>Disciplina<select name="discipline">${Object.entries(disciplineLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Medición<select name="metric"><option value="sessions">Sesiones</option><option value="distance_km">Distancia (km)</option></select></label></div><div class="row"><label>Meta<input name="goal_value" type="number" min="1" step="0.1" required></label><label>Inicio<input name="starts_on" type="date" required></label><label>Fin<input name="ends_on" type="date" required></label></div><div class="quick-actions"><button class="btn" type="submit">Crear reto</button><button class="btn ghost" type="button" id="challenge-cancel" hidden>Cancelar edición</button></div><p class="msg" aria-live="polite"></p></form><h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map(row=>`<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric==='distance_km'?'Kilómetros':'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description||'')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('')||'<p class="card muted">Aún no hay retos.</p>'}</div>`;
+  const form=$('#challenge-form',body);
+  form.elements.discipline.onchange=()=>{if(form.elements.discipline.value==='plyo'||form.elements.discipline.value==='training'){form.elements.metric.value='sessions';form.elements.metric.querySelector('[value="distance_km"]').disabled=true;}else form.elements.metric.querySelector('[value="distance_km"]').disabled=false;};
+  form.onsubmit=async event=>{
+    event.preventDefault();const data=new FormData(form),id=data.get('id'),start=data.get('starts_on'),end=data.get('ends_on'),metric=data.get('metric'),discipline=data.get('discipline'),msg=form.querySelector('.msg'),button=form.querySelector('[type="submit"]');
+    if(end<start){msg.textContent='La fecha final debe ser igual o posterior al inicio.';return;}
+    if((discipline==='plyo'||discipline==='training')&&metric==='distance_km'){msg.textContent='Pliometría y Entrenamiento solo admiten retos por sesiones.';return;}
+    button.disabled=true;const row={title:String(data.get('title')).trim(),description:String(data.get('description')||'').trim()||null,discipline,metric,goal_value:Number(data.get('goal_value')),starts_on:start,ends_on:end};
+    const result=id?await supabase.from('club_challenges').update(row).eq('id',id):await supabase.from('club_challenges').insert({...row,created_by:me.id});
+    button.disabled=false;if(result.error){msg.textContent=`No se guardó el reto: ${result.error.message}`;return;}notify(id?'Reto actualizado.':'Reto creado.','success');retos();
+  };
+  $('#challenge-cancel',body).onclick=()=>retos();
+  body.querySelectorAll('[data-edit-challenge]').forEach(button=>button.onclick=()=>{
+    const row=rows.find(item=>item.id===button.dataset.editChallenge);if(!row)return;
+    for(const key of ['id','title','description','discipline','metric','goal_value','starts_on','ends_on'])form.elements[key].value=row[key]??'';
+    form.elements.discipline.dispatchEvent(new Event('change'));
+    $('#challenge-cancel',body).hidden=false;form.querySelector('[type="submit"]').textContent='Guardar cambios';form.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  body.querySelectorAll('[data-delete-challenge]').forEach(button=>button.onclick=async()=>{
+    if(!(await confirmDialog('¿Eliminar el reto? También se borrará la participación asociada.','Eliminar reto')))return;
+    const {error:deleteError}=await supabase.from('club_challenges').delete().eq('id',button.dataset.deleteChallenge);
+    if(deleteError)notify(deleteError.message);else{notify('Reto eliminado.','success');retos();}
+  });
+}
+
 /* ------------------------------- Shell ------------------------------- */
-const SECTIONS = { pagos, socios, modulos, ejercicios, eventos };
+const SECTIONS = { pagos, socios, modulos, ejercicios, eventos, retos };
 function route() {
   const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + t));

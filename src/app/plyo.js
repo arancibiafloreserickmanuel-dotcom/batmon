@@ -13,6 +13,8 @@ let catalog = [];          // ejercicios activos de pliometría
 let sub = 'new';           // new | hist | lib
 let W = null;              // sesión en construcción
 let restTimer = null;
+let ownerKey = '';
+const userDraftKey = () => `${DRAFT_KEY}_${ownerKey}`;
 const blankSet = () => Object.fromEntries(FIELDS.map(([k]) => [k, '']));
 const blankW = () => ({ date: today(), duration: '', rpe: '', notes: '', items: [] });
 
@@ -30,10 +32,11 @@ export async function renderPlyo(view, ctx) {
     view.innerHTML = '<h1>Pliometría</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar sesiones. <a href="#pago">Ir a Membresía</a></div>';
     return;
   }
+  if(ownerKey!==ctx.user.id){ownerKey=ctx.user.id;W=null;sub='new';}
   const { data = [], error } = await supabase.from('exercises').select('*').eq('category', 'plyometrics').eq('is_active', true).order('name');
   if (error) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(error.message)}</p>`; return; }
   catalog = data;
-  W = W || draft.get(DRAFT_KEY) || blankW();
+  W = W || draft.get(userDraftKey()) || blankW();
 
   view.innerHTML = `<h1>Pliometría</h1>
     <div class="tabs sub"><button data-s="new">Nueva sesión</button><button data-s="hist">Historial</button><button data-s="lib">Ejercicios (${catalog.length})</button><button data-s="eval">Evaluaciones</button></div>
@@ -58,7 +61,7 @@ async function assessments(box, ctx) {
 
 /* ---------------------------- Nueva sesión ---------------------------- */
 function builder(box, view, ctx) {
-  const save = () => draft.set(DRAFT_KEY, W);
+  const save = () => draft.set(userDraftKey(), W);
   const draw = () => {
     box.innerHTML = `
       <div class="card"><div class="row3">
@@ -101,8 +104,8 @@ function builder(box, view, ctx) {
       restTimer = setInterval(() => { left -= 1; const out = $('#restleft', box); if (out) out.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`; if (left <= 0) { clearInterval(restTimer); notify('Descanso terminado', 'success'); } }, 1000);
     };
     $('#reststop', box).onclick = () => { clearInterval(restTimer); $('#restleft', box).textContent = '01:00'; };
-    $('#clr', box).onclick = () => confirmDialog('¿Vaciar la sesión en curso?', 'Vaciar sesión').then((ok) => { if (ok) { W = blankW(); draft.del(DRAFT_KEY); draw(); } });
-    $('#savew', box).onclick = () => saveWorkout(box, () => { W = blankW(); draft.del(DRAFT_KEY); sub = 'hist'; renderPlyo(view, ctx); });
+    $('#clr', box).onclick = () => confirmDialog('¿Vaciar la sesión en curso?', 'Vaciar sesión').then((ok) => { if (ok) { W = blankW(); draft.del(userDraftKey()); draw(); } });
+    $('#savew', box).onclick = () => saveWorkout(box, () => { W = blankW(); draft.del(userDraftKey()); sub = 'hist'; renderPlyo(view, ctx); });
   };
   draw();
 }
@@ -116,7 +119,7 @@ async function saveWorkout(box, done) {
   if (!items.length) { msg.textContent = 'Agrega al menos un ejercicio con una serie completada.'; return; }
   const btn = $('#savew', box); btn.disabled = true;
   const { data: w, error } = await supabase.from('workouts').insert({
-    performed_on: W.date, duration_min: num(W.duration), rpe: num(W.rpe), notes: W.notes.trim() || null,
+    kind: 'plyometrics', performed_on: W.date, duration_min: num(W.duration), rpe: num(W.rpe), notes: W.notes.trim() || null,
   }).select('id').single();
   if (error) { msg.textContent = 'Error: ' + error.message; btn.disabled = false; return; }
   const rows = items.flatMap((it) => it.sets.map((s, j) => {
@@ -179,7 +182,7 @@ function customForm(ctx, onDone) {
 /* ------------------------------ Historial ------------------------------ */
 async function history(box) {
   const { data: ws = [], error } = await supabase.from('workouts')
-    .select('*, workout_sets(*, exercises(name,name_es,images))').order('performed_on', { ascending: false }).order('created_at', { ascending: false }).limit(60);
+    .select('*, workout_sets(*, exercises(name,name_es,images))').eq('kind','plyometrics').order('performed_on', { ascending: false }).order('created_at', { ascending: false }).limit(60);
   if (error) { box.innerHTML = `<p class="msg">${esc(error.message)}</p>`; return; }
 
   // récords personales por ejercicio

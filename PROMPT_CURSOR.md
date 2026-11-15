@@ -4,7 +4,7 @@ LEE PRIMERO: `PROGRESS.md` (estado, tablas, decisiones) y este archivo. Después
 
 STACK (no lo cambies)
 - Vite 5.4 multipágina, JavaScript vanilla con módulos ES, sin frameworks. Páginas: `index.html` (landing), `app.html` (socio), `admin.html` (admin).
-- Código en `src/app/`: app.js (shell, pestañas, inicio, perfil, membresía, configuración), auth.js (login, registro, recuperación, "completa tu perfil", ojo de contraseña), running.js, plyo.js, training.js, admin.js (Pagos / Socios / Ejercicios / Módulos y apariencia), common.js. Estilos solo en `src/app/app.css`.
+- Código en `src/app/`: app.js (shell, inicio, perfil, membresía y configuración), auth.js (login/registro/recuperación), running.js, plyo.js, training.js, community.js (Actividad/Miembros/Retos), admin.js (Pagos/Socios/Módulos/Ejercicios/Eventos/Retos), common.js. Estilos solo en `src/app/app.css`.
 - Backend: Supabase (Postgres + Auth + Storage + Edge Functions). Seguridad en RLS de Postgres, NO en el frontend. Sin servidor propio. Deploy: Vercel estático (https://batmon.vercel.app), repo https://github.com/arancibiafloreserickmanuel-dotcom/batmon rama main (cada push redespliega). Supabase: https://kzuuqborlrvvgibksgwk.supabase.co (publishable key en `.env`, gitignored).
 - GitHub Action `keepalive.yml` hace ping a Supabase cada 3 días.
 
@@ -15,10 +15,10 @@ QUÉ HAY HECHO
 - Módulos: running, ciclismo, natación, pliometría (61 ejercicios del dataset yuhonas/free-exercise-db con fotos) y entrenamiento (catálogo propio). El admin los activa/desactiva globalmente y por socio.
 - Pagos: QR fijo (public/qr-pago.webp), el socio sube comprobante (bucket privado `receipts`) o pide pago en efectivo; el admin aprueba/rechaza en Admin → Pagos. Los admins están exentos del aviso/bloqueo por membresía (solo UI).
 - Admin: pagos, socios (ver/borrar datos, cambiar rol, eliminar socio para siempre = RPC `admin_delete_user` + borrado de archivos de Storage), ejercicios (importar catálogos, traducir name_es, activar/desactivar), módulos y apariencia.
-- Migraciones SQL en `supabase/migrations/` (0002 a 0011, todas YA aplicadas en Supabase; la base es `supabase/schema.sql`). Tablas: profiles, activities, memberships, exercises, workouts, workout_sets, training_plans, profile_modules, app_modules, site_settings, friendships, profile_posts, body_measurements.
+- Migraciones SQL versionadas en `supabase/migrations/` (la secuencia local llega actualmente a 0015; el usuario confirmó que 0013 está aplicada, y las 0014/0015 nuevas quedan pendientes). `PROGRESS.md` conserva el historial, que debe actualizarse al aplicar cada migración. Tablas adicionales incluyen eventos, notificaciones, evaluaciones pliométricas, comentarios/reacciones y retos.
 
 REGLAS DURAS
-1. No toques RLS ni la base de datos sin crear una migración nueva `supabase/migrations/0012_<nombre>.sql` (siguiente número), y avísame para que la aplique (la aplica Claude en Chrome desde el SQL Editor; tú no tienes acceso a Supabase). No asumas que una migración nueva ya está aplicada.
+1. No toques RLS ni la base de datos sin crear una migración nueva con el siguiente número disponible en `supabase/migrations/` y avísame para que la aplique el usuario desde SQL Editor. No ejecutes SQL remoto ni supongas que una migración nueva ya está aplicada.
 2. No cambies nombres de tablas/columnas ni los ids que usa el JS sin actualizar todo lo que los usa.
 3. No pongas claves secretas en el código ni en el chat. Solo la publishable key.
 4. Nada de efecto glass/blur. Textos en español.

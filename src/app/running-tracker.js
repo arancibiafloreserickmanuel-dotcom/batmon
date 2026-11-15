@@ -21,6 +21,7 @@ export function createRunningTracker(userId) {
   const distanceKm = () => (state?.distance_m || 0) / 1000;
   const stopWatch = () => { if (activeWatchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(activeWatchId); activeWatchId = null; };
   const stopClock = () => { clearInterval(activeClockId); activeClockId = null; };
+  const startClock = (onUpdate) => { stopClock(); activeClockId = setInterval(() => onUpdate?.(state), 1000); };
 
   function startWatch(onUpdate, onError) {
     if (!navigator.geolocation) { onError('Este navegador no ofrece geolocalización.'); return; }
@@ -32,12 +33,14 @@ export function createRunningTracker(userId) {
       if (!Number.isFinite(accuracy) || accuracy > MAX_ACCURACY_M) { state.gps_status = 'Señal GPS débil; buscando mejor precisión…'; save(); onUpdate?.(state); return; }
       const point = { lat, lon, at: position.timestamp || Date.now(), accuracy: Math.round(accuracy), elevation: Number.isFinite(altitude) ? altitude : null };
       const prev = state.points.at(-1);
+      if(state.ignore_next_segment){state.ignore_next_segment=false;state.points.push(point);state.gps_status='GPS conectado';save();onUpdate?.(state);return;}
       if (prev) {
         const step = distanceBetween(prev, point);
         if (step < MIN_STEP_M || step > MAX_STEP_M) return;
         state.distance_m += step;
       }
       state.points.push(point);
+      if(state.points.length>4000)state.points=state.points.filter((_,index)=>index===0||index===state.points.length-1||index%2===0);
       state.gps_status = 'GPS conectado';
       save(); onUpdate?.(state);
     }, (error) => {
@@ -51,12 +54,12 @@ export function createRunningTracker(userId) {
     if (!navigator.geolocation || !window.isSecureContext) { onError?.(!window.isSecureContext ? 'El GPS requiere HTTPS.' : 'Este navegador no ofrece geolocalización.'); return false; }
     state = { user_id: userId, started_at: Date.now(), segment_started_at: Date.now(), elapsed_before_pause: 0, distance_m: 0, points: [], status: 'running', gps_status: 'Buscando señal GPS…' };
     save(); startWatch(onUpdate, onError);
-    activeClockId = setInterval(() => onUpdate?.(state), 1000);
+    startClock(onUpdate);
     return true;
   }
   function restore(onUpdate, onError) {
     if (!state || state.status !== 'running') return;
-    startWatch(onUpdate, onError); activeClockId = setInterval(() => onUpdate?.(state), 1000);
+    startWatch(onUpdate, onError); startClock(onUpdate);
   }
   function pause() {
     if (!state || state.status !== 'running') return;
@@ -64,7 +67,7 @@ export function createRunningTracker(userId) {
   }
   function resume(onUpdate, onError) {
     if (!state || state.status !== 'paused') return;
-    state.status = 'running'; state.segment_started_at = Date.now(); state.gps_status = 'Buscando señal GPS…'; save(); startWatch(onUpdate, onError); activeClockId = setInterval(() => onUpdate?.(state), 1000);
+    state.status = 'running'; state.segment_started_at = Date.now(); state.ignore_next_segment = true; state.gps_status = 'Buscando señal GPS…'; save(); startWatch(onUpdate, onError); startClock(onUpdate);
   }
   function discard() { stopWatch(); stopClock(); localStorage.removeItem(key); state = null; }
   function finish() {

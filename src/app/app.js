@@ -4,12 +4,14 @@ import { fmt, iso, today, monthStart, weekStart, paceStr, DISC, showDelayedLoadi
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
+import { renderCommunity } from './community.js';
 import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles } from './auth.js';
 
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
 const TABS = [
   ['inicio', 'Inicio', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'],
+  ['club', 'Club', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'],
   ['running', 'Running', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/></svg>'],
   ['cycling', 'Ciclismo', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/></svg>'],
   ['swimming', 'Natación', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/></svg>'],
@@ -90,7 +92,7 @@ function route() {
     view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
     return;
   }
-  const fn = { inicio: renderHome, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, perfil: renderProfile }[tab] || renderHome;
+  const fn = { inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, perfil: renderProfile }[tab] || renderHome;
   const stopLoading=showDelayedLoading(view);
   Promise.resolve().then(()=>fn(view, ctx)).then(stopLoading).catch((e) => { stopLoading();view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }

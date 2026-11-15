@@ -112,6 +112,15 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Diagnóstico del código real en `AUDITORIA_PLATAFORMA.md`: arquitectura Vite/JS vanilla + Supabase, inventario por áreas, funciones existentes, brechas y orden recomendado. Se conserva el calendario único de Inicio y Progreso dentro de Perfil.
 - Running: añadido tracker GPS foreground con iniciar/pausar/reanudar/finalizar, cronómetro, distancia/ritmo, trazo local de ruta y borrador persistente por usuario. El guardado de la actividad conserva los puntos GPS; ante fallo de BD queda pausada para reintentar.
 - Pliometría: nueva pestaña de evaluación manual para CMJ, SJ y Drop Jump, con mediciones e historial. No estima resultados ni simula sensores.
-- Nueva migración `supabase/migrations/0013_running_gps_track.sql`: columnas de ruta/fuente GPS y tabla/RLS para evaluaciones pliométricas. Está pendiente de aplicar por el usuario; no se ejecutó SQL contra Supabase.
-- Verificación local: `npm run build` (ejecutar de nuevo antes de integrar). Sin validación de GPS físico, sesión real, RLS o Supabase conectado en este entorno. GPS web requiere HTTPS/permisos y mantener la pestaña disponible.
+- El usuario confirma que `supabase/migrations/0013_running_gps_track.sql` ya está aplicada: columnas de ruta/fuente GPS y tabla/RLS para evaluaciones pliométricas.
+- Verificación local: `npm run build` pasó el 15 nov. Sin validación de GPS físico, sesión real, RLS o Supabase conectado en este entorno. GPS web requiere HTTPS/permisos y mantener la pestaña disponible.
 - Nota de auditoría: el historial de migraciones en este archivo contiene estados que no coinciden entre secciones (por ejemplo, 0012 se marca aplicada según reporte del usuario y más abajo pendiente). No se puede confirmar el estado remoto desde este repositorio; revisar con el listado de migraciones de Supabase antes de aplicar cualquier SQL.
+
+## Organización por páginas + Club (15 nov)
+- Running/Ciclismo/Natación: separadas dentro de cada disciplina en Resumen, Iniciar/Registrar e Historial; las métricas de resumen semanal usan la disciplina seleccionada. El historial muestra el trazo GPS cuando existe.
+- Corregido un cruce de datos: el historial de Pliometría filtra `workouts.kind='plyometrics'`; los borradores locales pliométricos ahora quedan separados por usuario.
+- Se agregó la página Club con subsecciones Actividad, Miembros y Retos. Actividad reutiliza `profile_posts` y `profile-media`, visibilidad del autor y sus amigos aceptados; permite publicar fotos/videos, comentar, reaccionar y borrar publicaciones propias. Miembros usa el directorio/amistades existentes. Los eventos siguen en el calendario único de Inicio.
+- Admin tiene gestión CRUD de retos. Las clasificaciones se calculan con registros reales y separan disciplinas/unidades; Running/Ciclismo/Natación pueden puntuar kilómetros o sesiones y Pliometría/Entrenamiento sesiones.
+- Nuevas migraciones `0014_club_community.sql` y `0015_club_challenges.sql`: ampliar claves de publicación a Ciclismo; añadir reacciones/comentarios y retos/participantes/RPC de clasificación con RLS. Pendientes de aplicar por el usuario; no se ejecutó SQL remoto.
+- Perfil: se conserva y no se duplicó Progreso. Natación, Ciclismo y Entrenamiento conservan sus páginas existentes; Running ahora presenta los registros de Ciclismo/Natación en vistas internas separadas.
+- Verificación: `npm run build` pasó el 15 nov y `git diff --check` no reportó errores. No se validó con sesión real, datos Supabase ni dispositivos.
