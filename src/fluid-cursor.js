@@ -42,6 +42,7 @@ export function createFluidCursor(canvas, config) {
   let texelX, texelY;
   let rafId = null, lastTime = 0;
   let lastPoint = null;
+  let activeTouchId = null;
   const splatQueue = [];
 
   function compile(type, source) {
@@ -252,13 +253,18 @@ export function createFluidCursor(canvas, config) {
   }
 
   /* ---------- input ---------- */
-  function pointerMove(clientX, clientY) {
+  function normalizedPoint(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) / rect.width;
-    const y = 1.0 - (clientY - rect.top) / rect.height;
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const y = 1.0 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    return { x, y };
+  }
+
+  function pointerMove(clientX, clientY, sensitivity = 1) {
+    const { x, y } = normalizedPoint(clientX, clientY);
     if (lastPoint) {
-      const dx = (x - lastPoint.x) * config.SPLAT_FORCE;
-      const dy = (y - lastPoint.y) * config.SPLAT_FORCE;
+      const dx = (x - lastPoint.x) * config.SPLAT_FORCE * sensitivity;
+      const dy = (y - lastPoint.y) * config.SPLAT_FORCE * sensitivity;
       if (dx !== 0 || dy !== 0) splatQueue.push({ x, y, dx, dy });
     }
     lastPoint = { x, y };
@@ -267,11 +273,39 @@ export function createFluidCursor(canvas, config) {
   function bindInput() {
     window.addEventListener("mousemove", (e) => pointerMove(e.clientX, e.clientY));
     window.addEventListener("mouseleave", () => { lastPoint = null; });
+    window.addEventListener("touchstart", (e) => {
+      if (activeTouchId !== null || !e.changedTouches.length) return;
+      const touch = e.changedTouches[0];
+      activeTouchId = touch.identifier;
+      lastPoint = normalizedPoint(touch.clientX, touch.clientY);
+    }, { passive: true, capture: true });
     window.addEventListener("touchmove", (e) => {
-      const t = e.touches[0];
-      if (t) pointerMove(t.clientX, t.clientY);
-    }, { passive: true });
-    window.addEventListener("touchend", () => { lastPoint = null; });
+      let touch = Array.from(e.touches).find((item) => item.identifier === activeTouchId);
+      if (!touch) touch = e.touches[0];
+      if (!touch) return;
+      if (activeTouchId === null || touch.identifier !== activeTouchId) {
+        activeTouchId = touch.identifier;
+        lastPoint = normalizedPoint(touch.clientX, touch.clientY);
+        return;
+      }
+      // Touch sampling is less consistent than mouse sampling on mobile; slightly
+      // amplify finger movement without changing the ink preset or radius.
+      pointerMove(touch.clientX, touch.clientY, 1.2);
+    }, { passive: true, capture: true });
+    const finishTouch = (e) => {
+      const ended = Array.from(e.changedTouches).some((item) => item.identifier === activeTouchId);
+      if (!ended) return;
+      const remaining = e.touches[0];
+      if (remaining) {
+        activeTouchId = remaining.identifier;
+        lastPoint = normalizedPoint(remaining.clientX, remaining.clientY);
+      } else {
+        activeTouchId = null;
+        lastPoint = null;
+      }
+    };
+    window.addEventListener("touchend", finishTouch, { passive: true, capture: true });
+    window.addEventListener("touchcancel", finishTouch, { passive: true, capture: true });
   }
 
   function resizeCanvas() {
