@@ -141,16 +141,20 @@ body.appbody[data-theme="light"] .cal10 {
   padding: 0 2px;
 }
 .cal10__month {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 21px;
+  letter-spacing: .02em;
   color: var(--text);
   line-height: 1;
 }
 .cal10__year {
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text3);
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   margin-top: 1px;
 }
 .cal10__actions {
@@ -211,16 +215,20 @@ body.appbody[data-theme="light"] .cal10 {
 .cal10__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 2px;
 }
 .cal10__cell {
-  aspect-ratio: 1;
-  min-height: 34px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  max-width: 28px;
+  margin: 0 auto;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
@@ -233,19 +241,18 @@ body.appbody[data-theme="light"] .cal10 {
 }
 .cal10__cell.other {
   color: var(--text3);
-  opacity: .4;
+  opacity: .35;
   pointer-events: none;
 }
 .cal10__cell.today:not(.selected) {
   box-shadow: var(--shadow-in);
-  font-weight: 800;
+  font-weight: 700;
 }
 .cal10__cell.selected {
   background: #0a0a0a;
   color: #ffffff;
-  font-weight: 800;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .15);
-  transform: scale(1.05);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .15);
 }
 .cal10.is-collapsed .cal10__cell--hidden {
   display: none;

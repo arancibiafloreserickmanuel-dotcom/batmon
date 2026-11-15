@@ -133,7 +133,7 @@ function buildUnifiedCalendar() {
       </div>
 
       <div class="cal10__toggles" id="cal10-toggles">
-        <button type="button" class="cal10__toggle active" data-filter="day">Día</button>
+        <button type="button" class="cal10__toggle active" data-filter="day">Hoy</button>
         <button type="button" class="cal10__toggle" data-filter="week">Semana</button>
         <button type="button" class="cal10__toggle" data-filter="month">Mes</button>
       </div>
