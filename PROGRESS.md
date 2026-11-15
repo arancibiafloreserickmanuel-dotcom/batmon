@@ -146,3 +146,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 ## Alineación del icono activo del dock (15 nov)
 - Centrado el icono dentro del círculo seleccionado mediante un ajuste vertical de su posición.
 - `npm run build` correcto; `git diff --check` limpio.
+
+## Campanita de Inicio abre calendario (15 nov)
+- La campanita ahora expande el calendario completo existente y desplaza la vista hasta él; ya no abre el modal duplicado de notificaciones/eventos.
+- Se conserva el contador de notificaciones sin leer y se sincroniza `aria-expanded` con el estado del calendario.
+- Compilación `npm run build` correcta; `git diff --check` limpio.

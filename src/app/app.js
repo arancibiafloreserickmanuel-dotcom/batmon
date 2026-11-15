@@ -163,6 +163,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
   const nextBtn = root.querySelector('#cal10-next');
   const gridEl = root.querySelector('#cal10Grid');
   const pullBtn = root.querySelector('#cal10-pull-btn');
+  const bellBtn = root.querySelector('#cal10-bell');
   const pullZone = root.querySelector('#cal10-pull-zone');
   const drawerEl = root.querySelector('#cal10-drawer');
   const footerLabel = root.querySelector('#cal10-footer-label');
@@ -344,10 +345,16 @@ function setupUnifiedCalendar(view, clubEvents = []) {
     isCollapsed = !isCollapsed;
     root.classList.toggle('is-collapsed', isCollapsed);
     drawerEl.style.display = isCollapsed ? 'none' : 'block';
+    pullBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    bellBtn?.setAttribute('aria-expanded', String(!isCollapsed));
     renderGrid();
   };
 
   pullBtn.onclick = toggleCollapse;
+  if (bellBtn) bellBtn.onclick = () => {
+    if (isCollapsed) toggleCollapse();
+    root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   let touchStartY = 0;
   pullZone.addEventListener('touchstart', (e) => {
@@ -391,12 +398,6 @@ async function openClubEvent(eventId) {
   document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
   modal.querySelector('[data-confirm]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){button.disabled=false;notify('No se pudo confirmar: '+e.message);}else{notify('Asistencia confirmada.','success');modal.remove();}});
   modal.querySelector('[data-cancel]')?.addEventListener('click',async(eventClick)=>{if(!(await confirmDialog('¿Confirmas que no asistirás a este evento?','Quitar confirmación')))return;const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',rsvp.id).eq('user_id',ctx.user.id);if(e){button.disabled=false;notify('No se pudo cancelar: '+e.message);}else{notify('Confirmación cancelada.','success');modal.remove();}});
-}
-
-async function openEventNotifications(events) {
-  const {data:notifs=[]}=await supabase.from('event_notifications').select('id,event_id,message,is_read').eq('user_id',ctx.user.id).order('created_at',{ascending:false}).limit(50);
-  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet"><div class="sheet-h"><h2>Eventos y notificaciones</h2><button class="link" data-close>Cerrar</button></div><div class="notifications-list">${events.map(e=>`<button class="card event-notification-item" data-event-id="${e.id}"><b>${esc(e.title)}</b><span>${new Date(e.event_date).toLocaleString('es-BO')}</span></button>`).join('')}${notifs.map(n=>`<button class="card event-notification-item" data-event-id="${n.event_id}">${esc(n.message||'Recordatorio de evento')}</button>`).join('')||(!events.length?'<p class="muted">No hay eventos ni notificaciones.</p>':'')}</div></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelectorAll('[data-event-id]').forEach(b=>b.onclick=async()=>{const id=b.dataset.eventId;await supabase.from('event_notifications').update({is_read:true}).eq('user_id',ctx.user.id).eq('event_id',id);modal.remove();await openClubEvent(id);});
 }
 
 async function renderHome(v) {
@@ -450,7 +451,7 @@ async function renderHome(v) {
     <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
   setupUnifiedCalendar(v,clubEvents);
   const eventBell=v.querySelector('#cal10-bell');
-  if(eventBell){eventBell.setAttribute('aria-label',`Notificaciones de eventos: ${unreadNotifications||0}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);eventBell.onclick=()=>openEventNotifications(clubEvents);}
+  if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);
   const nextMidnight = new Date();
   nextMidnight.setHours(24, 0, 5, 0);
