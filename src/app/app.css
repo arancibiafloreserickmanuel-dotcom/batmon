@@ -847,6 +847,17 @@ body.appbody #settings-logout:active{background:#a71919!important;border-color:#
 .pw-eye.on{color:#0d0d0c}body[data-theme="dark"] .pw-eye.on{color:#fff}
 input[type="password"][data-eye],input[type="text"][data-eye]{padding-right:46px}
 
+/* Checks neumórficos exclusivos de Administración → Módulos. */
+body.appbody .module-toggle .module-check{position:relative;display:block;flex:0 0 1.3em;width:1.3em;height:1.3em;font-size:20px;}
+body.appbody .module-toggle .module-check>input{position:absolute;inset:0;z-index:2;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;opacity:0;cursor:pointer;}
+body.appbody .module-toggle .module-checkmark{position:absolute;inset:0;display:block;border-radius:50%;background:#e8e8e8;box-shadow:3px 3px 5px #c5c5c5,-3px -3px 5px #fff;transition:box-shadow .25s ease,background-color .25s ease;}
+body.appbody[data-theme="dark"] .module-toggle .module-checkmark{background:#212121;box-shadow:3px 3px 5px #121212,-3px -3px 5px #2c2c2c;}
+body.appbody .module-toggle .module-check>input:checked~.module-checkmark{box-shadow:inset 3px 3px 5px #c5c5c5,inset -3px -3px 5px #fff;}
+body.appbody[data-theme="dark"] .module-toggle .module-check>input:checked~.module-checkmark{box-shadow:inset 3px 3px 5px #121212,inset -3px -3px 5px #2c2c2c;}
+body.appbody .module-toggle .module-checkmark::after{content:"";position:absolute;left:39%;top:22%;width:22%;height:43%;border:solid #174a35;border-width:0 .14em .14em 0;opacity:0;transform:rotate(45deg) scale(.75);transition:opacity .16s ease,transform .16s ease;}
+body.appbody .module-toggle .module-check>input:checked~.module-checkmark::after{opacity:1;transform:rotate(45deg) scale(1);}
+body.appbody .module-toggle .module-check>input:focus-visible~.module-checkmark{outline:2px solid var(--ink);outline-offset:4px;}
+
 /* Dock de navegación: relieve del calendario, iconos por defecto y etiquetas al enfocar. */
 body.appbody .tabs.main{left:50%;right:auto;bottom:calc(9px + env(safe-area-inset-bottom));width:min(720px,calc(100vw - 28px));max-width:720px;transform:translateX(-50%);align-items:center;justify-content:stretch;gap:2px;overflow:visible;padding:7px;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);border-radius:var(--card-radius,20px);background:var(--card-surface,#e0e0e0);box-shadow:var(--dock-shadow,6px 6px 14px #bebebe,-6px -6px 14px #fff);--dock-item-shadow:inset 4px 4px 8px #bebebe,inset -4px -4px 8px #fff;}
 body.appbody[data-theme="dark"] .tabs.main{--dock-shadow:5px 5px 12px #121212,-5px -5px 12px #2c2c2c;--dock-item-shadow:inset 3px 3px 7px #121212,inset -3px -3px 7px #2c2c2c;}

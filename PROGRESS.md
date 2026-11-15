@@ -151,3 +151,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - La campanita ahora expande el calendario completo existente y desplaza la vista hasta él; ya no abre el modal duplicado de notificaciones/eventos.
 - Se conserva el contador de notificaciones sin leer y se sincroniza `aria-expanded` con el estado del calendario.
 - Compilación `npm run build` correcta; `git diff --check` limpio.
+
+## Dock y checks en Administración (15 nov)
+- Corregida navegación Admin: Pagos, Socios, Módulos, Ejercicios, Eventos y Retos tienen iconos SVG; nombres solo visibles en selección/hover, con círculo activo hundido y animación de vecinos.
+- Los checks de módulos globales, excepciones por socio y ficha de socio usan el control circular neumórfico con marca verde oscuro; estilos limitados a `.module-toggle`.
+- `npm run build` pasó; `git diff --check` limpio.

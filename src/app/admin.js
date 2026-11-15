@@ -6,7 +6,14 @@ import translations from '../data/plyometrics_es.json';
 import trainingCatalog from '../data/training_exercises.json';
 
 const view = $('#view');
-const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios'], ['eventos', 'Eventos'], ['retos', 'Retos']];
+const TABS = [
+  ['pagos', 'Pagos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>'],
+  ['socios', 'Socios', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.5a3.5 3.5 0 0 1 0 6.8M17 14a5.5 5.5 0 0 1 4.5 5.5"/></svg>'],
+  ['modulos', 'Módulos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>'],
+  ['ejercicios', 'Ejercicios', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg>'],
+  ['eventos', 'Eventos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 3h6"/></svg>'],
+  ['retos', 'Retos', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Zm4 8v5m-4 3h8m-8-3h8M8 6H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4"/></svg>'],
+];
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
@@ -90,7 +97,7 @@ async function detalle(u) {
     <h2>Pliometría (${plyoSessions.length})</h2><div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
     <h2>Entrenamiento (${trainingSessions.length})</h2><div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
     <h2>Módulos de este socio</h2><p class="muted">Los módulos desactivados se ocultan en su navegación y accesos directos.</p>
-    ${moduleError ? `<p class="msg">No disponible: aplica la migración 0004 para gestionar módulos.</p>` : `<div class="module-settings">${[['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']].map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-module="${key}" ${moduleState[key] ? 'checked' : ''} aria-label="Activar ${title}"></label>`).join('')}</div>`}
+    ${moduleError ? `<p class="msg">No disponible: aplica la migración 0004 para gestionar módulos.</p>` : `<div class="module-settings">${[['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']].map(([key,title]) => `<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-module="${key}" ${moduleState[key] ? 'checked' : ''} aria-label="Activar ${title}"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div>`}
     <h2>Acciones</h2>
     ${self ? '<p class="muted">Eres tú: no puedes cambiar tu rol ni borrarte.</p>' : `<button class="btn sm ghost" id="role">${u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}</button>
       <button class="btn sm" id="rmuser" style="background:#a00;border-color:#a00">Eliminar socio y sus datos</button>`}`);
@@ -186,7 +193,7 @@ async function modulos() {
   ]);
   if (globalError || userError) { $('#body').innerHTML = `<h2>Módulos</h2><p class="msg">Aplica la migración 0004 para configurar módulos.</p>`; return; }
   const globals = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
-  $('#body').innerHTML = `<h1>Módulos y apariencia</h1><p class="muted">Configura qué módulos y tema verá el club.</p><h2>Tema para todo el club</h2><label for="theme-policy">Apariencia</label><select id="theme-policy"><option value="choice" ${appearance?.theme_policy==='choice'?'selected':''}>Cada socio puede elegir</option><option value="dark" ${appearance?.theme_policy==='dark'?'selected':''}>Forzar modo oscuro</option><option value="light" ${appearance?.theme_policy==='light'?'selected':''}>Forzar modo claro</option></select><p class="muted">Los fondos de textura se aplicarán en ambos modos.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''}></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><input type="checkbox" data-user="${u.id}" data-module="${key}" checked></label>`).join('')}</div></details>`).join('')}</div>`;
+  $('#body').innerHTML = `<h1>Módulos y apariencia</h1><p class="muted">Configura qué módulos y tema verá el club.</p><h2>Tema para todo el club</h2><label for="theme-policy">Apariencia</label><select id="theme-policy"><option value="choice" ${appearance?.theme_policy==='choice'?'selected':''}>Cada socio puede elegir</option><option value="dark" ${appearance?.theme_policy==='dark'?'selected':''}>Forzar modo oscuro</option><option value="light" ${appearance?.theme_policy==='light'?'selected':''}>Forzar modo claro</option></select><p class="muted">Los fondos de textura se aplicarán en ambos modos.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''} aria-label="Activar ${title} para todos"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-user="${u.id}" data-module="${key}" checked aria-label="Activar ${title} para ${esc(u.full_name)}"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div></details>`).join('')}</div>`;
   $('#theme-policy').onchange=async e=>{const {error}=await supabase.from('site_settings').upsert({id:true,theme_policy:e.target.value,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'id'});if(error)notify(error.message);};
   const userRows = await supabase.from('profile_modules').select('user_id,module_key,enabled');
   if (userRows.error) { notify(`No se pudieron leer excepciones: ${userRows.error.message}`); return; }
@@ -567,7 +574,11 @@ async function retos() {
 const SECTIONS = { pagos, socios, modulos, ejercicios, eventos, retos };
 function route() {
   const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
-  document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + t));
+  document.querySelectorAll('#tabs a').forEach((a) => {
+    const active = a.getAttribute('href') === '#' + t;
+    a.classList.toggle('on', active);
+    a.setAttribute('aria-current', active ? 'page' : 'false');
+  });
   const stopLoading=showDelayedLoading($('#body'));
   SECTIONS[t]().then(stopLoading).catch((e) => { stopLoading();$('#body').innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
@@ -585,7 +596,7 @@ async function init() {
     stopLoading();
     view.innerHTML = '<div id="body"></div>';
     $('#tabs').hidden = false;
-    $('#tabs').innerHTML = TABS.map(([h, t]) => `<a href="#${h}">${t}</a>`).join('');
+    $('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
     window.addEventListener('hashchange', route);
     route();
   } catch (error) {
