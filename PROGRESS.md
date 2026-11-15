@@ -177,3 +177,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - La etiqueta genérica «Evento» usa fondo blanco/negro según el tema y texto verde oscuro; las etiquetas de prioridad amarilla/roja conservan sus colores.
 - El detalle del evento se centra en móvil, respeta las áreas seguras y limita su alto al viewport. Descripción, hora y lugar usan superficie/sombras de cards.
 - `npm run build` pasó; `git diff --check` limpio.
+
+## Posición del cierre del modal de eventos (15 nov)
+- Se subió el control animado «Cerrar» en la portada del evento, con margen compacto adaptado a móvil. La ficha conserva scroll interno y respeta safe areas.
+- `npm run build` correcto; `git diff --check` limpio.
