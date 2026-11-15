@@ -256,6 +256,20 @@ body.appbody[data-theme="light"] .cal10 {
   transition: box-shadow .18s, color .18s, transform .18s;
   background: var(--bg);
 }
+.cal10__dot {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.cal10__dot--green { background: #24553a; border-color: #427552; }
+.cal10__dot--yellow { background: #705516; border-color: #987a2e; }
+.cal10__dot--red { background: #6b2029; border-color: #91333d; }
 .cal10__cell:hover {
   box-shadow: var(--shadow-in-sm);
 }

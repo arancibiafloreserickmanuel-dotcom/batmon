@@ -210,3 +210,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - «Indumentaria» usa texto negro y tamaño/estilo como «Complejos de entrenamiento». El título de complejos se acercó al carrusel en móvil.
 - Se aumentó la respuesta táctil del cursor de 1.2x a 2.2x, sin alterar presets ni radio.
 - `npm run build` pasó; `git diff --check` limpio. Pendiente validar gestos y encuadre en dispositivos reales.
+
+## Indicadores de fecha para eventos en calendario (15 nov)
+- Se añadieron estilos visibles para el círculo de evento con tonos oscuros: verde a más de 7 días, amarillo de 3 a 7 días y rojo en los últimos 2 días o en fechas pasadas.
+- La fecha del evento se compara en hora local, evitando desplazar al día siguiente eventos próximos a medianoche. El calendario carga eventos pasados y futuros para marcar todas sus fechas.
+- `npm run build` pasó; `git diff --check` limpio. No requiere migración.

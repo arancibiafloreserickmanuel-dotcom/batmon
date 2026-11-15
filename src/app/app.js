@@ -179,10 +179,11 @@ function setupUnifiedCalendar(view, clubEvents = []) {
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const dayLabelsFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const formatEventTime = (event) => new Date(event.event_date).toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
+  const eventDateIso = (event) => iso(new Date(event.event_date));
 
   function getEventsForDate(dateObj) {
     const dIso = iso(dateObj);
-    return clubEvents.filter((ev) => String(ev.event_date).slice(0,10) === dIso);
+    return clubEvents.filter((ev) => eventDateIso(ev) === dIso);
   }
 
   function renderGrid() {
@@ -225,10 +226,10 @@ function setupUnifiedCalendar(view, clubEvents = []) {
         const isToday = cellIso === today();
         const isSelected = cellIso === selectedIso;
 
-        // Puntos exclusivos de eventos del club (excluyendo estrictamente el día 12)
+        // El evento se compara en la zona horaria local para marcar el día elegido por el admin.
         const event = getEventsForDate(d).sort((a,b)=>new Date(a.event_date)-new Date(b.event_date))[0];
         const hasDot = Boolean(event);
-        const daysToEvent = event ? Math.ceil((new Date(`${String(event.event_date).slice(0,10)}T12:00:00`).getTime()-new Date(`${today()}T12:00:00`).getTime())/86400000) : Infinity;
+        const daysToEvent = event ? Math.ceil((new Date(`${eventDateIso(event)}T12:00:00`).getTime()-new Date(`${today()}T12:00:00`).getTime())/86400000) : Infinity;
         const eventColor = daysToEvent <= 2 ? 'red' : daysToEvent <= 7 ? 'yellow' : 'green';
 
         const isVisibleInCollapsed = wIdx === activeWeekIdx;
@@ -425,7 +426,7 @@ async function renderHome(v) {
     supabase.from('training_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
   ]);
   const [{data:clubEvents=[]},{count:unreadNotifications=0}]=await Promise.all([
-    supabase.from('events').select('id,title,description,event_date,location,image_path').gte('event_date',new Date(new Date().setHours(0,0,0,0)).toISOString()).order('event_date'),
+    supabase.from('events').select('id,title,description,event_date,location,image_path').order('event_date'),
     supabase.from('event_notifications').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id).eq('is_read',false),
   ]);
   const calendarEvents=await Promise.all(clubEvents.map(async event=>{
