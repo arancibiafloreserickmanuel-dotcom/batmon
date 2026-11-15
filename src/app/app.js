@@ -177,6 +177,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
 
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const dayLabelsFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const formatEventTime = (event) => new Date(event.event_date).toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
 
   function getEventsForDate(dateObj) {
     const dIso = iso(dateObj);
@@ -272,7 +273,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
       title = `${isToday ? 'Hoy' : selDayName} · ${selDate.getDate()} de ${selMonthName}`;
       events = getEventsForDate(selDate).map((ev) => ({
         ...ev,
-        dateLabel: `${isToday ? 'Hoy' : selDayName} · ${ev.time}`
+        dateLabel: `${isToday ? 'Hoy' : selDayName} · ${formatEventTime(ev)}`
       }));
     } else if (eventFilter === 'week') {
       const wStart = new Date(selDate);
@@ -288,7 +289,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
         dayEvs.forEach((ev) => {
           events.push({
             ...ev,
-            dateLabel: `${dayLabelsFull[curD.getDay()]} ${curD.getDate()} · ${ev.time}`
+            dateLabel: `${dayLabelsFull[curD.getDay()]} ${curD.getDate()} · ${formatEventTime(ev)}`
           });
         });
       }
@@ -305,7 +306,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
         dayEvs.forEach((ev) => {
           events.push({
             ...ev,
-            dateLabel: `${dayLabelsFull[curD.getDay()]} ${d} de ${monthNames[m]} · ${ev.time}`
+            dateLabel: `${dayLabelsFull[curD.getDay()]} ${d} de ${monthNames[m]} · ${formatEventTime(ev)}`
           });
         });
       }
@@ -316,7 +317,7 @@ function setupUnifiedCalendar(view, clubEvents = []) {
     if (events.length) {
       eventsList.innerHTML = events.map((ev) => `
         <button type="button" class="cal10__ev" data-event-id="${ev.id}">
-          <div class="cal10__ev-icon">${ev.icon || '📅'}</div>
+          ${ev.image_url ? `<img class="cal10__ev-img" src="${esc(ev.image_url)}" alt="" loading="lazy">` : '<div class="cal10__ev-icon" aria-hidden="true">BC</div>'}
           <div class="cal10__ev-body">
             <div class="cal10__ev-name">${esc(ev.title)}</div>
             <div class="cal10__ev-time">${esc(ev.dateLabel)}${ev.location ? ` · ${esc(ev.location)}` : ''}</div>
@@ -390,14 +391,29 @@ function setupUnifiedCalendar(view, clubEvents = []) {
 async function openClubEvent(eventId) {
   const {data:event,error}=await supabase.from('events').select('*').eq('id',eventId).single();
   if(error||!event){notify('No se pudo abrir el evento.');return;}
-  const [{data:rsvp},{data:image}]=await Promise.all([
+  const [{data:rsvp},{data:confirmedRows},{data:directoryRows},{data:image}]=await Promise.all([
     supabase.from('event_rsvps').select('id,status').eq('event_id',eventId).eq('user_id',ctx.user.id).maybeSingle(),
-    event.image_path?.startsWith('http')?Promise.resolve({data:{signedUrl:event.image_path}}):supabase.storage.from('event-media').createSignedUrl(event.image_path,3600),
+    supabase.from('event_rsvps').select('user_id').eq('event_id',eventId).eq('status','confirmed'),
+    supabase.rpc('profile_directory'),
+    !event.image_path?Promise.resolve({data:null}):event.image_path.startsWith('http')?Promise.resolve({data:{signedUrl:event.image_path}}):supabase.storage.from('event-media').createSignedUrl(event.image_path,3600),
   ]);
-  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet event-detail-sheet"><div class="sheet-h"><h2>${esc(event.title)}</h2><button type="button" class="link" data-close>Cerrar</button></div>${image?.signedUrl?`<img class="event-detail-image" src="${esc(image.signedUrl)}" alt="${esc(event.title)}">`:''}<p>${esc(event.description||'')}</p><p><b>Fecha y hora:</b> ${new Date(event.event_date).toLocaleString('es-BO')}</p>${event.location?`<p><b>Ubicación:</b> ${esc(event.location)}</p>`:''}<p class="muted">${rsvp?.status==='confirmed'?'Ya confirmaste tu asistencia.':rsvp?.status==='cancelled'?'Cancelaste tu confirmación.':'Aún no confirmaste.'}</p>${rsvp?.status==='confirmed'?'<button class="btn ghost" data-cancel>Quitar confirmación</button>':'<button class="btn" data-confirm>Confirmar asistencia</button>'}</section>`;
+  const confirmed=confirmedRows||[];
+  const directory=directoryRows||[];
+  const people=await Promise.all(confirmed.map(async row=>{
+    const person=row.user_id===ctx.user.id?ctx.profile:(directory||[]).find(profile=>profile.id===row.user_id);
+    const name=person?.full_name||'Socio Batmon';
+    if(!person?.avatar_path)return {name,avatar:''};
+    const {data:avatar}=await supabase.storage.from('profile-media').createSignedUrl(person.avatar_path,1800);
+    return {name,avatar:avatar?.signedUrl||''};
+  }));
+  const eventDate=new Date(event.event_date);
+  const dateLabel=eventDate.toLocaleDateString('es-BO',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'').toUpperCase();
+  const timeLabel=eventDate.toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
+  const initials=name=>name.split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
+  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet event-detail-sheet" aria-labelledby="event-detail-title"><button type="button" class="event-detail-close" data-close aria-label="Cerrar evento">×</button><div class="event-detail-cover">${image?.signedUrl?`<img class="event-detail-cover-image" src="${esc(image.signedUrl)}" alt="">`:''}<div class="event-detail-cover-copy"><span>${dateLabel}</span><h2 id="event-detail-title">${esc(event.title)}</h2></div></div><div class="event-detail-content"><p class="event-detail-desc">${esc(event.description||'')}</p><div class="event-detail-meta"><div><small>HORA</small><b>${timeLabel}</b></div><div><small>LUGAR</small><b>${esc(event.location||'Por confirmar')}</b></div></div><div class="event-detail-actions"><button class="btn ${rsvp?.status==='confirmed'?'is-confirmed':''}" data-confirm>${rsvp?.status==='confirmed'?'Voy ✓':'Voy'}</button><button class="btn ghost" data-cancel>No voy</button></div><section class="event-attendees" aria-label="Personas confirmadas"><p><b>${people.length} confirmados</b></p><div class="event-attendee-list">${people.length?people.map(person=>`<div class="event-attendee">${person.avatar?`<img src="${esc(person.avatar)}" alt="">`:`<span class="event-attendee-initials">${esc(initials(person.name))}</span>`}<small>${esc(person.name)}</small></div>`).join(''):'<span class="muted">Aún no hay confirmaciones.</span>'}</div></section></div></section>`;
   document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelector('[data-confirm]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){button.disabled=false;notify('No se pudo confirmar: '+e.message);}else{notify('Asistencia confirmada.','success');modal.remove();}});
-  modal.querySelector('[data-cancel]')?.addEventListener('click',async(eventClick)=>{if(!(await confirmDialog('¿Confirmas que no asistirás a este evento?','Quitar confirmación')))return;const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',rsvp.id).eq('user_id',ctx.user.id);if(e){button.disabled=false;notify('No se pudo cancelar: '+e.message);}else{notify('Confirmación cancelada.','success');modal.remove();}});
+  modal.querySelector('[data-confirm]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){button.disabled=false;notify('No se pudo confirmar: '+e.message);}else{notify('Asistencia confirmada.','success');modal.remove();void renderHome(view);}});
+  modal.querySelector('[data-cancel]')?.addEventListener('click',async(eventClick)=>{const title=rsvp?.status==='confirmed'?'¿Confirmas que no asistirás a este evento? Se quitará tu confirmación.':'¿Quieres indicar que no asistirás a este evento?';if(!(await confirmDialog(title,'No voy')))return;const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'cancelled',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){button.disabled=false;notify('No se pudo actualizar tu respuesta: '+e.message);}else{notify('Tu respuesta quedó registrada.','success');modal.remove();void renderHome(view);}});
 }
 
 async function renderHome(v) {
@@ -411,6 +427,12 @@ async function renderHome(v) {
     supabase.from('events').select('id,title,description,event_date,location,image_path').gte('event_date',new Date(new Date().setHours(0,0,0,0)).toISOString()).order('event_date'),
     supabase.from('event_notifications').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id).eq('is_read',false),
   ]);
+  const calendarEvents=await Promise.all(clubEvents.map(async event=>{
+    if(!event.image_path)return {...event,image_url:''};
+    if(event.image_path.startsWith('http'))return {...event,image_url:event.image_path};
+    const {data:image}=await supabase.storage.from('event-media').createSignedUrl(event.image_path,3600);
+    return {...event,image_url:image?.signedUrl||''};
+  }));
   const ws0 = weekStart();
   const km = (d) => acts.filter((a) => a.discipline === d && a.performed_on >= ws0).reduce((s, a) => s + Number(a.distance_km), 0);
   const last = acts[0];
@@ -449,7 +471,7 @@ async function renderHome(v) {
     ${ctx.modules.running ? `<div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>` : ''}
     ${ctx.modules.plyo && ws.some((w) => w.kind === 'plyometrics') ? `<div class="card"><span class="muted">Última sesión de pliometría</span><br>${(() => { const recent = ws.find((w) => w.kind === 'plyometrics'); return recent ? `<b>${recent.performed_on}</b> · ${recent.workout_sets.length} series${recent.duration_min ? ' · ' + fmt(recent.duration_min, 0) + ' min' : ''}` : ''; })()}</div>` : ''}
     <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
-  setupUnifiedCalendar(v,clubEvents);
+  setupUnifiedCalendar(v,calendarEvents);
   const eventBell=v.querySelector('#cal10-bell');
   if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);

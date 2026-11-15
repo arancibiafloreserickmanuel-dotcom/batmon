@@ -888,3 +888,31 @@ body.appbody .tabs.main a.on .tab-label{opacity:1;transform:translate(-50%,0);}
 }
 @media(max-width:520px){body.appbody .tabs.main{width:calc(100vw - 20px);gap:0;padding:5px;border-radius:18px}body.appbody .tabs.main a{min-height:54px;padding-inline:1px}body.appbody .tabs.main .tab-icon{flex-basis:32px;width:32px;height:32px}body.appbody .tabs.main a.on{flex-grow:1.15}body.appbody .tabs.main a.on::before{top:5px;width:38px;height:38px}body.appbody .tabs.main a.on .tab-label{top:calc(50% + 14px)}}
 @media (prefers-reduced-motion:reduce){body.appbody .tabs.main a,body.appbody .tabs.main .tab-icon,body.appbody .tabs.main .tab-label{transition:none}}
+
+/* Evento: portada del administrador, datos y asistentes con el tema del socio. */
+.cal10__ev-pill:not(.cal10__ev-pill--r):not(.cal10__ev-pill--a),.cal10__ev-pill--confirmed{background:#183324;color:#79e0a8;border:1px solid #28543b;box-shadow:none;}
+.event-detail-sheet{position:relative;width:min(560px,100%);max-height:94vh;overflow-y:auto;padding:12px;border:1px solid var(--line);border-radius:20px 20px 0 0;background:var(--card-surface,#e0e0e0);color:var(--ink);}
+.event-detail-cover{position:relative;display:flex;min-height:240px;align-items:flex-end;overflow:hidden;border-radius:16px;background:linear-gradient(145deg,#303030,#101010);}
+.event-detail-cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.event-detail-cover::after{position:absolute;inset:0;content:"";background:linear-gradient(180deg,transparent 32%,rgb(0 0 0 / 72%) 100%);pointer-events:none;}
+.event-detail-cover-copy{position:relative;z-index:1;padding:18px;width:100%;color:#fff;}
+.event-detail-cover-copy>span{display:block;margin-bottom:6px;color:#d0ad5e;font:700 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;}
+.event-detail-cover-copy h2{margin:0;color:#fff;font:400 clamp(30px,8vw,42px)/.95 Anton,sans-serif;letter-spacing:.02em;text-transform:uppercase;}
+body.appbody .event-detail-close{position:absolute;z-index:3;top:20px;right:20px;display:grid;width:36px;height:36px;min-height:36px;place-items:center;padding:0;border:1px solid #ffffff66;border-radius:50%;background:#111a;color:#fff;font:400 26px/1 Inter,sans-serif;box-shadow:none;}
+.event-detail-content{display:grid;gap:12px;padding:12px 3px 4px;}
+.event-detail-desc{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font-size:14px;line-height:1.5;white-space:pre-wrap;}
+.event-detail-meta{display:grid;grid-template-columns:.7fr 1.3fr;gap:10px;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);}
+.event-detail-meta>div{display:grid;gap:5px;align-content:start;min-width:0;}
+.event-detail-meta small{color:var(--muted);font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.12em;}
+.event-detail-meta b{color:var(--ink);font-size:14px;overflow-wrap:anywhere;}
+.event-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0;}
+.event-detail-actions .btn{min-height:46px;margin:0;padding:10px 14px;border-radius:12px;}
+.event-detail-actions .btn.is-confirmed{background:#183324;color:#a4e5bd;border-color:#28543b;box-shadow:inset 3px 3px 7px #10251b,inset -3px -3px 7px #28543b;}
+.event-attendees{display:grid;gap:9px;padding-top:2px;}
+.event-attendees>p{margin:0;color:var(--muted);font-size:12px;}
+.event-attendees>p b{color:var(--ink);}
+.event-attendee-list{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 8px;}
+.event-attendee{display:grid;flex:0 0 58px;justify-items:center;align-content:start;gap:5px;text-align:center;}
+.event-attendee img,.event-attendee-initials{display:grid;width:42px;height:42px;place-items:center;overflow:hidden;border:1px solid var(--line);border-radius:50%;background:var(--card-surface);color:var(--ink);object-fit:cover;font-size:11px;font-weight:700;box-shadow:var(--card-shadow-a,3px 3px 7px #0002),var(--card-shadow-b,-3px -3px 7px #fff2);}
+.event-attendee small{display:block;width:100%;overflow:hidden;color:var(--muted);font-size:9px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap;}
+@media(min-width:560px){.event-detail-sheet{align-self:center;margin:auto;border-radius:20px;}}

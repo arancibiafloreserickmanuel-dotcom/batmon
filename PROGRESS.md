@@ -161,3 +161,9 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se extendió el diseño circular neumórfico con check verde oscuro a los checkbox de toda la app (planes, catálogo, notificación de eventos y otros formularios), conservando el switch ilustrado de tema.
 - Estados seleccionado, foco de teclado y deshabilitado quedan visibles; se mantienen eventos/valores nativos de cada input.
 - `npm run build` correcto; `git diff --check` limpio.
+
+## Diseño y asistentes de eventos (15 nov)
+- La lista del calendario muestra la imagen configurada por el admin. La ficha de evento reorganiza portada con fecha/título, descripción, hora, ubicación, acciones Voy/No voy y lista horizontal de avatares/nombres confirmados. Respuesta RSVP refresca Inicio.
+- Los avatares están en `profile-media` privado. Nueva migración `0016_event_attendee_avatars.sql` permite leer solo archivos `avatar-*` de socios confirmados; debe aplicarse en Supabase antes de que aparezcan fotos ajenas. No se ejecutó SQL remoto.
+- Indicador de evento verde actualizado a verde oscuro. Hora de eventos del calendario formateada desde `event_date`.
+- Archivos: `src/app/app.js`, `src/app/app.css`, `supabase/migrations/0016_event_attendee_avatars.sql`. `npm run build` correcto; `git diff --check` limpio.
