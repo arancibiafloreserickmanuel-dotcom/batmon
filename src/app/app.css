@@ -940,3 +940,16 @@ body.appbody .admin-header-back .animated-back-sweep{top:4px;left:4px;width:28px
 body.appbody .admin-header-back .animated-back-sweep svg{width:16px;height:16px;flex-basis:16px;}
 body.appbody .admin-header-back:hover .animated-back-sweep,body.appbody .admin-header-back:focus-visible .animated-back-sweep{width:calc(100% - 8px);}
 @media(max-width:420px){body.appbody .admin-header{gap:7px;padding-inline:9px}.admin-brand{gap:6px}.admin-brand img{width:20px;height:20px}.admin-brand span{font-size:14px}.admin-header-user{gap:5px}.admin-header-avatar{width:30px;height:30px;flex-basis:30px}body.appbody .admin-header-user b{max-width:78px;font-size:10px}body.appbody .admin-header-back{min-width:106px;height:34px;min-height:34px;padding-left:34px;padding-right:7px;font-size:9px}body.appbody .admin-header-back .animated-back-sweep{top:3px;left:3px;width:26px;height:26px}}
+
+/* Etiqueta del evento discreta: blanco en claro y negro en oscuro. */
+.cal10__ev-pill:not(.cal10__ev-pill--r):not(.cal10__ev-pill--a),.cal10__ev-pill--confirmed{background:#fff;color:#174a35;border:1px solid color-mix(in srgb,#174a35 18%,transparent);box-shadow:var(--shadow-out-sm);}
+body.appbody[data-theme="dark"] .cal10__ev-pill:not(.cal10__ev-pill--r):not(.cal10__ev-pill--a),body.appbody[data-theme="dark"] .cal10__ev-pill--confirmed{background:#101010;color:#174a35;border-color:#343434;box-shadow:3px 3px 7px #090909,-3px -3px 7px #202020;}
+
+/* Ficha centrada en móvil; cada bloque informativo usa el relieve de las cards. */
+.event-detail-modal{align-items:center;overflow-y:auto;padding:max(12px,env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom));}
+.event-detail-sheet{width:min(560px,100%);max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);margin:auto;border-radius:20px;overscroll-behavior:contain;}
+.event-detail-desc,.event-detail-info-card{border:1px solid color-mix(in srgb,var(--ink) 5%,transparent);background:var(--card-surface);box-shadow:var(--card-shadow-a),var(--card-shadow-b);}
+.event-detail-desc{padding:16px;border-radius:14px;}
+.event-detail-meta{grid-template-columns:.75fr 1.25fr;gap:10px;margin:0;padding:0;border:0;background:transparent;}
+.event-detail-info-card{display:grid;gap:5px;align-content:center;min-height:68px;padding:12px 14px;border-radius:14px;}
+@media(max-width:559px){.event-detail-modal{align-items:center}.event-detail-sheet{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);padding:10px;border-radius:18px}.event-detail-cover{min-height:clamp(190px,30vh,260px)}.event-detail-content{gap:10px;padding:10px 2px 3px}.event-detail-meta{grid-template-columns:.8fr 1.2fr;gap:8px}.event-detail-info-card{min-height:64px;padding:10px}.event-detail-desc{padding:14px}}

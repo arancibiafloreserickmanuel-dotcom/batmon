@@ -172,3 +172,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se reutiliza la animación de volver en cierres de modales, en tamaño compacto; se mantienen tamaños normales en páginas completas.
 - Cabecera admin ordenada con marca ADMIN, nombre y avatar del administrador, y botón animado «Volver a la app», adaptado a móvil.
 - `npm run build` pasó; `git diff --check` limpio.
+
+## Ajustes visuales de eventos en móvil (15 nov)
+- La etiqueta genérica «Evento» usa fondo blanco/negro según el tema y texto verde oscuro; las etiquetas de prioridad amarilla/roja conservan sus colores.
+- El detalle del evento se centra en móvil, respeta las áreas seguras y limita su alto al viewport. Descripción, hora y lugar usan superficie/sombras de cards.
+- `npm run build` pasó; `git diff --check` limpio.
