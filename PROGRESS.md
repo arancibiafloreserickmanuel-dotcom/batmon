@@ -142,3 +142,7 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - El círculo de la pestaña seleccionada ahora es fijo y redondo, con sombras hacia dentro en ambos temas siguiendo el relieve hundido del calendario.
 - La etiqueta activa aparece debajo del icono y fuera del círculo; al pasar o enfocar, se desplaza arriba como tooltip. Se mantiene la expansión del icono y sus vecinos.
 - Compilación `npm run build` correcta; `git diff --check` limpio.
+
+## Alineación del icono activo del dock (15 nov)
+- Centrado el icono dentro del círculo seleccionado mediante un ajuste vertical de su posición.
+- `npm run build` correcto; `git diff --check` limpio.

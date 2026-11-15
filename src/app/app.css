@@ -858,7 +858,7 @@ body.appbody .tabs.main .tab-label{position:absolute;z-index:6;left:50%;top:calc
 body.appbody .tabs.main a.on{flex-grow:1.05;color:var(--ink);font-weight:700;}
 body.appbody .tabs.main a.on::before{content:"";position:absolute;top:5px;left:50%;width:40px;height:40px;transform:translateX(-50%);border-radius:50%;background:var(--card-surface,#e0e0e0);box-shadow:var(--dock-item-shadow);}
 body.appbody .tabs.main a.on{transform:translateY(-2px);}
-body.appbody .tabs.main a.on .tab-icon{transform:scale(1.12);}
+body.appbody .tabs.main a.on .tab-icon{transform:translateY(-4px) scale(1.12);}
 body.appbody .tabs.main a.on .tab-label{opacity:1;transform:translate(-50%,0);}
 @media (hover:hover) and (pointer:fine){
   body.appbody .tabs.main a:hover,body.appbody .tabs.main a:focus-visible{flex-grow:1.75;z-index:5;transform:translateY(-4px);color:var(--ink);}
