@@ -1,6 +1,6 @@
 import './app.css';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, iso, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading } from './common.js';
+import { fmt, iso, today, monthStart, weekStart, paceStr, DISC, showDelayedLoading, notify, confirmDialog } from './common.js';
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
@@ -383,8 +383,8 @@ async function openClubEvent(eventId) {
   ]);
   const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet event-detail-sheet"><div class="sheet-h"><h2>${esc(event.title)}</h2><button type="button" class="link" data-close>Cerrar</button></div>${image?.signedUrl?`<img class="event-detail-image" src="${esc(image.signedUrl)}" alt="${esc(event.title)}">`:''}<p>${esc(event.description||'')}</p><p><b>Fecha y hora:</b> ${new Date(event.event_date).toLocaleString('es-BO')}</p>${event.location?`<p><b>Ubicación:</b> ${esc(event.location)}</p>`:''}<p class="muted">${rsvp?.status==='confirmed'?'Ya confirmaste tu asistencia.':rsvp?.status==='cancelled'?'Cancelaste tu confirmación.':'Aún no confirmaste.'}</p>${rsvp?.status==='confirmed'?'<button class="btn ghost" data-cancel>Quitar confirmación</button>':'<button class="btn" data-confirm>Confirmar asistencia</button>'}</section>`;
   document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelector('[data-confirm]')?.addEventListener('click',async()=>{const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e)notify('No se pudo confirmar: '+e.message);else{notify('Asistencia confirmada.');modal.remove();}});
-  modal.querySelector('[data-cancel]')?.addEventListener('click',async()=>{if(!window.confirm('¿Confirmas que no asistirás a este evento?'))return;const {error:e}=await supabase.from('event_rsvps').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',rsvp.id);if(e)notify('No se pudo cancelar: '+e.message);else{notify('Confirmación cancelada.');modal.remove();}});
+  modal.querySelector('[data-confirm]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){button.disabled=false;notify('No se pudo confirmar: '+e.message);}else{notify('Asistencia confirmada.','success');modal.remove();}});
+  modal.querySelector('[data-cancel]')?.addEventListener('click',async(eventClick)=>{if(!(await confirmDialog('¿Confirmas que no asistirás a este evento?','Quitar confirmación')))return;const button=eventClick.currentTarget;button.disabled=true;const {error:e}=await supabase.from('event_rsvps').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',rsvp.id).eq('user_id',ctx.user.id);if(e){button.disabled=false;notify('No se pudo cancelar: '+e.message);}else{notify('Confirmación cancelada.','success');modal.remove();}});
 }
 
 async function openEventNotifications(events) {
