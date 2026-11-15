@@ -47,8 +47,10 @@ const C = {
   lookAtY: 3.8,
 };
 
-const stripWidth = 2 * C.radius * C.guideRadius * 1.12;
-const turnDrop = Math.abs(C.pitch * Math.PI * 2);
+const mobileLayout = window.matchMedia('(max-width: 760px)').matches;
+const L = mobileLayout ? { ...C, radius: 4.3, step: 0.9, cardWidth: 3.6, cardHeight: 5.2 } : C;
+const stripWidth = 2 * L.radius * L.guideRadius * 1.12;
+const turnDrop = Math.abs(L.pitch * Math.PI * 2);
 
 function containTexture(image, renderer) {
   const canvas = document.createElement('canvas');
@@ -75,15 +77,15 @@ export function mountApparelGallery() {
   if (!root || !stage || !canvas) return () => {};
 
   const scene = new Scene();
-  const camera = new PerspectiveCamera(C.fov, 1, 0.1, 60);
-  camera.position.set(0, C.camY, C.camZ);
-  camera.lookAt(0, C.lookAtY, 0);
+  const camera = new PerspectiveCamera(L.fov, 1, 0.1, 60);
+  camera.position.set(0, L.camY, L.camZ);
+  camera.lookAt(0, L.lookAtY, 0);
   const rig = new Group();
   const tilt = new Group();
   const spin = new Group();
   const guides = new Group();
-  tilt.rotation.x = C.tiltX;
-  tilt.position.y = C.baseY;
+  tilt.rotation.x = L.tiltX;
+  tilt.position.y = L.baseY;
   tilt.add(spin, guides);
   rig.add(tilt);
   scene.add(rig);
@@ -100,21 +102,21 @@ export function mountApparelGallery() {
   const raycaster = new Raycaster();
 
   function cardCenter(angle, midY) {
-    return new Vector3(C.radius * Math.sin(angle), angle * C.pitch - midY, C.radius * Math.cos(angle));
+    return new Vector3(L.radius * Math.sin(angle), angle * L.pitch - midY, L.radius * Math.cos(angle));
   }
 
   function makeGeometry(angle, midY) {
-    const geometry = new PlaneGeometry(C.cardWidth, C.cardHeight, 32, 8);
+    const geometry = new PlaneGeometry(L.cardWidth, L.cardHeight, 32, 8);
     const positions = geometry.attributes.position;
-    const bank = Math.atan2(C.pitch, C.radius) * C.bank;
+    const bank = Math.atan2(L.pitch, L.radius) * L.bank;
     const center = cardCenter(angle, midY);
     for (let i = 0; i < positions.count; i++) {
-      const theta = angle + positions.getX(i) / C.radius;
+      const theta = angle + positions.getX(i) / L.radius;
       const y = positions.getY(i);
-      const radius = C.radius - y * Math.sin(bank);
+      const radius = L.radius - y * Math.sin(bank);
       positions.setXYZ(i,
         radius * Math.sin(theta) - center.x,
-        theta * C.pitch - midY + y * Math.cos(bank) - center.y,
+        theta * L.pitch - midY + y * Math.cos(bank) - center.y,
         radius * Math.cos(theta) - center.z);
     }
     return geometry;
@@ -122,14 +124,14 @@ export function mountApparelGallery() {
 
   function draw() {
     if (!renderer || !visible || destroyed) return;
-    const entry = C.entryBack + extraTurns * Math.PI * 2;
-    const spinSpan = (C.turns + extraTurns) * Math.PI * 2;
+    const entry = L.entryBack + extraTurns * Math.PI * 2;
+    const spinSpan = (L.turns + extraTurns) * Math.PI * 2;
     const travel = entry - progress * spinSpan;
-    spin.rotation.y = C.spinOffset + travel;
-    spin.position.y = C.pitch * travel;
+    spin.rotation.y = L.spinOffset + travel;
+    spin.position.y = L.pitch * travel;
     const guideTravel = entry - (1 - progress) * spinSpan;
-    guides.rotation.y = C.spinOffset + guideTravel;
-    guides.position.y = C.pitch * guideTravel;
+    guides.rotation.y = L.spinOffset + guideTravel;
+    guides.position.y = L.pitch * guideTravel;
 
     let hovered = -1;
     if (stage.matches(':hover') && window.matchMedia('(hover: hover)').matches) {
@@ -172,11 +174,13 @@ export function mountApparelGallery() {
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height, false);
-    const visibleWidth = 2 * Math.tan((C.fov * Math.PI) / 360) * camera.aspect * C.camZ;
-    const scale = Math.min(1, visibleWidth / stripWidth);
+    const visibleWidth = 2 * Math.tan((L.fov * Math.PI) / 360) * camera.aspect * L.camZ;
+    const scale = mobileLayout
+      ? Math.min(1, Math.max(visibleWidth / stripWidth, 0.82))
+      : Math.min(1, visibleWidth / stripWidth);
     rig.scale.setScalar(scale);
-    rig.position.y = C.lookAtY * (1 - scale);
-    const dropBelow = C.lookAtY - (C.baseY + C.pitch * C.entryBack);
+    rig.position.y = L.lookAtY * (1 - scale);
+    const dropBelow = L.lookAtY - (L.baseY + L.pitch * L.entryBack);
     extraTurns = Math.ceil((dropBelow * (1 / scale - 1)) / turnDrop);
     requestDraw();
   }
@@ -218,8 +222,8 @@ export function mountApparelGallery() {
       renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = SRGBColorSpace;
-      const span = (loaded.length - 1) * C.step;
-      const midY = span / 2 * C.pitch;
+      const span = (loaded.length - 1) * L.step;
+      const midY = span / 2 * L.pitch;
       const maxAnisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
       textures = loaded.map(({ image }) => {
         const texture = containTexture(image, renderer);
@@ -227,7 +231,7 @@ export function mountApparelGallery() {
         return texture;
       });
       meshes = loaded.map(({ alt }, index) => {
-        const angle = index * C.step;
+        const angle = index * L.step;
         const geometry = makeGeometry(angle, midY);
         const material = new MeshBasicMaterial({ map: textures[index], transparent: true, alphaTest: 0.015, side: DoubleSide });
         const mesh = new Mesh(geometry, material);
@@ -237,14 +241,14 @@ export function mountApparelGallery() {
         return mesh;
       });
 
-      const start = -((C.guideLength - 1) * span) / 2;
+      const start = -((L.guideLength - 1) * span) / 2;
       const end = span - start;
-      const edgeY = (C.cardHeight / 2) * C.guideHeight;
+      const edgeY = (L.cardHeight / 2) * L.guideHeight;
       const guideMaterial = new LineBasicMaterial({ color: '#c90020', transparent: true, opacity: 0.28 });
       for (const y of [edgeY, -edgeY]) {
         const points = [];
         for (let t = start; t <= end; t += 0.03) {
-          points.push(new Vector3(C.radius * C.guideRadius * Math.sin(t), t * C.pitch - midY + y, C.radius * C.guideRadius * Math.cos(t)));
+          points.push(new Vector3(L.radius * L.guideRadius * Math.sin(t), t * L.pitch - midY + y, L.radius * L.guideRadius * Math.cos(t)));
         }
         guides.add(new Line(new BufferGeometry().setFromPoints(points), guideMaterial));
       }

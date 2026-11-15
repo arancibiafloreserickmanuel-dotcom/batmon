@@ -288,9 +288,9 @@ export function createFluidCursor(canvas, config) {
         lastPoint = normalizedPoint(touch.clientX, touch.clientY);
         return;
       }
-      // Touch sampling is less consistent than mouse sampling on mobile; slightly
-      // amplify finger movement without changing the ink preset or radius.
-      pointerMove(touch.clientX, touch.clientY, 1.2);
+      // Touch sampling is less consistent than mouse sampling on mobile, so
+      // amplify finger movement to make the ink react clearly to short swipes.
+      pointerMove(touch.clientX, touch.clientY, 2.2);
     }, { passive: true, capture: true });
     const finishTouch = (e) => {
       const ended = Array.from(e.changedTouches).some((item) => item.identifier === activeTouchId);

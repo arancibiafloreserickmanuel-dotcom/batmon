@@ -16,11 +16,11 @@ import {
 } from 'three';
 
 const projects = [
-  { src: '/complex-training-center.png', label: 'Centro de entrenamiento Batmon Crowd' },
-  { src: '/complex-running-group.png', label: 'Grupo corriendo' },
-  { src: '/complex-team-coast.png', label: 'Equipo Batmon en la costa' },
-  { src: '/complex-campaign.png', label: 'Campaña Nueva Piel Batmon Crowd' },
-  { src: '/complex-shirt-night.png', label: 'Polera Batmon Crowd de noche' },
+  { src: '/complex-training-center.jpg', label: 'Centro de entrenamiento Batmon Crowd' },
+  { src: '/complex-running-group.jpg', label: 'Grupo corriendo' },
+  { src: '/complex-team-coast.jpg', label: 'Equipo Batmon en la costa' },
+  { src: '/complex-campaign.jpg', label: 'Campaña Nueva Piel Batmon Crowd' },
+  { src: '/complex-shirt-night.jpg', label: 'Polera Batmon Crowd de noche' },
 ];
 
 export function mountComplexCarousel() {
@@ -101,8 +101,8 @@ export function mountComplexCarousel() {
     halfW = halfH * aspect;
     renderer.setSize(width, height, false);
 
-    const cardHeight = halfH * 2 * 0.52;
-    const maxCardWidth = halfW * 2 * 0.88;
+    const cardHeight = halfH * 2 * (mobileViewport.matches ? 0.72 : 0.62);
+    const maxCardWidth = halfW * 2 * 0.96;
     const gap = 20 * (halfW * 2 / width);
     cards.forEach(({ mesh }) => {
       scene.remove(mesh);
@@ -258,21 +258,19 @@ export function mountComplexCarousel() {
     let dy = event.deltaY;
     if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) { dx *= 16; dy *= 16; }
     else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) { dx *= root.clientWidth; dy *= root.clientHeight; }
-    // Vertical wheel gestures advance the carousel while it has images left;
-    // once an end is reached, the browser keeps scrolling the page normally.
     const dominant = Math.abs(dx) > Math.abs(dy) ? dx : dy;
     if (!dominant) return;
-    // En móvil, el scroll vertical nativo recorre la sección fija y el progreso
-    // de esa sección mueve el carrusel; así el navegador puede continuar al final.
-    if (mobileViewport.matches && Math.abs(dy) >= Math.abs(dx)) return;
+    // El scroll vertical de la página conduce el carrusel fijado al runway;
+    // rueda horizontal o trackpad horizontal mantiene el control directo.
+    if (Math.abs(dy) >= Math.abs(dx)) return;
     if (!moveByPixels(dominant * 0.8)) return;
     event.preventDefault();
   }
 
   function onPageScroll() {
-    if (!mobileViewport.matches || !scrollTrack || !cards.length) return;
+    if (!scrollTrack || !cards.length) return;
     const trackRect = scrollTrack.getBoundingClientRect();
-    const stickyTop = window.innerHeight * 0.14;
+    const stickyTop = window.innerHeight * (mobileViewport.matches ? 0.10 : 0.17);
     const travel = Math.max(1, scrollTrack.clientHeight - root.clientHeight);
     const progress = MathUtils.clamp((stickyTop - trackRect.top) / travel, 0, 1);
     targetOffset = cards[0].center + (cards[cards.length - 1].center - cards[0].center) * progress;
@@ -307,8 +305,8 @@ export function mountComplexCarousel() {
         return;
       }
       // A mouse drag has no native page-scroll gesture; ignore vertical drags.
-      // Touch and pen use vertical movement to advance slides, as the mouse
-      // wheel does on desktop, then hand any excess movement to the page.
+    // The vertical page scroll now drives the pinned track; touch keeps its
+    // native vertical gesture and horizontal swipe remains directly draggable.
       if (axis === 'y' && drag.pointerType === 'mouse') {
         drag = null;
         return;

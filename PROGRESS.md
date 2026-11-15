@@ -203,3 +203,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se reemplazó el bloque promocional bajo el carrusel por «Indumentaria» y una galería 3D de scroll inspirada en Curved Scroll Gallery, adaptada a Vite/Three.js y con el fondo original de la landing.
 - Las líneas NEW POLERA, NUEVA PIEL y BATMON CROWD animan con el desplazamiento. Se añadieron las cinco imágenes solicitadas en orden; las dos prendas PNG conservan transparencia y se muestran completas.
 - El enlace del menú ahora apunta a Indumentaria. `npm run build` pasó; `git diff --check` limpio. Pendiente revisar en teléfono real.
+
+## Correcciones de scroll y galería responsive (15 nov)
+- El carrusel de complejos ahora avanza con el scroll vertical de página en escritorio y móvil dentro de su runway sticky; rueda horizontal/trackpad horizontal sigue moviendo las tarjetas directamente y la página continúa al terminar.
+- Las fotos de complejos se pasaron a JPEG, reduciendo su conjunto de unos 6.2 MB a cerca de 0.95 MB. Las prendas transparentes se redujeron de tamaño conservando el canal alfa; la galería de indumentaria usa escala y tarjetas mayores en móvil.
+- «Indumentaria» usa texto negro y tamaño/estilo como «Complejos de entrenamiento». El título de complejos se acercó al carrusel en móvil.
+- Se aumentó la respuesta táctil del cursor de 1.2x a 2.2x, sin alterar presets ni radio.
+- `npm run build` pasó; `git diff --check` limpio. Pendiente validar gestos y encuadre en dispositivos reales.
