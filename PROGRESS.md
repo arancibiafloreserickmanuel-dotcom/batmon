@@ -137,3 +137,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - La barra inferior ahora va en una cápsula con bordes y sombras parecidos al calendario, adaptados a tema claro/oscuro. Al pasar por una opción, aumenta su tamaño y el de las vecinas.
 - Se añadió `aria-current` a la pestaña activa; el cambio conserva navegación y rutas existentes.
 - Archivos: `src/app/app.js`, `src/app/app.css`. `npm run build` y `git diff --check` correctos.
+
+## Dock BATMON: relieve hundido y etiqueta activa (15 nov)
+- El círculo de la pestaña seleccionada ahora es fijo y redondo, con sombras hacia dentro en ambos temas siguiendo el relieve hundido del calendario.
+- La etiqueta activa aparece debajo del icono y fuera del círculo; al pasar o enfocar, se desplaza arriba como tooltip. Se mantiene la expansión del icono y sus vecinos.
+- Compilación `npm run build` correcta; `git diff --check` limpio.
