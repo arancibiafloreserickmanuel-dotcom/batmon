@@ -185,6 +185,7 @@ body.appbody[data-theme="light"] .cal10 {
 }
 .cal10__nav-btn:active { box-shadow: var(--shadow-in-sm); }
 .cal10__bell-btn {
+  position: relative;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -200,6 +201,25 @@ body.appbody[data-theme="light"] .cal10 {
   transition: box-shadow .18s;
 }
 .cal10__bell-btn:active { box-shadow: var(--shadow-in-sm); }
+.cal10__bell-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: #50131b;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7c202d;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+  line-height: 1;
+}
 .cal10__dow {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -254,16 +274,32 @@ body.appbody[data-theme="light"] .cal10 {
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .15);
 }
+.cal10__cell--event-green {
+  background: #183324 !important;
+  color: #e2f7eb !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 0 1px #28543b, 0 2px 4px rgba(0, 0, 0, .3) !important;
+}
+.cal10__cell--event-yellow {
+  background: #42340d !important;
+  color: #fff3ce !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 0 1px #6e5616, 0 2px 4px rgba(0, 0, 0, .3) !important;
+}
+.cal10__cell--event-red {
+  background: #46141b !important;
+  color: #fde8eb !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 0 1px #74222e, 0 2px 4px rgba(0, 0, 0, .3) !important;
+}
+.cal10__cell.selected.cal10__cell--event-green,
+.cal10__cell.selected.cal10__cell--event-yellow,
+.cal10__cell.selected.cal10__cell--event-red {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
 .cal10.is-collapsed .cal10__cell--hidden {
   display: none;
-}
-.cal10__dot {
-  position: absolute;
-  bottom: 4px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--green);
 }
 .cal10__drawer {
   margin-top: 10px;
@@ -287,27 +323,43 @@ body.appbody[data-theme="light"] .cal10 {
 .cal10__ev {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .15s ease, transform .15s ease;
+}
+.cal10__ev:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  transform: translateY(-1px);
 }
 .cal10__ev + .cal10__ev {
   border-top: 1px solid color-mix(in srgb, var(--text3) 25%, transparent);
 }
+.cal10__ev-img {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-out-sm);
+  background: var(--bg);
+}
 .cal10__ev-icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 .cal10__ev-body { flex: 1; min-width: 0; }
 .cal10__ev-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
@@ -317,24 +369,98 @@ body.appbody[data-theme="light"] .cal10 {
 .cal10__ev-time {
   font-size: 11px;
   color: var(--text2);
+  margin-top: 2px;
+}
+.cal10__ev-loc {
+  font-size: 11px;
+  color: var(--text3);
   margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cal10__ev-pill {
   font-size: 10px;
   font-weight: 800;
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: 20px;
   background: var(--bg);
   box-shadow: var(--shadow-out-sm);
   flex-shrink: 0;
   color: var(--green);
 }
+.cal10__ev-pill--confirmed {
+  background: #183324;
+  color: #e2f7eb;
+  border: 1px solid #28543b;
+}
 .cal10__ev-pill--r { color: var(--red); }
+.cal10__ev-pill--a { color: #f59e0b; }
 .cal10__ev-empty {
   font-size: 12px;
   color: var(--text2);
   text-align: center;
-  padding: 8px 0;
+  padding: 10px 0;
+}
+
+/* Modal y vista de detalle de evento */
+.event-detail-cover {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-out);
+}
+.event-detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.event-detail-badge.confirmed {
+  background: #183324;
+  color: #79e0a8;
+  border: 1px solid #28543b;
+}
+.event-detail-badge.pending {
+  background: #362908;
+  color: #f7d070;
+  border: 1px solid #634b10;
+}
+.event-detail-meta {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  font-size: 13px;
+}
+.event-detail-meta div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.event-detail-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text2);
+  white-space: pre-wrap;
+  margin-bottom: 18px;
+}
+.event-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
 }
 .cal10__toggles {
   display: flex;
@@ -682,6 +808,24 @@ body.appbody .animated-back-sweep svg{display:block;width:18px;height:18px;flex:
 body.appbody .animated-back-label{position:relative;z-index:0;white-space:nowrap;color:var(--button-ink)}
 body.appbody :is(button,a).animated-back:hover .animated-back-sweep{width:calc(100% - 8px)}
 body.appbody :is(button,a).animated-back:focus-visible .animated-back-sweep{width:calc(100% - 8px)}
+
+/* Administración de Eventos */
+.admin-events-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.admin-event-card { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; position: relative; }
+.admin-event-hero { display: flex; gap: 14px; align-items: flex-start; }
+.admin-event-thumb { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background: var(--bg); box-shadow: var(--shadow-out-sm); }
+.admin-event-info { flex: 1; min-width: 0; }
+.admin-event-info h3 { font-size: 16px; margin: 0 0 4px; color: var(--text); font-weight: 700; }
+.admin-event-info p { margin: 0 0 4px; font-size: 13px; color: var(--text2); }
+.admin-event-meta { font-size: 12px; color: var(--text3); display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-event-rsvps { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.admin-rsvp-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.admin-rsvp-pill.confirmed { background: #183324; color: #79e0a8; border: 1px solid #28543b; }
+.admin-rsvp-pill.cancelled { background: #3b171c; color: #f28b99; border: 1px solid #6b2832; }
+.admin-rsvp-list { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.admin-rsvp-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 4%, transparent); font-size: 13px; }
+.admin-event-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); }
+
 body.appbody :is(button,a).animated-back:active{transform:scale(.98);box-shadow:var(--button-shadow-active)}
 body.appbody :is(button,a).animated-back:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 body.appbody .animated-back.settings-logout{width:100%;justify-content:flex-start;padding-left:48px}

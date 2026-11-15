@@ -6,7 +6,7 @@ import translations from '../data/plyometrics_es.json';
 import trainingCatalog from '../data/training_exercises.json';
 
 const view = $('#view');
-const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios']];
+const TABS = [['pagos', 'Pagos'], ['socios', 'Socios'], ['modulos', 'Módulos'], ['ejercicios', 'Ejercicios'], ['eventos', 'Eventos']];
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
@@ -196,8 +196,345 @@ async function modulos() {
   $('#body').querySelectorAll('[data-user]').forEach(input => input.onchange=async()=>{ const {error}=await supabase.from('profile_modules').upsert({user_id:input.dataset.user,module_key:input.dataset.module,enabled:input.checked,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'user_id,module_key'}); if(error){input.checked=!input.checked;notify(error.message);} });
 }
 
+/* ------------------------------- Eventos ------------------------------- */
+async function eventos() {
+  const [{ data: evList = [], error: evErr }, { data: rsvpList = [] }, { data: members = [] }] = await Promise.all([
+    supabase.from('events').select('*').order('event_date', { ascending: true }),
+    supabase.from('event_rsvps').select('*, profiles(id, full_name, carnet_number)'),
+    supabase.from('profiles').select('id, full_name'),
+  ]);
+
+  if (evErr) {
+    $('#body').innerHTML = `<h2>Eventos</h2><p class="msg">${esc(evErr.message)}<br>¿Ejecutaste la migración 0012 en Supabase?</p>`;
+    return;
+  }
+
+  const imgUrls = {};
+  await Promise.all(evList.filter((e) => e.image_path).map(async (e) => {
+    if (e.image_path.startsWith('http://') || e.image_path.startsWith('https://')) {
+      imgUrls[e.id] = e.image_path;
+    } else {
+      const { data } = await supabase.storage.from('event-media').createSignedUrl(e.image_path, 3600);
+      imgUrls[e.id] = data?.signedUrl || null;
+    }
+  }));
+
+  const rsvpsByEvent = {};
+  rsvpList.forEach((r) => {
+    if (!rsvpsByEvent[r.event_id]) rsvpsByEvent[r.event_id] = [];
+    rsvpsByEvent[r.event_id].push(r);
+  });
+
+  const now = new Date();
+  const upcoming = evList.filter((e) => new Date(e.event_date) >= new Date(now.getTime() - 86400000));
+  const past = evList.filter((e) => new Date(e.event_date) < new Date(now.getTime() - 86400000));
+
+  const formatEventDate = (isoStr) => {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString('es-BO', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const renderCard = (e) => {
+    const rsvps = rsvpsByEvent[e.id] || [];
+    const confirmed = rsvps.filter((r) => r.status === 'confirmed');
+    const cancelled = rsvps.filter((r) => r.status === 'cancelled');
+    const img = imgUrls[e.id] ? `<img class="admin-event-thumb" src="${imgUrls[e.id]}" alt="${esc(e.title)}">` : '<div class="admin-event-thumb ph">📅</div>';
+
+    return `<article class="card admin-event-card" data-event-id="${e.id}">
+      <div class="admin-event-hero">
+        ${img}
+        <div class="admin-event-info">
+          <h3>${esc(e.title)}</h3>
+          <div class="admin-event-meta">
+            <span>🗓 ${formatEventDate(e.event_date)}</span>
+            ${e.location ? `<span>📍 ${esc(e.location)}</span>` : ''}
+          </div>
+          ${e.description ? `<p style="margin-top:6px;">${esc(e.description.slice(0, 120))}${e.description.length > 120 ? '…' : ''}</p>` : ''}
+          <div class="admin-event-rsvps">
+            <span class="admin-rsvp-pill confirmed">✓ ${confirmed.length} confirmados</span>
+            <span class="admin-rsvp-pill cancelled">✕ ${cancelled.length} cancelaron</span>
+          </div>
+        </div>
+      </div>
+      <div class="admin-event-actions">
+        <button class="btn sm ghost" data-action="rsvps" data-id="${e.id}">Ver asistentes</button>
+        <button class="btn sm ghost" data-action="remind" data-id="${e.id}">Recordar evento</button>
+        <button class="btn sm ghost" data-action="edit" data-id="${e.id}">Editar</button>
+        <button class="btn sm ghost" data-action="delete" data-id="${e.id}" style="color:var(--red);">Borrar</button>
+      </div>
+    </article>`;
+  };
+
+  $('#body').innerHTML = `
+    <div class="admin-events-header">
+      <div>
+        <h1>Eventos del Club</h1>
+        <p class="muted">Organiza entrenamientos, salidas, competencias y gestiona asistencia.</p>
+      </div>
+      <button class="btn sm" id="create-event">+ Nuevo evento</button>
+    </div>
+    <h2>Próximos eventos (${upcoming.length})</h2>
+    <div class="admin-cards">${upcoming.length ? upcoming.map(renderCard).join('') : '<p class="card muted">No hay eventos próximos programados.</p>'}</div>
+    ${past.length ? `
+      <details class="card" style="margin-top:20px;">
+        <summary><b>Ver anteriores eventos (${past.length})</b></summary>
+        <div class="admin-cards" style="margin-top:12px;">${past.map(renderCard).join('')}</div>
+      </details>
+    ` : ''}
+  `;
+
+  // Crear / Editar modal
+  const openFormModal = (existing = null) => {
+    const isEdit = Boolean(existing);
+    let initDate = '';
+    let initTime = '08:00';
+    if (existing?.event_date) {
+      const d = new Date(existing.event_date);
+      initDate = d.toISOString().slice(0, 10);
+      initTime = d.toTimeString().slice(0, 5);
+    } else {
+      const d = new Date();
+      d.setDate(d.getDate() + 3);
+      initDate = d.toISOString().slice(0, 10);
+    }
+
+    const m = modal(`
+      <div class="sheet-h">
+        <b>${isEdit ? 'Editar evento' : 'Nuevo evento del Club'}</b>
+        <button class="link" data-close>Cerrar</button>
+      </div>
+      <form id="event-form" class="card" style="margin-top:12px;border:0;padding:0;">
+        <label for="ef-title">Título del evento *</label>
+        <input id="ef-title" value="${esc(existing?.title || '')}" required placeholder="Ej: Fondo de Running 15K Batmon">
+
+        <label for="ef-desc">De qué trata (descripción)</label>
+        <textarea id="ef-desc" rows="3" placeholder="Detalles de la ruta, ritmo, requerimientos…">${esc(existing?.description || '')}</textarea>
+
+        <div class="row">
+          <div>
+            <label for="ef-date">Fecha *</label>
+            <input id="ef-date" type="date" value="${initDate}" required>
+          </div>
+          <div>
+            <label for="ef-time">Hora *</label>
+            <input id="ef-time" type="time" value="${initTime}" required>
+          </div>
+        </div>
+
+        <label for="ef-loc">Ubicación (opcional)</label>
+        <input id="ef-loc" value="${esc(existing?.location || '')}" placeholder="Ej: Parque Central / Costanera">
+
+        <label for="ef-img">Imagen del evento (foto)</label>
+        <input id="ef-img" type="file" accept="image/*">
+        ${existing?.image_path ? `<p class="muted" style="margin-top:4px;">Tiene imagen previa guardada.</p>` : ''}
+
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
+          <input type="checkbox" id="ef-notify" ${isEdit ? '' : 'checked'}>
+          <span>Enviar notificación a la campanita de los socios</span>
+        </label>
+
+        <button class="btn" type="submit" id="ef-submit" style="margin-top:16px;">${isEdit ? 'Guardar cambios' : 'Publicar evento'}</button>
+        <p class="msg" id="ef-msg"></p>
+      </form>
+    `);
+    m.querySelector('[data-close]').onclick = () => m.remove();
+
+    const form = m.querySelector('#event-form');
+    form.onsubmit = async (ev) => {
+      ev.preventDefault();
+      const submitBtn = m.querySelector('#ef-submit');
+      const msg = m.querySelector('#ef-msg');
+      submitBtn.disabled = true;
+      msg.textContent = 'Guardando evento…';
+
+      const title = m.querySelector('#ef-title').value.trim();
+      const description = m.querySelector('#ef-desc').value.trim();
+      const dateVal = m.querySelector('#ef-date').value;
+      const timeVal = m.querySelector('#ef-time').value || '08:00';
+      const location = m.querySelector('#ef-loc').value.trim();
+      const file = m.querySelector('#ef-img').files[0];
+      const notifyChecked = m.querySelector('#ef-notify').checked;
+
+      const eventDateTime = new Date(`${dateVal}T${timeVal}:00`).toISOString();
+
+      let imagePath = existing?.image_path || null;
+      if (file) {
+        if (file.size > 8 * 1024 * 1024) {
+          submitBtn.disabled = false;
+          msg.textContent = 'La imagen es mayor a 8 MB.';
+          return;
+        }
+        const ext = file.name.split('.').pop();
+        const path = `events/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const up = await supabase.storage.from('event-media').upload(path, file, { upsert: true });
+        if (up.error) {
+          submitBtn.disabled = false;
+          msg.textContent = 'Error subiendo foto: ' + up.error.message;
+          return;
+        }
+        imagePath = path;
+      }
+
+      const row = {
+        title,
+        description,
+        event_date: eventDateTime,
+        location: location || null,
+        image_path: imagePath,
+        notify_members: notifyChecked,
+        updated_at: new Date().toISOString(),
+      };
+
+      let eventId = existing?.id;
+      if (isEdit) {
+        const { error } = await supabase.from('events').update(row).eq('id', existing.id);
+        if (error) { submitBtn.disabled = false; msg.textContent = error.message; return; }
+      } else {
+        const { data: newRow, error } = await supabase.from('events').insert(row).select().single();
+        if (error) { submitBtn.disabled = false; msg.textContent = error.message; return; }
+        eventId = newRow.id;
+      }
+
+      // Si se activó notificar a los socios
+      if (notifyChecked && eventId && members.length) {
+        const notifs = members.map((mem) => ({
+          event_id: eventId,
+          user_id: mem.id,
+          type: 'event',
+          message: `Nuevo evento: ${title}`,
+          is_read: false,
+        }));
+        const { error: notifError } = await supabase.from('event_notifications').insert(notifs); if (notifError) notify('Evento guardado, pero no se pudieron crear las notificaciones: ' + notifError.message);
+      }
+
+      notify(isEdit ? 'Evento actualizado correctamente.' : 'Evento publicado con éxito.', 'success');
+      m.remove();
+      eventos();
+    };
+  };
+
+  $('#create-event').onclick = () => openFormModal();
+
+  // Ver asistentes modal
+  const openRsvpsModal = (eventId) => {
+    const e = evList.find((x) => x.id === eventId);
+    const rsvps = rsvpsByEvent[eventId] || [];
+    const confirmed = rsvps.filter((r) => r.status === 'confirmed');
+    const cancelled = rsvps.filter((r) => r.status === 'cancelled');
+
+    const m = modal(`
+      <div class="sheet-h">
+        <b>Asistencia: ${esc(e.title)}</b>
+        <button class="link" data-close>Cerrar</button>
+      </div>
+      <div style="margin:10px 0 14px;">
+        <span class="admin-rsvp-pill confirmed">✓ ${confirmed.length} confirmados</span>
+        <span class="admin-rsvp-pill cancelled" style="margin-left:8px;">✕ ${cancelled.length} cancelaron</span>
+      </div>
+      <h2>Confirmados (${confirmed.length})</h2>
+      <div class="admin-rsvp-list">
+        ${confirmed.length ? confirmed.map((r) => `
+          <div class="admin-rsvp-item">
+            <b>${esc(r.profiles?.full_name || 'Socio Batmon')}</b>
+            <span class="muted">${r.profiles?.carnet_number ? 'CI: ' + esc(r.profiles.carnet_number) : ''} · ${new Date(r.updated_at || r.created_at).toLocaleDateString('es-BO')}</span>
+          </div>
+        `).join('') : '<p class="muted">Aún no hay socios confirmados.</p>'}
+      </div>
+      <h2>Cancelaron confirmación (${cancelled.length})</h2>
+      <div class="admin-rsvp-list">
+        ${cancelled.length ? cancelled.map((r) => `
+          <div class="admin-rsvp-item">
+            <b>${esc(r.profiles?.full_name || 'Socio Batmon')}</b>
+            <span class="muted">${new Date(r.updated_at || r.created_at).toLocaleDateString('es-BO')}</span>
+          </div>
+        `).join('') : '<p class="muted">Ningún socio canceló.</p>'}
+      </div>
+    `);
+    m.querySelector('[data-close]').onclick = () => m.remove();
+  };
+
+  // Recordar evento modal
+  const openRemindModal = (eventId) => {
+    const e = evList.find((x) => x.id === eventId);
+    const m = modal(`
+      <div class="sheet-h">
+        <b>Recordar evento</b>
+        <button class="link" data-close>Cerrar</button>
+      </div>
+      <p class="muted">Envía un recordatorio directo a la campana de notificaciones de los socios.</p>
+      <div class="card" style="border:0;padding:0;margin-top:10px;">
+        <p><b>Evento:</b> ${esc(e.title)}</p>
+        <p class="muted">🗓 ${formatEventDate(e.event_date)}</p>
+        <label for="remind-target">¿A quiénes enviar el recordatorio?</label>
+        <select id="remind-target">
+          <option value="all">A todos los socios</option>
+          <option value="unconfirmed" selected>A los que no han confirmado</option>
+          <option value="confirmed">A los que sí confirmaron</option>
+        </select>
+        <label for="remind-msg">Mensaje opcional</label>
+        <input id="remind-msg" placeholder="¡No te olvides confirmar tu asistencia este fin de semana!">
+        <button class="btn" id="remind-send" type="button" style="margin-top:14px;">Enviar recordatorio</button>
+        <p class="msg" id="remind-res"></p>
+      </div>
+    `);
+    m.querySelector('[data-close]').onclick = () => m.remove();
+
+    $('#remind-send', m).onclick = async () => {
+      const btn = $('#remind-send', m);
+      const res = $('#remind-res', m);
+      btn.disabled = true;
+      res.textContent = 'Enviando…';
+      const target = $('#remind-target', m).value;
+      const customMsg = $('#remind-msg', m).value.trim();
+
+      const { data: count, error } = await supabase.rpc('send_event_reminder', {
+        p_event_id: eventId,
+        p_target: target,
+        p_message: customMsg || `Recordatorio: ${e.title}`,
+      });
+
+      if (error) {
+        btn.disabled = false;
+        res.textContent = error.message;
+      } else {
+        notify(`Recordatorio enviado a ${count || 0} socios.`, 'success');
+        m.remove();
+      }
+    };
+  };
+
+  // Manejo de acciones en tarjetas
+  $('#body').querySelectorAll('[data-action]').forEach((b) => {
+    b.onclick = async () => {
+      const act = b.dataset.action;
+      const id = b.dataset.id;
+      if (act === 'rsvps') {
+        openRsvpsModal(id);
+      } else if (act === 'remind') {
+        openRemindModal(id);
+      } else if (act === 'edit') {
+        const e = evList.find((x) => x.id === id);
+        openFormModal(e);
+      } else if (act === 'delete') {
+        if (!(await confirmDialog('¿Borrar este evento? Se eliminarán también las confirmaciones asociadas.', 'Borrar evento'))) return;
+        b.disabled = true;
+        const e = evList.find((x) => x.id === id);
+        if (e?.image_path) {
+          await supabase.storage.from('event-media').remove([e.image_path]);
+        }
+        const { error } = await supabase.from('events').delete().eq('id', id);
+        if (error) notify(error.message);
+        else {
+          notify('Evento eliminado con éxito.', 'success');
+          eventos();
+        }
+      }
+    };
+  });
+}
+
 /* ------------------------------- Shell ------------------------------- */
-const SECTIONS = { pagos, socios, modulos, ejercicios };
+const SECTIONS = { pagos, socios, modulos, ejercicios, eventos };
 function route() {
   const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + t));

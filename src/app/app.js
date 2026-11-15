@@ -147,7 +147,7 @@ function buildUnifiedCalendar() {
   </section>`;
 }
 
-function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
+function setupUnifiedCalendar(view, clubEvents = []) {
   const root = view.querySelector('#cal10-widget');
   if (!root) return;
 
@@ -170,6 +170,11 @@ function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
 
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const dayLabelsFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  function getEventsForDate(dateObj) {
+    const dIso = iso(dateObj);
+    return clubEvents.filter((ev) => String(ev.event_date).slice(0,10) === dIso);
+  }
 
   function renderGrid() {
     const y = viewDate.getFullYear();
@@ -211,16 +216,18 @@ function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
         const isToday = cellIso === today();
         const isSelected = cellIso === selectedIso;
 
-        // Puntos de actividades reales (excluyendo estrictamente el día 12 según lo solicitado)
-        let hasDot = (acts.some((a) => a.performed_on === cellIso) || ws.some((a) => a.performed_on === cellIso));
-        if (d.getDate() === 12) hasDot = false;
+        // Puntos exclusivos de eventos del club (excluyendo estrictamente el día 12)
+        const event = getEventsForDate(d).sort((a,b)=>new Date(a.event_date)-new Date(b.event_date))[0];
+        const hasDot = Boolean(event);
+        const daysToEvent = event ? Math.ceil((new Date(`${String(event.event_date).slice(0,10)}T12:00:00`).getTime()-new Date(`${today()}T12:00:00`).getTime())/86400000) : Infinity;
+        const eventColor = daysToEvent <= 2 ? 'red' : daysToEvent <= 7 ? 'yellow' : 'green';
 
         const isVisibleInCollapsed = wIdx === activeWeekIdx;
         const hiddenClass = (isCollapsed && !isVisibleInCollapsed) ? ' cal10__cell--hidden' : '';
 
         cellsHtml += `<div class="cal10__cell${!isCurrentMonth ? ' other' : ''}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${hiddenClass}" data-iso="${cellIso}" data-week="${wIdx}">
           ${d.getDate()}
-          ${hasDot ? '<span class="cal10__dot cal10__dot--g"></span>' : ''}
+          ${hasDot ? `<span class="cal10__dot cal10__dot--${eventColor}"></span>` : ''}
         </div>`;
       });
     });
@@ -252,83 +259,68 @@ function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
     const isToday = selectedIso === today();
 
     let title = '';
-    let filteredActs = [];
-    let filteredWs = [];
-    let filteredPlan = [];
+    let events = [];
 
     if (eventFilter === 'day') {
       title = `${isToday ? 'Hoy' : selDayName} · ${selDate.getDate()} de ${selMonthName}`;
-      filteredActs = acts.filter((a) => a.performed_on === selectedIso);
-      filteredWs = ws.filter((w) => w.performed_on === selectedIso);
-      filteredPlan = plan?.[selDayName] || [];
+      events = getEventsForDate(selDate).map((ev) => ({
+        ...ev,
+        dateLabel: `${isToday ? 'Hoy' : selDayName} · ${ev.time}`
+      }));
     } else if (eventFilter === 'week') {
-      title = `Semana de ${selDayName} ${selDate.getDate()}`;
-      // Lunes a domingo de la semana seleccionada
       const wStart = new Date(selDate);
       wStart.setDate(wStart.getDate() - ((wStart.getDay() + 6) % 7));
       const wEnd = new Date(wStart);
       wEnd.setDate(wEnd.getDate() + 6);
-      const startIso = iso(wStart);
-      const endIso = iso(wEnd);
-      filteredActs = acts.filter((a) => a.performed_on >= startIso && a.performed_on <= endIso);
-      filteredWs = ws.filter((w) => w.performed_on >= startIso && w.performed_on <= endIso);
-      filteredPlan = Object.entries(plan || {}).flatMap(([dName, items]) => (items || []).map((it) => ({ ...it, dayName: dName })));
+      title = `Eventos · Semana del ${wStart.getDate()} al ${wEnd.getDate()} de ${monthNames[wEnd.getMonth()]}`;
+
+      for (let i = 0; i < 7; i++) {
+        const curD = new Date(wStart);
+        curD.setDate(curD.getDate() + i);
+        const dayEvs = getEventsForDate(curD);
+        dayEvs.forEach((ev) => {
+          events.push({
+            ...ev,
+            dateLabel: `${dayLabelsFull[curD.getDay()]} ${curD.getDate()} · ${ev.time}`
+          });
+        });
+      }
     } else {
       // Mes
       const y = viewDate.getFullYear();
       const m = viewDate.getMonth();
-      title = `${monthNames[m]} ${y}`;
-      const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
-      filteredActs = acts.filter((a) => a.performed_on?.startsWith(prefix));
-      filteredWs = ws.filter((w) => w.performed_on?.startsWith(prefix));
-      filteredPlan = Object.entries(plan || {}).flatMap(([dName, items]) => (items || []).map((it) => ({ ...it, dayName: dName })));
+      title = `Eventos de ${monthNames[m]} ${y}`;
+
+      const totalDays = new Date(y, m + 1, 0).getDate();
+      for (let d = 1; d <= totalDays; d++) {
+        const curD = new Date(y, m, d, 12, 0, 0);
+        const dayEvs = getEventsForDate(curD);
+        dayEvs.forEach((ev) => {
+          events.push({
+            ...ev,
+            dateLabel: `${dayLabelsFull[curD.getDay()]} ${d} de ${monthNames[m]} · ${ev.time}`
+          });
+        });
+      }
     }
 
     footerLabel.textContent = title;
 
-    let itemsHtml = '';
-    if (filteredActs.length || filteredWs.length) {
-      itemsHtml += filteredActs.map((a) => `
-        <div class="cal10__ev">
-          <div class="cal10__ev-icon">${a.discipline === 'running' ? '🏃' : a.discipline === 'cycling' ? '🚴' : '🏊'}</div>
+    if (events.length) {
+      eventsList.innerHTML = events.map((ev) => `
+        <button type="button" class="cal10__ev" data-event-id="${ev.id}">
+          <div class="cal10__ev-icon">${ev.icon || '📅'}</div>
           <div class="cal10__ev-body">
-            <div class="cal10__ev-name">${DISC[a.discipline] || a.discipline}</div>
-            <div class="cal10__ev-time">${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min · ${a.performed_on}</div>
+            <div class="cal10__ev-name">${esc(ev.title)}</div>
+            <div class="cal10__ev-time">${esc(ev.dateLabel)}${ev.location ? ` · ${esc(ev.location)}` : ''}</div>
           </div>
-          <div class="cal10__ev-pill cal10__ev-pill--g">Hecho</div>
-        </div>
+          <div class="cal10__ev-pill ${ev.tagColor === 'r' ? 'cal10__ev-pill--r' : ev.tagColor === 'a' ? 'cal10__ev-pill--a' : ''}">${esc(ev.tag || 'Evento')}</div>
+        </button>
       `).join('');
-
-      itemsHtml += filteredWs.map((w) => `
-        <div class="cal10__ev">
-          <div class="cal10__ev-icon">${w.kind === 'plyometrics' ? '⚡' : '🏋️'}</div>
-          <div class="cal10__ev-body">
-            <div class="cal10__ev-name">${w.kind === 'plyometrics' ? 'Pliometría' : 'Entrenamiento'}</div>
-            <div class="cal10__ev-time">${w.workout_sets?.length || 0} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''} · ${w.performed_on}</div>
-          </div>
-          <div class="cal10__ev-pill cal10__ev-pill--a">Sesión</div>
-        </div>
-      `).join('');
+      eventsList.querySelectorAll('[data-event-id]').forEach((button)=>button.onclick=()=>openClubEvent(button.dataset.eventId));
+    } else {
+      eventsList.innerHTML = `<div class="cal10__ev-empty">No hay eventos programados para esta fecha.</div>`;
     }
-
-    if (filteredPlan.length) {
-      itemsHtml += filteredPlan.map((p) => `
-        <div class="cal10__ev">
-          <div class="cal10__ev-icon">📋</div>
-          <div class="cal10__ev-body">
-            <div class="cal10__ev-name">${p.exercise_id ? p.exercise_id.replace(/-/g, ' ') : 'Ejercicio'}${p.dayName ? ` (${p.dayName})` : ''}</div>
-            <div class="cal10__ev-time">${p.sets ? `${p.sets} series` : ''} ${p.reps ? `× ${p.reps} reps` : ''}</div>
-          </div>
-          <div class="cal10__ev-pill cal10__ev-pill--r">Plan</div>
-        </div>
-      `).join('');
-    }
-
-    if (!itemsHtml) {
-      itemsHtml = `<div class="cal10__ev-empty">Sin eventos ni entrenamientos en este periodo.</div>`;
-    }
-
-    eventsList.innerHTML = itemsHtml;
   }
 
   // Toggles de filtro (Día, Semana, Mes para eventos)
@@ -382,12 +374,35 @@ function setupUnifiedCalendar(view, acts = [], ws = [], plan = {}) {
 }
 
 /* ---------------- Inicio ---------------- */
+async function openClubEvent(eventId) {
+  const {data:event,error}=await supabase.from('events').select('*').eq('id',eventId).single();
+  if(error||!event){notify('No se pudo abrir el evento.');return;}
+  const [{data:rsvp},{data:image}]=await Promise.all([
+    supabase.from('event_rsvps').select('id,status').eq('event_id',eventId).eq('user_id',ctx.user.id).maybeSingle(),
+    event.image_path?.startsWith('http')?Promise.resolve({data:{signedUrl:event.image_path}}):supabase.storage.from('event-media').createSignedUrl(event.image_path,3600),
+  ]);
+  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet event-detail-sheet"><div class="sheet-h"><h2>${esc(event.title)}</h2><button type="button" class="link" data-close>Cerrar</button></div>${image?.signedUrl?`<img class="event-detail-image" src="${esc(image.signedUrl)}" alt="${esc(event.title)}">`:''}<p>${esc(event.description||'')}</p><p><b>Fecha y hora:</b> ${new Date(event.event_date).toLocaleString('es-BO')}</p>${event.location?`<p><b>Ubicación:</b> ${esc(event.location)}</p>`:''}<p class="muted">${rsvp?.status==='confirmed'?'Ya confirmaste tu asistencia.':rsvp?.status==='cancelled'?'Cancelaste tu confirmación.':'Aún no confirmaste.'}</p>${rsvp?.status==='confirmed'?'<button class="btn ghost" data-cancel>Quitar confirmación</button>':'<button class="btn" data-confirm>Confirmar asistencia</button>'}</section>`;
+  document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
+  modal.querySelector('[data-confirm]')?.addEventListener('click',async()=>{const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e)notify('No se pudo confirmar: '+e.message);else{notify('Asistencia confirmada.');modal.remove();}});
+  modal.querySelector('[data-cancel]')?.addEventListener('click',async()=>{if(!window.confirm('¿Confirmas que no asistirás a este evento?'))return;const {error:e}=await supabase.from('event_rsvps').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',rsvp.id);if(e)notify('No se pudo cancelar: '+e.message);else{notify('Confirmación cancelada.');modal.remove();}});
+}
+
+async function openEventNotifications(events) {
+  const {data:notifs=[]}=await supabase.from('event_notifications').select('id,event_id,message,is_read').eq('user_id',ctx.user.id).order('created_at',{ascending:false}).limit(50);
+  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<section class="sheet"><div class="sheet-h"><h2>Eventos y notificaciones</h2><button class="link" data-close>Cerrar</button></div><div class="notifications-list">${events.map(e=>`<button class="card event-notification-item" data-event-id="${e.id}"><b>${esc(e.title)}</b><span>${new Date(e.event_date).toLocaleString('es-BO')}</span></button>`).join('')}${notifs.map(n=>`<button class="card event-notification-item" data-event-id="${n.event_id}">${esc(n.message||'Recordatorio de evento')}</button>`).join('')||(!events.length?'<p class="muted">No hay eventos ni notificaciones.</p>':'')}</div></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();
+  modal.querySelectorAll('[data-event-id]').forEach(b=>b.onclick=async()=>{const id=b.dataset.eventId;await supabase.from('event_notifications').update({is_read:true}).eq('user_id',ctx.user.id).eq('event_id',id);modal.remove();await openClubEvent(id);});
+}
+
 async function renderHome(v) {
   const [{ data: acts = [] }, { data: ws = [] }, { data: mems = [] }, { data: planRow }] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(200),
     supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id, exercise_id, reps, weight_kg)').order('performed_on', { ascending: false }).limit(100),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
     supabase.from('training_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
+  ]);
+  const [{data:clubEvents=[]},{count:unreadNotifications=0}]=await Promise.all([
+    supabase.from('events').select('id,title,description,event_date,location,image_path').gte('event_date',new Date(new Date().setHours(0,0,0,0)).toISOString()).order('event_date'),
+    supabase.from('event_notifications').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id).eq('is_read',false),
   ]);
   const ws0 = weekStart();
   const km = (d) => acts.filter((a) => a.discipline === d && a.performed_on >= ws0).reduce((s, a) => s + Number(a.distance_km), 0);
@@ -427,7 +442,9 @@ async function renderHome(v) {
     ${ctx.modules.running ? `<div class="card"><span class="muted">Última actividad</span><br>${last ? `<b>${DISC[last.discipline]}</b> · ${fmt(last.distance_km)} km · ${fmt(last.duration_min)} min${last.discipline === 'running' ? ' · ' + paceStr(last.distance_km, last.duration_min) : ''} · ${last.performed_on}` : 'Aún no registras nada.'}</div>` : ''}
     ${ctx.modules.plyo && ws.some((w) => w.kind === 'plyometrics') ? `<div class="card"><span class="muted">Última sesión de pliometría</span><br>${(() => { const recent = ws.find((w) => w.kind === 'plyometrics'); return recent ? `<b>${recent.performed_on}</b> · ${recent.workout_sets.length} series${recent.duration_min ? ' · ' + fmt(recent.duration_min, 0) + ' min' : ''}` : ''; })()}</div>` : ''}
     <div class="quick-actions">${ctx.modules.running ? '<a class="btn" href="#running">Registrar running</a>' : ''}${ctx.modules.plyo ? '<a class="btn ghost" href="#plyo">Registrar pliometría</a>' : ''}${ctx.modules.training ? '<a class="btn ghost" href="#training">Entrenamiento</a>' : ''}</div>`;
-  setupUnifiedCalendar(v, acts, ws, planRow?.plan);
+  setupUnifiedCalendar(v,clubEvents);
+  const eventBell=v.querySelector('#cal10-bell');
+  if(eventBell){eventBell.setAttribute('aria-label',`Notificaciones de eventos: ${unreadNotifications||0}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);eventBell.onclick=()=>openEventNotifications(clubEvents);}
   clearTimeout(homeDayTimer);
   const nextMidnight = new Date();
   nextMidnight.setHours(24, 0, 5, 0);

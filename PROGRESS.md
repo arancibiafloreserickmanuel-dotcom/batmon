@@ -95,3 +95,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Sin punto en el día 12 y puntos de actividad exclusivos para registros reales.
 - Tarjeta de descanso separada ("Descansa, [Nombre]") ubicada abajo fuera del calendario, con acceso directo a Registrar entrenamiento.
 - Archivos: `src/app/app.js`, `src/app/app.css`.
+
+## Eventos del club (15 nov)
+- Migración 0012 (`events`, `event_rsvps`, `event_notifications`, bucket público `event-media`, RPC `send_event_reminder`). Endurecida en revisión: notificaciones solo permiten UPDATE de `is_read`, bucket limitado a imágenes ≤5 MB, recordatorio valida destino y evita duplicados.
+- App: calendario con eventos reales, confirmar/cancelar asistencia, notificaciones. Admin → Eventos: crear/editar, imagen, notificar, asistentes.
+- Pendiente: aplicar 0012 en Supabase y probar flujos (RSVP, notificación, recordatorio, imagen).
