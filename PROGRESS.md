@@ -242,3 +242,9 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se mantienen los destinos existentes y el filtrado por permisos individuales/globales; no se alteraron los módulos ni se agregaron estadísticas ficticias.
 - Se omitió “Continuar entrenamiento”: los borradores de sesiones no garantizan una reanudación directa fiable desde la portada, especialmente tras recargar; implementarlo requeriría cambiar el funcionamiento interno de los módulos, fuera del alcance de esta fase.
 - No requiere migraciones ni dependencias nuevas.
+
+## Corrección migración 0015 y cancelar asistencia en eventos (15 nov)
+- **0015_club_challenges.sql**: Corregida la comparación de tipos `operator does not exist: discipline = text` en la función `club_challenge_leaderboard`, aplicando cast explícito `a.discipline::text = c.discipline` en las consultas de `activities`. Lista para reejecutar en Supabase.
+- **Cancelación de asistencia en eventos (`src/app/app.js`)**: Solucionado el bug `Cannot set properties of null (setting 'disabled')` al pulsar "No voy". El objeto `eventClick.currentTarget` se volvía `null` tras la espera asíncrona del `await confirmDialog(...)`. Ahora se captura la referencia al botón antes del `await` y con selector de respaldo.
+- Verificación: `npm run build` ejecutado exitosamente con 0 errores.
+

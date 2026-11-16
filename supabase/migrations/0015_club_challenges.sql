@@ -53,12 +53,12 @@ language sql stable security definer set search_path=public as $$
     case
       when c.metric='distance_km' then coalesce((
         select sum(a.distance_km)::numeric from public.activities a
-        where a.user_id=cp.user_id and a.discipline=c.discipline
+        where a.user_id=cp.user_id and a.discipline::text=c.discipline
           and a.performed_on between c.starts_on and c.ends_on
       ),0)
       when c.discipline in ('running','cycling','swimming') then (
         select count(*)::numeric from public.activities a
-        where a.user_id=cp.user_id and a.discipline=c.discipline
+        where a.user_id=cp.user_id and a.discipline::text=c.discipline
           and a.performed_on between c.starts_on and c.ends_on
       )
       when c.discipline='plyo' then (
@@ -76,12 +76,12 @@ language sql stable security definer set search_path=public as $$
     case
       when c.metric='distance_km' then coalesce((
         select sum(a.distance_km)::numeric from public.activities a
-        where a.user_id=cp.user_id and a.discipline=c.discipline
+        where a.user_id=cp.user_id and a.discipline::text=c.discipline
           and a.performed_on between c.starts_on and c.ends_on
       ),0)>=c.goal_value
       when c.discipline in ('running','cycling','swimming') then (
         select count(*)::numeric from public.activities a
-        where a.user_id=cp.user_id and a.discipline=c.discipline
+        where a.user_id=cp.user_id and a.discipline::text=c.discipline
           and a.performed_on between c.starts_on and c.ends_on
       )>=c.goal_value
       when c.discipline='plyo' then (
