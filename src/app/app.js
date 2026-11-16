@@ -17,10 +17,10 @@ const TABS = [
 ];
 const TRAINING_MODULES = [
   { route: 'running', key: 'running', title: 'Running', detail: 'Registra tus carreras, revisa métricas y consulta tu historial.', icon: '<circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/>' },
-  { route: 'cycling', key: 'cycling', title: 'Ciclismo', detail: 'Guarda tus recorridos, distancia y evolución sobre la bici.', icon: '<circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/>' },
-  { route: 'swimming', key: 'swimming', title: 'Natación', detail: 'Registra sesiones y distancia, y revisa tus marcas.', icon: '<path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/>' },
   { route: 'plyo', key: 'plyo', title: 'Pliometría', detail: 'Explora ejercicios, registra sesiones y sigue tu progreso.', icon: '<path d="M7 19h10M9 19l1.2-5.1 2.4-2.4 2.1 2.1L17 19M11 7.5a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4ZM12 9l-1.2 3.4-3.3 1.8M12 9l3.2 1.2 1.5 2.3M4 19h3M17 19h3"/>' },
-  { route: 'gym', key: 'training', title: 'Gimnasio', detail: 'Organiza tus rutinas, ejercicios y sesiones de fuerza.', icon: '<path d="M3 10v4m3-7v10m12-10v10m3-7v4M6 12h12"/><path d="M9 8v8m6-8v8"/>' },
+    { route: 'swimming', key: 'swimming', title: 'Natación', detail: 'Registra sesiones y distancia, y revisa tus marcas.', icon: '<path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/>' },
+    { route: 'cycling', key: 'cycling', title: 'Ciclismo', detail: 'Guarda tus recorridos, distancia y evolución sobre la bici.', icon: '<circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/>' },
+    { route: 'gym', key: 'training', title: 'Entrenamiento físico', detail: 'Organiza rutinas, ejercicios y sesiones de fuerza.', icon: '<path d="M3 10v4m3-7v10m12-10v10m3-7v4M6 12h12"/><path d="M9 8v8m6-8v8"/>' },
 ];
 let ctx = null;
 
@@ -90,8 +90,8 @@ function renderTabs() {
 function renderTrainingHub() {
   const available = TRAINING_MODULES.filter(({ key }) => ctx.modules[key]);
   view.innerHTML = `<section class="training-hub">
-    <header class="training-hub__intro"><p class="training-hub__eyebrow">BATMON CROWD · TU ACTIVIDAD</p><h1>Entrenamiento</h1><p class="muted">Elige una disciplina para registrar sesiones y consultar tus estadísticas e historial.</p></header>
-    ${available.length ? `<div class="training-hub__grid">${available.map(({ route, title, detail, icon }) => `<a class="card training-module-card" href="#${route}"><span class="training-module-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="training-module-card__copy"><strong>${title}</strong><small>${detail}</small></span><span class="training-module-card__arrow" aria-hidden="true">→</span></a>`).join('')}</div>` : '<div class="card muted">No tienes disciplinas activas. Consulta con el administrador del club.</div>'}
+    <header class="training-hub__intro"><p class="training-hub__eyebrow">BATMON CROWD · DISCIPLINAS</p><h1>Entrenar</h1><p class="muted">Elige una disciplina para registrar y revisar tus entrenamientos.</p></header>
+    ${available.length ? `<div class="training-hub__grid training-hub__grid--${available.length}" aria-label="Disciplinas de entrenamiento">${available.map(({ route, title, detail, icon }) => `<a class="card training-module-card" href="#${route}"><span class="training-module-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="training-module-card__copy"><strong>${title}</strong><small>${detail}</small></span><span class="training-module-card__arrow" aria-hidden="true">→</span></a>`).join('')}</div>` : '<div class="card muted">No tienes disciplinas activas. Consulta con el administrador del club.</div>'}
   </section>`;
 }
 

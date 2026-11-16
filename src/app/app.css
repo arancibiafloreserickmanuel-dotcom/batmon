@@ -1015,12 +1015,12 @@ body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:1
 .cal10__agenda-challenge .cal10__agenda-symbol{color:#705516}
 .cal10__agenda-completed .cal10__agenda-symbol{color:var(--text)}
 .cal10__agenda-link:focus-visible{outline:2px solid var(--text);outline-offset:2px}
-.training-hub{display:grid;gap:16px}
-.training-hub__intro{display:grid;gap:8px}
+.training-hub{display:grid;gap:20px}
+.training-hub__intro{display:grid;gap:8px;max-width:620px}
 .training-hub__intro h1{margin:0}
 .training-hub__eyebrow{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.18em}
-.training-hub__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.training-module-card{display:grid;grid-template-columns:44px minmax(0,1fr) 16px;align-items:center;gap:12px;min-height:108px;margin:0;color:var(--ink);text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
+.training-hub__grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.training-module-card{grid-column:span 4;display:grid;grid-template-columns:48px minmax(0,1fr) 16px;align-items:center;gap:12px;min-height:116px;margin:0;padding:18px;color:var(--ink);text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
 .training-module-card:hover,.training-module-card:focus-visible{transform:translateY(-2px)}
 .training-module-card__icon{display:grid;width:44px;height:44px;place-items:center;border-radius:50%;background:var(--surface);color:var(--ink);box-shadow:inset 2px 2px 5px color-mix(in srgb,var(--ink) 12%,transparent),inset -2px -2px 5px color-mix(in srgb,var(--surface) 70%,transparent)}
 .training-module-card__icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -1029,6 +1029,12 @@ body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:1
 .training-module-card__copy small{color:var(--muted);font-size:11px;line-height:1.4}
 .training-module-card__arrow{font-size:20px;color:var(--muted)}
 .training-back-button{display:inline-flex;margin:0 0 10px;padding:7px 10px;font-size:10px}
-@media(max-width:520px){.training-hub__grid{grid-template-columns:1fr}.training-module-card{min-height:94px}.training-hub{gap:14px}}
+.training-hub__grid--1 .training-module-card{grid-column:5/span 4}
+.training-hub__grid--2 .training-module-card{grid-column:span 6}
+.training-hub__grid--4 .training-module-card:nth-child(4){grid-column:5/span 4}
+.training-hub__grid--5 .training-module-card:nth-child(4){grid-column:3/span 4}
+.training-hub__grid--5 .training-module-card:nth-child(5){grid-column:7/span 4}
+@media(max-width:760px){.training-hub__grid{grid-template-columns:repeat(2,minmax(0,1fr))}.training-module-card{grid-column:auto}.training-hub__grid--1 .training-module-card,.training-hub__grid--4 .training-module-card:nth-child(4){grid-column:1/-1;max-width:calc(50% - 7px);justify-self:center}.training-hub__grid--5 .training-module-card:nth-child(5){grid-column:1/-1;max-width:calc(50% - 7px);justify-self:center}}
+@media(max-width:520px){.training-hub__grid{grid-template-columns:1fr;gap:10px}.training-module-card,.training-hub__grid--1 .training-module-card,.training-hub__grid--2 .training-module-card,.training-hub__grid--4 .training-module-card:nth-child(4),.training-hub__grid--5 .training-module-card:nth-child(5){grid-column:1/-1;max-width:none;min-height:94px;padding:15px}.training-hub{gap:14px}}
 @media(max-width:520px){.home-greeting{grid-template-columns:1fr;gap:8px;margin-bottom:12px}.home-greeting__title{grid-template-columns:minmax(0,auto) minmax(0,1fr)}.home-greeting__today{font-size:10px}.home-compliance{grid-template-columns:1fr;gap:4px}.home-compliance small{font-size:10px}.home-week-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.home-week-card{padding:12px}.home-week-card__head{align-items:flex-start;flex-direction:column;gap:3px}.home-week-card__head strong,.home-week-empty{text-align:left}.home-recent{padding-inline:12px}.cal10__agenda-section h3{margin-top:6px}.cal10__ev{gap:8px}.cal10__ev-pill{padding:4px 6px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){.training-module-card{transition:none}}

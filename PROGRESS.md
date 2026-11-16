@@ -234,3 +234,11 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Las rutas existentes para Running, Ciclismo, Natación y Pliometría se conservan. El módulo anterior de fuerza se abre con `#gym`; `#training` ahora es el selector.
 - Cambio solo de frontend; no requiere migración. En el directorio local figuran 0014, 0015 y 0016 como migraciones que requieren verificación/aplicación. Hay notas históricas contradictorias sobre 0002 y 0012; confirmar el historial real de Supabase antes de ejecutar pendientes.
 - Archivos: `src/app/app.js`, `src/app/app.css`. Build y revisión manual de rutas pendientes.
+
+
+## Entrenar — centro de disciplinas (15 nov)
+- La página unificada de Entrenar presenta las disciplinas habilitadas en este orden: Running, Pliometría, Natación, Ciclismo y Entrenamiento físico.
+- Se ajustaron encabezado, descripciones y distribución adaptable de tarjetas; en escritorio la quinta tarjeta queda centrada y en móvil se conserva una columna legible.
+- Se mantienen los destinos existentes y el filtrado por permisos individuales/globales; no se alteraron los módulos ni se agregaron estadísticas ficticias.
+- Se omitió “Continuar entrenamiento”: los borradores de sesiones no garantizan una reanudación directa fiable desde la portada, especialmente tras recargar; implementarlo requeriría cambiar el funcionamiento interno de los módulos, fuera del alcance de esta fase.
+- No requiere migraciones ni dependencias nuevas.
