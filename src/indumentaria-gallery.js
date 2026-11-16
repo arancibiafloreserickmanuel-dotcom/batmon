@@ -22,8 +22,9 @@ const images = [
   { src: '/apparel-shirt-back.png', alt: 'Polera Batmon Crowd, vista posterior' },
   { src: '/apparel-shirt-front.png', alt: 'Polera Batmon Crowd, vista frontal' },
   { src: '/apparel-new-polera.png', alt: 'Nueva polera Batmon Crowd' },
-  { src: '/apparel-crowd-shirt.png', alt: 'Diseño de poleras Batmon Crowd' },
-  { src: '/apparel-run-punilla.png', alt: 'Polera Run Punilla' },
+  { src: '/apparel-longsleeve-wings-back.webp', alt: 'Buzo manga larga Batmon Crowd, alas en la espalda' },
+  { src: '/apparel-longsleeve-club-back.webp', alt: 'Buzo manga larga Batmon Crowd Club, espalda' },
+  { src: '/apparel-longsleeve-mockup.webp', alt: 'Buzos manga larga Batmon Crowd, vista de ambos diseños' },
 ];
 
 const C = {
