@@ -187,21 +187,13 @@ async function mountMap(el, segments, { center = null, locate = null } = {}) {
 
 function addPageNav(view, selected, active) {
 
-  const nav = view.querySelector('.running-pages');
+  view.querySelectorAll('.tabs-pill__input').forEach((input) => {
 
-  view.querySelectorAll('[data-run-page]').forEach((button) => {
+    input.checked = input.value === selected;
 
-    button.classList.toggle('on', button.dataset.runPage === selected);
-
-    button.onclick = () => active(button.dataset.runPage);
+    input.onchange = () => active(input.value);
 
   });
-
-  const indicator = nav?.querySelector('.tabs-pill__indicator');
-
-  const selectedButton = nav?.querySelector('[data-run-page].on');
-
-  if (indicator && selectedButton) { indicator.style.width = `${selectedButton.offsetWidth}px`; indicator.style.transform = `translateX(${selectedButton.offsetLeft}px)`; }
 
 }
 
@@ -251,7 +243,15 @@ async function renderRun(view, ctx) {
 
     view.innerHTML = `<section class="run-module"><header class="run-module__head"><div><p class="run-kicker">RUNNING · BATMON CROWD</p><h1>${title}</h1></div>${active ? `<span class="run-state run-state--${tracker.state.status}">${tracker.state.status === 'paused' ? 'Pausada' : tracker.state.status === 'finished' ? 'Por guardar' : 'En curso'}</span>` : ''}</header>
 
-      ${showSubnav ? `<nav class="tabs sub running-pages tabs-pill" aria-label="Secciones de Running"><button data-run-page="run">Correr</button><button data-run-page="progress">Progreso</button><button data-run-page="history">Historial</button><i class="tabs-pill__indicator" aria-hidden="true"></i></nav>` : ''}
+      ${showSubnav ? `<nav class="running-pages tabs-pill" aria-label="Secciones de Running">
+        <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-run" value="run">
+        <label class="tabs-pill__label" for="run-page-run">Correr</label>
+        <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-progress" value="progress">
+        <label class="tabs-pill__label" for="run-page-progress">Progreso</label>
+        <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-history" value="history">
+        <label class="tabs-pill__label" for="run-page-history">Historial</label>
+        <div class="tabs-pill__indicator" aria-hidden="true"></div>
+      </nav>` : ''}
 
       ${error?`<p class="msg" role="status">No se pudo cargar el historial: ${esc(error.message)}</p>`:''}<div id="run-page-content"></div></section>`;
 
@@ -277,27 +277,31 @@ async function renderRun(view, ctx) {
   const GOAL_ICONS = { none: goalIcon('<path d="M8 5v14l11-7z"/>'), distance: goalIcon('<rect x="3" y="10" width="18" height="4" rx="1"/><path d="M7 10v2M11 10v3M15 10v2"/>'), duration: goalIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>') };
   const SETTINGS_ICON = goalIcon('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>');
 
+  const GOAL_OPTIONS = [ { value: 'none', label: 'Libre', icon: GOAL_ICONS.none }, { value: 'distance', label: 'Distancia', icon: GOAL_ICONS.distance }, { value: 'duration', label: 'Duración', icon: GOAL_ICONS.duration } ];
+
   function goalRadialMarkup() {
     const chosen = prefs.goal?.type || 'none';
-    return `<div class="goal-radial" id="goal-radial">
-      <div class="goal-ring" aria-hidden="true"></div>
-      <div class="goal-options" aria-hidden="true">
-        <button type="button" class="goal-option ${chosen==='none'?'on':''}" data-goal="none" data-i="1" title="Libre">${GOAL_ICONS.none}</button>
-        <button type="button" class="goal-option ${chosen==='distance'?'on':''}" data-goal="distance" data-i="2" title="Distancia">${GOAL_ICONS.distance}</button>
-        <button type="button" class="goal-option ${chosen==='duration'?'on':''}" data-goal="duration" data-i="3" title="Duración">${GOAL_ICONS.duration}</button>
+    const selectedIndex = Math.max(1, GOAL_OPTIONS.findIndex((o) => o.value === chosen) + 1);
+    return `<div class="goal-radial" style="--selected:${selectedIndex}">
+      <div class="goal-options">
+        ${GOAL_OPTIONS.map((o, i) => `<label class="goal-option" style="--i:${i + 1}">
+          <input class="goal-option-input" type="radio" name="goal-option" value="${o.value}" ${chosen === o.value ? 'checked' : ''}>
+          <span class="goal-option-inner" data-tooltip="${esc(o.label)}">${o.icon}</span>
+        </label>`).join('')}
       </div>
-      <button type="button" class="goal-btn" id="goal-btn" aria-label="Elegir objetivo" aria-haspopup="true" aria-expanded="false">${GOAL_ICONS[chosen]}</button>
+      <div class="goal-menu-ring" aria-hidden="true"></div>
+      <div class="goal-selector-light" aria-hidden="true"></div>
+      <div class="goal-btn" aria-label="Elegir objetivo">
+        <span class="goal-btn-icon">${GOAL_ICONS[chosen]}</span>
+        <input class="goal-menu-input" type="checkbox" aria-label="Abrir selector de objetivo">
+      </div>
     </div>`;
   }
 
   function bindGoalRadial(box, onPicked) {
-    const radial = $('#goal-radial', box), goalBtn = $('#goal-btn', box);
-    if (!radial || !goalBtn) return;
-    goalBtn.onclick = () => { const open = radial.classList.toggle('open'); goalBtn.setAttribute('aria-expanded', String(open)); };
-    radial.querySelectorAll('[data-goal]').forEach((opt) => (opt.onclick = () => {
-      radial.classList.remove('open'); goalBtn.setAttribute('aria-expanded', 'false');
-      onPicked(opt.dataset.goal);
-    }));
+    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box);
+    if (!radial || !toggle) return;
+    radial.querySelectorAll('.goal-option-input').forEach((input) => (input.onchange = () => { toggle.checked = false; onPicked(input.value); }));
   }
 
   function settingsToggleFields(prefix) {
@@ -329,13 +333,12 @@ async function renderRun(view, ctx) {
           <div class="run-prep-overlay">
             <p class="run-goal-label">${esc(goalSummary())}</p>
             <div class="run-prep-controls">
-              <button type="button" class="run-float-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
-              <button type="button" class="run-circle-btn run-circle-btn--start" id="run-start">COMENZAR</button>
+              <button type="button" class="run-icon-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
+              <button type="button" class="run-circle-btn run-circle-btn--start" id="run-start"><span>COMENZAR</span></button>
               ${goalRadialMarkup()}
             </div>
           </div>
         </div>
-        <div id="goal-value-row" class="card goal-value-row" hidden><label><span id="goal-value-label"></span><input id="goal-value-input" type="number" min="0.1" step="0.1" inputmode="decimal"></label><button class="btn sm" id="goal-value-save" type="button">Guardar objetivo</button></div>
         <details class="card run-manual-card"><summary>Registrar manualmente</summary><form id="run-manual-form">${manualFormMarkup()}</form></details>
         <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
@@ -349,16 +352,8 @@ async function renderRun(view, ctx) {
 
       bindGoalRadial(box, (type) => {
         if (type === 'none') { prefs.goal = null; savePreferences(userId, prefs); renderRunScreen(box); return; }
-        const row = $('#goal-value-row', box);
-        $('#goal-value-label', box).textContent = type === 'distance' ? 'Distancia objetivo (km)' : 'Duración objetivo (minutos)';
-        const input = $('#goal-value-input', box); input.value = prefs.goal?.type === type ? prefs.goal.value : ''; input.placeholder = type === 'distance' ? '5' : '30';
-        row.hidden = false; row.dataset.type = type; input.focus();
+        openGoalValueDialog(type, () => renderRunScreen(box));
       });
-      $('#goal-value-save', box).onclick = () => {
-        const row = $('#goal-value-row', box), type = row.dataset.type, value = Number($('#goal-value-input', box).value);
-        if (!(value > 0)) { notify('Indica un objetivo válido.'); return; }
-        prefs.goal = { type, value }; savePreferences(userId, prefs); row.hidden = true; renderRunScreen(box);
-      };
 
       bindManual($('#run-manual-form', box), null);
 
@@ -412,14 +407,19 @@ async function renderRun(view, ctx) {
           <div class="run-counter-sub"><div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div><div><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div></div>
           ${renderGoalProgress(state)}
           <div class="run-actions"><button class="run-circle-btn" id="run-pause" type="button" aria-label="Pausar">❚❚</button><button class="btn run-start-btn" id="run-finish" type="button">Finalizar</button></div>
-          <button class="link run-discard" id="run-discard" type="button">Descartar</button>
           <p class="msg" id="run-live-msg" aria-live="polite"></p></section>
-        <section class="run-swipe__panel run-swipe__panel--config"><h3>Configuración</h3>${settingsToggleFields('cfg')}</section>
+        <section class="run-swipe__panel run-swipe__panel--map">
+          <div class="run-map-wrap run-map-wrap--boxed run-map-wrap--flex"><div id="run-map-live" class="run-map run-map--boxed" aria-label="Tu recorrido"></div><div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div>
+          <div class="run-map-keystats"><div><b id="run-live-distance3">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div><div><b id="run-live-time3">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div><div><b id="run-live-pace3">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div></div>
+        </section>
+        <section class="run-swipe__panel run-swipe__panel--config"><h3>Configuración</h3>${settingsToggleFields('cfg')}<button class="link run-discard" id="run-discard" type="button">Descartar carrera</button></section>
       </div>
-      <div class="run-swipe-dots" aria-hidden="true"><i></i><i class="on"></i><i></i></div>
+      <div class="run-swipe-dots" aria-hidden="true"><i></i><i class="on"></i><i></i><i></i></div>
     </div>`;
 
     bindSettingsToggleFields(box, 'cfg');
+    mapController = mountMap($('#run-map-live', box), state.segments || []);
+    $('#run-center', box).onclick = () => mapController?.then(({ recenter }) => recenter?.());
 
     const swipe = $('#run-swipe', box);
     requestAnimationFrame(() => { swipe.scrollLeft = swipe.clientWidth; });
@@ -467,6 +467,25 @@ async function renderRun(view, ctx) {
     dlg.addEventListener('close', () => dlg.remove());
   }
 
+  function openGoalValueDialog(type, onSaved) {
+    const dlg = document.createElement('dialog'); dlg.className = 'run-detail-dialog';
+    const label = type === 'distance' ? 'Distancia objetivo (km)' : 'Duración objetivo (minutos)';
+    const current = prefs.goal?.type === type ? prefs.goal.value : '';
+    dlg.innerHTML = `<div class="run-detail-sheet"><button class="link run-detail-close" type="button" id="goalval-close">Cerrar</button><h2>${esc(label)}</h2>
+      <label><input id="goalval-input" type="number" min="0.1" step="0.1" inputmode="decimal" value="${esc(String(current))}" placeholder="${type === 'distance' ? '5' : '30'}"></label>
+      <button class="btn" id="goalval-save" type="button">Guardar objetivo</button></div>`;
+    document.body.append(dlg); dlg.showModal();
+    $('#goalval-input', dlg).focus();
+    $('#goalval-close', dlg).onclick = () => dlg.close();
+    $('#goalval-save', dlg).onclick = () => {
+      const value = Number($('#goalval-input', dlg).value);
+      if (!(value > 0)) { notify('Indica un objetivo válido.'); return; }
+      prefs.goal = { type, value }; savePreferences(userId, prefs);
+      dlg.close(); onSaved();
+    };
+    dlg.addEventListener('close', () => dlg.remove());
+  }
+
   function openManualDialog(activity) {
     const dlg = document.createElement('dialog'); dlg.className = 'run-detail-dialog';
     dlg.innerHTML = `<form class="run-detail-sheet" id="manual-dialog-form">${manualFormMarkup(activity)}</form>`;
@@ -498,7 +517,7 @@ async function renderRun(view, ctx) {
 
     const write=(id,value)=>{const node=$(`#${id}`,view);if(node)node.textContent=value;};
 
-    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('#run-live-distance',view)?.nextElementSibling;if(unitNode)unitNode.textContent=distUnit;write('run-live-pace',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
+    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('#run-live-distance',view)?.nextElementSibling;if(unitNode)unitNode.textContent=distUnit;write('run-live-pace',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-live-distance3',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-time3',durationLabel(seconds));write('run-live-pace3',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
 
     const acc=flat.at(-1)?.accuracy;write('run-accuracy',acc?`Precisión ${acc} m`: '');
 
