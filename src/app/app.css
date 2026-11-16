@@ -1057,3 +1057,26 @@ body.appbody[data-theme="dark"] .run-map .leaflet-tile{filter:grayscale(.55) inv
 .run-history-route path:first-child{stroke:var(--ink)}
 .run-history-open:has(.run-history-route){grid-template-columns:1fr auto auto}
 @media(max-width:560px){.run-history-route{width:58px;height:34px}}
+
+/* ---------- Pliometría: Entrenar / Mi plan / Progreso ---------- */
+.plyo-week-nav{display:flex;gap:6px;overflow-x:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.plyo-day-chip{flex:0 0 auto;min-width:48px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:600 12px 'Inter';text-transform:uppercase}
+.plyo-day-chip.sel{border:2px solid var(--ink)}
+.plyo-day-chip.set{border-color:#16833a;color:#16833a}
+.plyo-day-chip.rest{border-color:#9a7b00;color:#9a7b00}
+.plyo-day-detail h3{font:400 22px Anton,sans-serif;margin:0 0 6px}
+.plyo-today h2,.plyo-quickstart h2{font-size:18px;letter-spacing:0;text-transform:none;color:var(--ink);margin:4px 0}
+.plyo-today .btn,.plyo-quickstart .btn{margin-top:10px}
+.plyo-pending{border-color:#9a7b00}
+.plyo-session-head{display:grid;gap:6px}
+.plyo-progress{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.plyo-progress i{display:block;height:100%;background:#16833a;transition:width .2s ease}
+.plyo-done-toggle{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.plyo-done-toggle input{width:20px;min-height:20px;accent-color:#16833a}
+.plyo-hint{font-size:12px;margin:-4px 0 10px}
+.card.ex.is-done{border-color:#16833a}
+.rest-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.rest-presets input{width:120px;min-height:40px}
+.quick-actions{flex-wrap:wrap}
+.card.ex .exh{flex-wrap:wrap}
+.card.ex .exh>div{min-width:120px}

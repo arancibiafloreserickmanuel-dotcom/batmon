@@ -210,6 +210,8 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   const formatEventTime = (event) => new Date(event.event_date).toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
   const eventDateIso = (event) => iso(new Date(event.event_date));
   const plan = agenda.plan || {};
+  const plyoPlan = agenda.plyoPlan || {};
+  const plyoRoutinesById = agenda.plyoRoutinesById || new Map();
   const exercisesById = agenda.exercisesById || new Map();
   const activities = (agenda.activities || []).filter((item) => agenda.modules?.[item.discipline]);
   const workouts = (agenda.workouts || []).filter((item) => item.kind === 'training' ? agenda.modules?.training : item.kind === 'plyometrics' ? agenda.modules?.plyo : true);
@@ -223,25 +225,43 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   }
 
   function getPlanForDate(dateObj) {
+    const entries = [];
     const rows = plan[dayLabelsFull[dateObj.getDay()]] || [];
-    if (!rows.length || !agenda.modules?.training) return [];
-    const names = rows.map((row) => exercisesById.get(String(row.exercise_id))?.name_es || exercisesById.get(String(row.exercise_id))?.name).filter(Boolean);
-    const sessions = workouts.filter((workout) => workout.performed_on === iso(dateObj) && workout.kind === 'training');
-    return [{
-      kind: 'routine', title: 'Gimnasio · Rutina programada', date: iso(dateObj), route: '#gym',
-      detail: names.length ? `${names.length} ejercicios · ${names.join(', ')}` : `${rows.length} ejercicios en tu plan`,
-      done: sessions.length > 0, duration: sessions.reduce((sum, item) => sum + Number(item.duration_min || 0), 0),
-    }];
+    if (rows.length && agenda.modules?.training) {
+      const names = rows.map((row) => exercisesById.get(String(row.exercise_id))?.name_es || exercisesById.get(String(row.exercise_id))?.name).filter(Boolean);
+      const sessions = workouts.filter((workout) => workout.performed_on === iso(dateObj) && workout.kind === 'training');
+      entries.push({
+        kind: 'routine', title: 'Gimnasio · Rutina programada', date: iso(dateObj), route: '#gym',
+        detail: names.length ? `${names.length} ejercicios · ${names.join(', ')}` : `${rows.length} ejercicios en tu plan`,
+        done: sessions.length > 0, duration: sessions.reduce((sum, item) => sum + Number(item.duration_min || 0), 0),
+      });
+    }
+    const dayName = dayLabelsFull[dateObj.getDay()];
+    const plyoEntry = plyoPlan[dayName];
+    if (plyoEntry && !plyoEntry.rest && plyoEntry.routineId && agenda.modules?.plyo) {
+      const routine = plyoRoutinesById.get(plyoEntry.routineId);
+      const sessions = workouts.filter((workout) => workout.performed_on === iso(dateObj) && workout.kind === 'plyometrics');
+      entries.push({
+        kind: 'routine', title: `Pliometría · ${routine?.name || 'Rutina programada'}`, date: iso(dateObj), route: '#plyo',
+        detail: routine ? `${(routine.items || []).length} ejercicios` : 'Rutina programada',
+        done: sessions.length > 0, duration: sessions.reduce((sum, item) => sum + Number(item.duration_min || 0), 0),
+      });
+    } else if (plyoEntry?.rest && agenda.modules?.plyo) {
+      entries.push({ kind: 'routine', title: 'Pliometría · Descanso', date: iso(dateObj), route: '#plyo', detail: 'Día de descanso', done: true, duration: 0 });
+    }
+    return entries;
   }
 
   function getCompletedForDate(dateObj) {
     const date = iso(dateObj);
-    const plannedTraining = getPlanForDate(dateObj).length > 0;
+    const dayName = dayLabelsFull[dateObj.getDay()];
+    const plannedTraining = (plan[dayName] || []).length > 0 && agenda.modules?.training;
+    const plannedPlyo = !!(plyoPlan[dayName]?.routineId) && agenda.modules?.plyo;
     const completedActivities = activities.filter((item) => item.performed_on === date).map((item) => ({
       kind: 'completed', title: DISC[item.discipline] || 'Actividad', date, route: routeByDiscipline[item.discipline] || '#training',
       detail: [Number(item.distance_km) > 0 ? `${fmt(item.distance_km)} km` : '', Number(item.duration_min) > 0 ? `${fmt(item.duration_min, 0)} min` : '', item.run_type ? RUN_TYPE[item.run_type] : ''].filter(Boolean).join(' · ') || 'Sesión registrada',
     }));
-    const completedWorkouts = workouts.filter((item) => item.performed_on === date && ['training', 'plyometrics'].includes(item.kind) && !(plannedTraining && item.kind === 'training')).map((item) => ({
+    const completedWorkouts = workouts.filter((item) => item.performed_on === date && ['training', 'plyometrics'].includes(item.kind) && !(plannedTraining && item.kind === 'training') && !(plannedPlyo && item.kind === 'plyometrics')).map((item) => ({
       kind: 'completed', title: item.kind === 'plyometrics' ? 'Pliometría' : 'Gimnasio', date,
       route: item.kind === 'plyometrics' ? '#plyo' : '#gym',
       detail: [item.workout_sets?.length ? `${item.workout_sets.length} series` : '', Number(item.duration_min) > 0 ? `${fmt(item.duration_min, 0)} min` : ''].filter(Boolean).join(' · ') || 'Sesión completada',
@@ -482,7 +502,7 @@ async function openClubEvent(eventId) {
 }
 
 async function renderHome(v) {
-  const [activityResult, workoutResult, membershipResult, planResult, eventResult, notificationResult, exerciseResult, challengeResult] = await Promise.all([
+  const [activityResult, workoutResult, membershipResult, planResult, eventResult, notificationResult, exerciseResult, challengeResult, plyoPlanResult, plyoRoutineResult] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(300),
     supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id, exercise_id, reps, weight_kg)').order('performed_on', { ascending: false }).limit(150),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
@@ -491,11 +511,15 @@ async function renderHome(v) {
     supabase.from('event_notifications').select('id', { count: 'exact', head: true }).eq('user_id', ctx.user.id).eq('is_read', false),
     supabase.from('exercises').select('id,name,name_es,category').in('category', ['training', 'plyometrics']).eq('is_active', true),
     supabase.from('club_challenges').select('id,title,discipline,starts_on,ends_on').order('starts_on'),
+    supabase.from('plyo_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
+    supabase.from('plyo_routines').select('id,name,items').eq('user_id', ctx.user.id),
   ]);
   const acts = activityResult.data || [];
   const ws = workoutResult.data || [];
   const mems = membershipResult.data || [];
   const plan = planResult.data?.plan || {};
+  const plyoPlan = plyoPlanResult.data?.plan || {};
+  const plyoRoutinesById = new Map((plyoRoutineResult.data || []).map((routine) => [routine.id, routine]));
   const clubEvents = eventResult.data || [];
   const challenges = challengeResult.data || [];
   const exercisesById = new Map((exerciseResult.data || []).map((exercise) => [String(exercise.id), exercise]));
@@ -576,7 +600,7 @@ async function renderHome(v) {
     ${weeklyCards.length ? `<section class="home-weekly"><div class="home-section-heading"><div><span class="muted">Resumen</span><h2>Esta semana</h2></div><small>${weekActs.length + weekWorkouts.length} ${weekActs.length + weekWorkouts.length === 1 ? 'actividad' : 'actividades'}</small></div>${activityError ? '<p class="muted">Métricas semanales no disponibles.</p>' : `<div class="home-week-grid">${weeklyCards.join('')}</div>`}</section>` : ''}
     <section class="home-recent-section"><h2>Lo que ya hiciste</h2>${recentMarkup}</section>`;
 
-  setupUnifiedCalendar(v, calendarEvents, { plan, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
+  setupUnifiedCalendar(v, calendarEvents, { plan, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
   const eventBell=v.querySelector('#cal10-bell');
   if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);
