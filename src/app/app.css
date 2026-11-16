@@ -968,3 +968,21 @@ body.appbody[data-theme="dark"] .cal10__ev-pill:not(.cal10__ev-pill--r):not(.cal
 .event-detail-info-card{display:grid;gap:5px;align-content:center;min-height:68px;padding:12px 14px;border-radius:14px;}
 body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:11px;right:11px;}
 @media(max-width:559px){.event-detail-modal{align-items:center}.event-detail-sheet{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);padding:10px;border-radius:18px}.event-detail-cover{min-height:clamp(190px,30vh,260px)}.event-detail-content{gap:10px;padding:10px 2px 3px}.event-detail-meta{grid-template-columns:.8fr 1.2fr;gap:8px}.event-detail-info-card{min-height:64px;padding:10px}.event-detail-desc{padding:14px}body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:9px;right:9px}}
+
+/* Selector único de disciplinas deportivas */
+.training-hub{display:grid;gap:16px}
+.training-hub__intro{display:grid;gap:8px}
+.training-hub__intro h1{margin:0}
+.training-hub__eyebrow{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.18em}
+.training-hub__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.training-module-card{display:grid;grid-template-columns:44px minmax(0,1fr) 16px;align-items:center;gap:12px;min-height:108px;margin:0;color:var(--ink);text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
+.training-module-card:hover,.training-module-card:focus-visible{transform:translateY(-2px)}
+.training-module-card__icon{display:grid;width:44px;height:44px;place-items:center;border-radius:50%;background:var(--surface);color:var(--ink);box-shadow:inset 2px 2px 5px color-mix(in srgb,var(--ink) 12%,transparent),inset -2px -2px 5px color-mix(in srgb,var(--surface) 70%,transparent)}
+.training-module-card__icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.training-module-card__copy{display:grid;gap:5px;min-width:0}
+.training-module-card__copy strong{font-size:15px}
+.training-module-card__copy small{color:var(--muted);font-size:11px;line-height:1.4}
+.training-module-card__arrow{font-size:20px;color:var(--muted)}
+.training-back-button{display:inline-flex;margin:0 0 10px;padding:7px 10px;font-size:10px}
+@media(max-width:520px){.training-hub__grid{grid-template-columns:1fr}.training-module-card{min-height:94px}.training-hub{gap:14px}}
+@media(prefers-reduced-motion:reduce){.training-module-card{transition:none}}

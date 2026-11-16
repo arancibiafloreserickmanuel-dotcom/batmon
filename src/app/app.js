@@ -12,12 +12,15 @@ const view = $('#view');
 const TABS = [
   ['inicio', 'Inicio', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'],
   ['club', 'Club', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'],
-  ['running', 'Running', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/></svg>'],
-  ['cycling', 'Ciclismo', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/></svg>'],
-  ['swimming', 'Natación', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/></svg>'],
-  ['plyo', 'Pliometría', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 19h10M9 19l1.2-5.1 2.4-2.4 2.1 2.1L17 19M11 7.5a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4ZM12 9l-1.2 3.4-3.3 1.8M12 9l3.2 1.2 1.5 2.3M4 19h3M17 19h3"/></svg>'],
   ['training', 'Entrenamiento', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4m3-7v10m12-10v10m3-7v4M6 12h12"/><path d="M9 8v8m6-8v8"/></svg>'],
   ['perfil', 'Perfil', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'],
+];
+const TRAINING_MODULES = [
+  { route: 'running', key: 'running', title: 'Running', detail: 'Registra tus carreras, revisa métricas y consulta tu historial.', icon: '<circle cx="16.5" cy="4.5" r="2"/><path d="m13 8 3 2 2 4-4 2-2 5m4-11-4 3-4 1-3 4m8-8-3-3-4 1"/>' },
+  { route: 'cycling', key: 'cycling', title: 'Ciclismo', detail: 'Guarda tus recorridos, distancia y evolución sobre la bici.', icon: '<circle cx="6" cy="17" r="4"/><circle cx="18" cy="17" r="4"/><path d="m6 17 4-8 4 8H6m4-8h4m-1-3h3"/>' },
+  { route: 'swimming', key: 'swimming', title: 'Natación', detail: 'Registra sesiones y distancia, y revisa tus marcas.', icon: '<path d="M3 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M3 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 3-2M12 4l-3 6h4l-2 4"/>' },
+  { route: 'plyo', key: 'plyo', title: 'Pliometría', detail: 'Explora ejercicios, registra sesiones y sigue tu progreso.', icon: '<path d="M7 19h10M9 19l1.2-5.1 2.4-2.4 2.1 2.1L17 19M11 7.5a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4ZM12 9l-1.2 3.4-3.3 1.8M12 9l3.2 1.2 1.5 2.3M4 19h3M17 19h3"/>' },
+  { route: 'gym', key: 'training', title: 'Gimnasio', detail: 'Organiza tus rutinas, ejercicios y sesiones de fuerza.', icon: '<path d="M3 10v4m3-7v10m12-10v10m3-7v4M6 12h12"/><path d="M9 8v8m6-8v8"/>' },
 ];
 let ctx = null;
 
@@ -80,26 +83,53 @@ async function boot(user) {
 }
 
 function renderTabs() {
-  $('#tabs').innerHTML = TABS.filter(([key]) => !['running', 'cycling', 'swimming', 'plyo', 'training'].includes(key) || ctx.modules[key])
+  $('#tabs').innerHTML = TABS.filter(([key]) => key !== 'training' || TRAINING_MODULES.some(({ key: moduleKey }) => ctx.modules[moduleKey]))
     .map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
+}
+
+function renderTrainingHub() {
+  const available = TRAINING_MODULES.filter(({ key }) => ctx.modules[key]);
+  view.innerHTML = `<section class="training-hub">
+    <header class="training-hub__intro"><p class="training-hub__eyebrow">BATMON CROWD · TU ACTIVIDAD</p><h1>Entrenamiento</h1><p class="muted">Elige una disciplina para registrar sesiones y consultar tus estadísticas e historial.</p></header>
+    ${available.length ? `<div class="training-hub__grid">${available.map(({ route, title, detail, icon }) => `<a class="card training-module-card" href="#${route}"><span class="training-module-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="training-module-card__copy"><strong>${title}</strong><small>${detail}</small></span><span class="training-module-card__arrow" aria-hidden="true">→</span></a>`).join('')}</div>` : '<div class="card muted">No tienes disciplinas activas. Consulta con el administrador del club.</div>'}
+  </section>`;
 }
 
 function route() {
   if (!ctx) return;
   const tab = (location.hash.slice(1) || 'inicio');
+  const isTrainingRoute = tab === 'training' || TRAINING_MODULES.some((item) => item.route === tab);
   document.querySelectorAll('#tabs a').forEach((a) => {
-    const active = a.getAttribute('href') === '#' + tab;
+    const href = a.getAttribute('href');
+    const active = href === '#' + tab || (href === '#training' && isTrainingRoute);
     a.classList.toggle('on', active);
     a.setAttribute('aria-current', active ? 'page' : 'false');
   });
-  const moduleKey = { running: 'running', cycling: 'cycling', swimming: 'swimming', plyo: 'plyo', training: 'training' }[tab];
-  if (moduleKey && !ctx.modules[moduleKey]) {
-    view.innerHTML = `<h1>${TABS.find(([key]) => key === tab)?.[1]}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div>`;
+  if (tab === 'training') {
+    const stopLoading = showDelayedLoading(view);
+    Promise.resolve().then(renderTrainingHub).then(stopLoading);
     return;
   }
-  const fn = { inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, training: renderTraining, perfil: renderProfile }[tab] || renderHome;
+  const moduleKey = { running: 'running', cycling: 'cycling', swimming: 'swimming', plyo: 'plyo', gym: 'training' }[tab];
+  if (moduleKey && !ctx.modules[moduleKey]) {
+    const title = TRAINING_MODULES.find(({ route }) => route === tab)?.title || 'Entrenamiento';
+    view.innerHTML = `<h1>${title}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div><a class="btn ghost" href="#training">Ver disciplinas disponibles</a>`;
+    return;
+  }
+  const fn = { inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, gym: renderTraining, perfil: renderProfile }[tab] || renderHome;
   const stopLoading=showDelayedLoading(view);
-  Promise.resolve().then(()=>fn(view, ctx)).then(stopLoading).catch((e) => { stopLoading();view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
+  Promise.resolve().then(()=>fn(view, ctx)).then(() => {
+    if (moduleKey) {
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'training-back-button';
+      back.textContent = '← Todas las disciplinas';
+      decorateBackButton(back, 'Todas las disciplinas', true);
+      back.addEventListener('click', () => { location.hash = '#training'; });
+      view.prepend(back);
+    }
+    stopLoading();
+  }).catch((e) => { stopLoading();view.innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
 /* ---------------- Calendario Neumórfico Mobile-First (cal10) ---------------- */

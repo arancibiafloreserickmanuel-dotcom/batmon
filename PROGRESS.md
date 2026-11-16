@@ -215,3 +215,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Se añadieron estilos visibles para el círculo de evento con tonos oscuros: verde a más de 7 días, amarillo de 3 a 7 días y rojo en los últimos 2 días o en fechas pasadas.
 - La fecha del evento se compara en hora local, evitando desplazar al día siguiente eventos próximos a medianoche. El calendario carga eventos pasados y futuros para marcar todas sus fechas.
 - `npm run build` pasó; `git diff --check` limpio. No requiere migración.
+
+## Menú único de Entrenamiento (15 nov)
+- El menú inferior agrupa Running, Ciclismo, Natación, Pliometría y Gimnasio bajo una única pestaña «Entrenamiento».
+- La pantalla de selección muestra únicamente las disciplinas habilitadas globalmente y para el socio. Cada una conserva su página, datos, estadísticas e historial; se añadió un acceso para volver al selector.
+- Las rutas existentes para Running, Ciclismo, Natación y Pliometría se conservan. El módulo anterior de fuerza se abre con `#gym`; `#training` ahora es el selector.
+- Cambio solo de frontend; no requiere migración. En el directorio local figuran 0014, 0015 y 0016 como migraciones que requieren verificación/aplicación. Hay notas históricas contradictorias sobre 0002 y 0012; confirmar el historial real de Supabase antes de ejecutar pendientes.
+- Archivos: `src/app/app.js`, `src/app/app.css`. Build y revisión manual de rutas pendientes.
