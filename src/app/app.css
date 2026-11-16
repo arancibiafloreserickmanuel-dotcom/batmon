@@ -1081,54 +1081,85 @@ body.appbody[data-theme="dark"] .run-map .leaflet-tile{filter:grayscale(.55) inv
 .card.ex .exh{flex-wrap:wrap}
 .card.ex .exh>div{min-width:120px}
 
-/* ---------- Running: pantalla de carrera a pantalla completa ---------- */
+/* ---------- Running: pantalla de carrera ---------- */
+/* El modo "pantalla completa" solo aplica al contador mientras corres: sin dock, sin cabecera. */
 body.run-takeover .tabs.main{display:none}
 body.run-takeover .run-module__head{display:none}
-body.run-takeover .running-pages{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:50%;transform:translateX(-50%);z-index:6;box-shadow:0 4px 18px #0003}
 .running-pages.tabs-pill{position:relative;display:inline-flex;gap:0;padding:3px;margin:0 auto 14px;width:max-content;max-width:100%;border:0;border-radius:99px;background:color-mix(in srgb,var(--ink) 8%,var(--surface))}
 .running-pages.tabs-pill button{position:relative;z-index:2;flex:0 0 auto;min-width:92px;min-height:36px;padding:0 14px;border:0;border-radius:99px;background:transparent;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
 .running-pages.tabs-pill button.on{color:var(--ink)}
 .running-pages.tabs-pill .tabs-pill__indicator{position:absolute;top:3px;left:0;bottom:3px;z-index:1;border-radius:99px;background:var(--surface);box-shadow:0 2px 8px #0002;transition:transform .25s cubic-bezier(.4,0,.2,1),width .25s cubic-bezier(.4,0,.2,1)}
 
-.run-stage{position:fixed;inset:0;z-index:5;background:var(--surface);overflow:hidden}
-.run-map-wrap--full{position:absolute;inset:0;border:0;border-radius:0;box-shadow:none}
-.run-map--full{width:100%;height:100%;min-height:0}
-.run-map__fade{position:absolute;inset:0;z-index:400;pointer-events:none;box-shadow:inset 0 0 min(22vw,160px) min(6vw,40px) var(--surface)}
-.run-float{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:500;display:flex;align-items:center;justify-content:center;gap:16px}
-.run-float-btn{display:grid;place-items:center;width:52px;height:52px;flex:0 0 auto;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font-size:20px;box-shadow:0 4px 14px #0003}
-.run-float-btn--settings{position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:16px;z-index:500}
-.run-start-btn{min-width:150px;min-height:64px;padding:0 20px;border:0;border-radius:99px;background:#000;color:#fff;font:700 15px 'Inter';letter-spacing:.04em;box-shadow:0 6px 18px #0004}
-.run-start-btn:active{transform:scale(.97)}
-.run-goal-pill{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translateX(-50%);z-index:500;padding:8px 16px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--ink);font-size:12px;box-shadow:0 2px 10px #0002}
-.run-manual-floating{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:16px;z-index:500;background:var(--surface);padding:6px 10px;border-radius:99px;box-shadow:0 2px 10px #0002}
+/* Mapa contenido (no a pantalla completa): tarjeta con alto limitado, sin borde, desvanecido suave y acotado. */
+.run-prep-card{display:grid;gap:12px}
+.run-map-wrap--boxed{position:relative;overflow:hidden;height:min(52vh,420px);min-height:260px;border:0;border-radius:var(--card-radius,18px);background:var(--run-surface)}
+.run-map--boxed{width:100%;height:100%}
+.run-map__fade--soft{box-shadow:inset 0 0 36px 14px var(--surface)}
+.run-prep-overlay{position:absolute;left:0;right:0;bottom:14px;z-index:500;display:grid;justify-items:center;gap:8px;padding:0 10px}
+.run-goal-label{margin:0;padding:6px 14px;border-radius:99px;background:var(--surface);color:var(--ink);font-size:11px;box-shadow:0 2px 10px #0002}
+.run-prep-controls{display:flex;align-items:center;justify-content:center;gap:18px}
+.run-float-btn{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);box-shadow:0 4px 14px #0003}
+.run-float-btn svg{width:20px;height:20px}
+.run-circle-btn{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto;border:0;border-radius:50%;background:color-mix(in srgb,var(--ink) 10%,var(--surface));color:var(--ink);font-size:18px;box-shadow:0 2px 10px #0002}
+.run-circle-btn--start{width:84px;height:84px;background:#000;color:#fff;font:700 13px 'Inter';letter-spacing:.03em;box-shadow:0 6px 18px #0004}
+.run-circle-btn--start:active{transform:scale(.96)}
+.run-circle-btn--ghost{background:transparent;border:1px solid var(--line)}
+.goal-value-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.goal-value-row label{flex:1 1 180px;margin:0}
+.run-manual-card{margin:0}
+.run-manual-card>summary{padding:14px;border:1px solid var(--line);border-radius:var(--card-radius,14px);cursor:pointer;font-weight:700}
+.run-manual-card[open]>summary{border-radius:var(--card-radius,14px) var(--card-radius,14px) 0 0;border-bottom:0}
+.run-manual-card form{padding:16px;border:1px solid var(--line);border-top:0;border-radius:0 0 var(--card-radius,14px) var(--card-radius,14px)}
 
-.run-swipe{position:absolute;inset:0;z-index:450;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+/* ---------- Menú radial del objetivo (tal como el diseño de referencia) ---------- */
+.goal-radial{position:relative;width:48px;height:48px;--ring-thickness:30px;--ring-dist:10px;--duration:.4s;--easing:cubic-bezier(.22,1,.36,1.15)}
+.goal-radial .goal-ring{position:absolute;inset:calc(-1 * (var(--ring-thickness) + var(--ring-dist)));border-radius:50%;background:var(--surface);border:1px solid var(--line);transform:scale(0);opacity:0;transition:transform var(--duration) var(--easing),opacity .25s ease;z-index:0}
+.goal-radial.open .goal-ring{transform:scale(1);opacity:1}
+.goal-radial .goal-options{position:absolute;inset:calc(-1 * (var(--ring-thickness) + var(--ring-dist)));border-radius:50%;pointer-events:none;z-index:1}
+.goal-option{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);color:var(--muted);opacity:0;pointer-events:none;transition:transform var(--duration) var(--easing),opacity .25s ease}
+.goal-option svg{width:18px;height:18px}
+.goal-option[data-i="1"]{transform:translate(0,0) rotate(0deg) translateY(0)}
+.goal-option[data-i="2"]{transform:translate(0,0) rotate(120deg) translateY(0)}
+.goal-option[data-i="3"]{transform:translate(0,0) rotate(240deg) translateY(0)}
+.goal-radial.open .goal-option{opacity:1;pointer-events:auto}
+.goal-radial.open .goal-option[data-i="1"]{transform:translate(0,0) rotate(0deg) translateY(-48px) rotate(0deg)}
+.goal-radial.open .goal-option[data-i="2"]{transform:translate(0,0) rotate(120deg) translateY(-48px) rotate(-120deg)}
+.goal-radial.open .goal-option[data-i="3"]{transform:translate(0,0) rotate(240deg) translateY(-48px) rotate(-240deg)}
+.goal-option.on{border-color:var(--ink);color:var(--ink)}
+.goal-btn{position:relative;z-index:2;width:48px;height:48px;border-radius:50%;background:#000;color:#fff;display:grid;place-items:center;border:0;box-shadow:0 4px 14px #0003}
+.goal-btn svg{width:20px;height:20px}
+
+/* ---------- Contador a pantalla completa (solo mientras corres) ---------- */
+.run-counter-stage{position:fixed;inset:0;z-index:5;background:var(--surface)}
+.run-swipe{position:absolute;inset:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .run-swipe::-webkit-scrollbar{display:none}
-.run-swipe__panel{flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px}
-.run-swipe__panel--map{pointer-events:none}
-.run-swipe__hint{align-self:flex-end;margin-top:auto;margin-bottom:calc(env(safe-area-inset-bottom) + 100px);padding:7px 12px;border-radius:99px;background:var(--surface);color:var(--muted);font-size:11px;box-shadow:0 2px 10px #0002}
-.run-swipe__panel--counter,.run-swipe__panel--stats{background:var(--surface);pointer-events:auto}
+.run-swipe__panel{flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;overflow-y:auto}
+.run-swipe__panel--config{align-items:stretch;justify-content:flex-start;padding-top:calc(env(safe-area-inset-top) + 24px)}
+.run-swipe__panel--config h3,.run-swipe__panel--stats h3{margin:0 0 4px;align-self:flex-start}
 .run-counter{display:flex;align-items:baseline;gap:8px}
-.run-counter b{font:400 clamp(72px,22vw,118px) Anton,sans-serif;line-height:.9;color:var(--ink)}
+.run-counter b{font:400 clamp(64px,20vw,110px) Anton,sans-serif;line-height:.9;color:var(--ink)}
 .run-counter>span{font-size:16px;color:var(--muted);text-transform:uppercase}
 .run-counter-sub{display:flex;gap:28px;margin-top:4px}
 .run-counter-sub div{text-align:center}
 .run-counter-sub b{display:block;font:400 20px Anton,sans-serif}
 .run-counter-sub span{font-size:10px;color:var(--muted);text-transform:uppercase}
-.run-swipe__panel--stats h3{margin:0 0 4px;align-self:flex-start}
 .run-swipe-table{width:100%;border-collapse:collapse}
 .run-swipe-table td{padding:10px 0;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .run-swipe-table td:last-child{text-align:right;color:var(--ink)}
 .run-swipe-table b{font:400 18px Anton,sans-serif}
-.run-swipe-dots{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 10px);transform:translateX(-50%);z-index:500;display:flex;gap:6px}
+.run-swipe-dots{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 10px);transform:translateX(-50%);z-index:500;display:flex;gap:6px;pointer-events:none}
 .run-swipe-dots i{width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--ink) 25%,transparent)}
 .run-swipe-dots i.on{background:var(--ink)}
 
+/* ---------- Pausa: mapa contenido + datos reales, sin controles de música ---------- */
+.run-paused{display:grid;gap:12px}
+.run-paused-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;text-align:center}
+.run-paused-stats b{display:block;font:400 clamp(16px,4vw,22px) Anton,sans-serif}
+.run-paused-stats span{font-size:9px;color:var(--muted);text-transform:uppercase}
+.run-paused-actions{display:flex;align-items:center;justify-content:center;gap:20px}
+.run-map-hidden{color:var(--muted);text-align:center;padding:24px}
+
 .run-countdown{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:var(--surface);color:var(--ink);font:400 min(40vw,220px) Anton,sans-serif}
 
-.run-goal-options{display:flex;gap:8px;flex-wrap:wrap}
-.run-goal-options button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--muted)}
-.run-goal-options button.on{border-color:var(--ink);color:var(--ink);font-weight:700}
-
-@media(max-width:560px){.run-float{gap:12px}.run-float-btn{width:46px;height:46px}.run-start-btn{min-width:130px;min-height:58px}.run-counter b{font-size:clamp(56px,20vw,90px)}}
-@media(prefers-reduced-motion:reduce){.running-pages.tabs-pill .tabs-pill__indicator{transition:none}}
+@media(max-width:560px){.run-map-wrap--boxed{height:min(46vh,360px)}.run-circle-btn--start{width:72px;height:72px}.run-counter b{font-size:clamp(52px,18vw,86px)}.run-paused-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.running-pages.tabs-pill .tabs-pill__indicator,.goal-radial *{transition:none}}

@@ -26,9 +26,9 @@ const durationOf = (activity) => Number(activity.duration_seconds) || Math.round
 
 function readPreferences(userId) {
 
-  try { return { unit: 'km', announce: true, ...(JSON.parse(localStorage.getItem(preferenceKey(userId))) || {}) }; }
+  try { return { unit: 'km', announce: true, voice: false, wakeLock: false, showMap: true, ...(JSON.parse(localStorage.getItem(preferenceKey(userId))) || {}) }; }
 
-  catch { return { unit: 'km', announce: true }; }
+  catch { return { unit: 'km', announce: true, voice: false, wakeLock: false, showMap: true }; }
 
 }
 
@@ -239,15 +239,19 @@ async function renderRun(view, ctx) {
 
   const render = () => {
 
-    document.body.classList.toggle('run-takeover', page === 'run');
+    const running = tracker.state?.status === 'running';
+    const paused = tracker.state?.status === 'paused';
+    document.body.classList.toggle('run-takeover', page === 'run' && running);
 
     const active = tracker.state && ['running','paused','finished'].includes(tracker.state.status);
 
     const title = page === 'run' ? (active ? 'Carrera en curso' : 'Correr') : page === 'progress' ? 'Progreso' : page === 'history' ? 'Historial' : 'Revisar carrera';
 
+    const showSubnav = page !== 'review' && !running && !paused;
+
     view.innerHTML = `<section class="run-module"><header class="run-module__head"><div><p class="run-kicker">RUNNING · BATMON CROWD</p><h1>${title}</h1></div>${active ? `<span class="run-state run-state--${tracker.state.status}">${tracker.state.status === 'paused' ? 'Pausada' : tracker.state.status === 'finished' ? 'Por guardar' : 'En curso'}</span>` : ''}</header>
 
-      ${page !== 'review' ? `<nav class="tabs sub running-pages tabs-pill" aria-label="Secciones de Running"><button data-run-page="run">${active ? 'En curso' : 'Correr'}</button><button data-run-page="progress">Progreso</button><button data-run-page="history">Historial</button><i class="tabs-pill__indicator" aria-hidden="true"></i></nav>` : ''}
+      ${showSubnav ? `<nav class="tabs sub running-pages tabs-pill" aria-label="Secciones de Running"><button data-run-page="run">Correr</button><button data-run-page="progress">Progreso</button><button data-run-page="history">Historial</button><i class="tabs-pill__indicator" aria-hidden="true"></i></nav>` : ''}
 
       ${error?`<p class="msg" role="status">No se pudo cargar el historial: ${esc(error.message)}</p>`:''}<div id="run-page-content"></div></section>`;
 
@@ -267,93 +271,180 @@ async function renderRun(view, ctx) {
 
 
 
-  function goalSummary(){ const g=prefs.goal; if(!g) return 'Establece un objetivo'; return g.type==='distance' ? `Meta: ${fmt(g.value,1)} km` : `Meta: ${fmt(g.value,0)} min`; }
+  function goalSummary(){ const g=prefs.goal; if(!g) return 'Objetivo: libre'; return g.type==='distance' ? `Objetivo: ${fmt(g.value,1)} km` : `Objetivo: ${fmt(g.value,0)} min`; }
+
+  const goalIcon = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const GOAL_ICONS = { none: goalIcon('<path d="M8 5v14l11-7z"/>'), distance: goalIcon('<rect x="3" y="10" width="18" height="4" rx="1"/><path d="M7 10v2M11 10v3M15 10v2"/>'), duration: goalIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>') };
+  const SETTINGS_ICON = goalIcon('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>');
+
+  function goalRadialMarkup() {
+    const chosen = prefs.goal?.type || 'none';
+    return `<div class="goal-radial" id="goal-radial">
+      <div class="goal-ring" aria-hidden="true"></div>
+      <div class="goal-options" aria-hidden="true">
+        <button type="button" class="goal-option ${chosen==='none'?'on':''}" data-goal="none" data-i="1" title="Libre">${GOAL_ICONS.none}</button>
+        <button type="button" class="goal-option ${chosen==='distance'?'on':''}" data-goal="distance" data-i="2" title="Distancia">${GOAL_ICONS.distance}</button>
+        <button type="button" class="goal-option ${chosen==='duration'?'on':''}" data-goal="duration" data-i="3" title="Duración">${GOAL_ICONS.duration}</button>
+      </div>
+      <button type="button" class="goal-btn" id="goal-btn" aria-label="Elegir objetivo" aria-haspopup="true" aria-expanded="false">${GOAL_ICONS[chosen]}</button>
+    </div>`;
+  }
+
+  function bindGoalRadial(box, onPicked) {
+    const radial = $('#goal-radial', box), goalBtn = $('#goal-btn', box);
+    if (!radial || !goalBtn) return;
+    goalBtn.onclick = () => { const open = radial.classList.toggle('open'); goalBtn.setAttribute('aria-expanded', String(open)); };
+    radial.querySelectorAll('[data-goal]').forEach((opt) => (opt.onclick = () => {
+      radial.classList.remove('open'); goalBtn.setAttribute('aria-expanded', 'false');
+      onPicked(opt.dataset.goal);
+    }));
+  }
+
+  function settingsToggleFields(prefix) {
+    return `<label>Distancia<select id="${prefix}-unit"><option value="km">Kilómetros</option><option value="mi">Millas</option></select></label>
+      <label class="run-check"><input id="${prefix}-announce" type="checkbox" ${prefs.announce?'checked':''}> Avisar cada kilómetro</label>
+      <label class="run-check"><input id="${prefix}-voice" type="checkbox" ${prefs.voice?'checked':''}> Comentarios en audio</label>
+      <label class="run-check"><input id="${prefix}-wakelock" type="checkbox" ${prefs.wakeLock?'checked':''}> Mantener la pantalla encendida</label>
+      <label class="run-check"><input id="${prefix}-showmap" type="checkbox" ${prefs.showMap?'checked':''}> Mostrar mapa al pausar</label>`;
+  }
+
+  function bindSettingsToggleFields(root, prefix, onChange) {
+    const unit = $(`#${prefix}-unit`, root); if (unit) { unit.value = prefs.unit; unit.onchange = () => { prefs.unit = unit.value; savePreferences(userId, prefs); onChange?.(); }; }
+    const bind = (key, id) => { const el = $(`#${prefix}-${id}`, root); if (el) el.onchange = () => { prefs[key] = el.checked; savePreferences(userId, prefs); if (key === 'wakeLock') applyWakeLock(); onChange?.(); }; };
+    bind('announce', 'announce'); bind('voice', 'voice'); bind('wakeLock', 'wakelock'); bind('showMap', 'showmap');
+  }
 
   function renderRunScreen(box) {
 
     const state = tracker.state;
 
-    box.innerHTML = `<div class="run-stage ${state?'run-stage--active':'run-stage--prep'}">
-      <div class="run-map-wrap run-map-wrap--full"><div id="run-map-live" class="run-map run-map--full" role="application" aria-label="Mapa de ubicación y recorrido"></div><div class="run-map__fade" aria-hidden="true"></div><div class="run-map__tools"><span id="run-gps-status" class="run-gps-state">${esc(state?.gps_status || 'Ubicación lista al iniciar')}</span><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div><p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p></div>
-      ${state ? `<button type="button" class="run-float-btn run-float-btn--settings" id="run-settings-open" aria-label="Ajustes">⚙</button>
-        <div class="run-swipe" id="run-swipe">
-          <section class="run-swipe__panel run-swipe__panel--map"><span class="run-swipe__hint">${state.status==='paused'?'PAUSADA · desliza para ver tus datos':'Desliza para ver tus datos ›'}</span></section>
-          <section class="run-swipe__panel run-swipe__panel--counter"><span class="run-live__label">${state.status==='paused'?'ACTIVIDAD PAUSADA':'SEGUIMIENTO GPS'}</span>
-            <div class="run-counter"><b id="run-live-distance">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div>
-            <div class="run-counter-sub"><div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div><div><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div></div>
-            ${renderGoalProgress(state)}
-            <div class="run-actions">${state.status==='running'?'<button class="btn ghost" id="run-pause" type="button">Pausar</button>':''}${state.status==='paused'?'<button class="btn" id="run-resume" type="button">Reanudar</button>':''}<button class="btn run-start-btn" id="run-finish" type="button">Finalizar</button><button class="link run-discard" id="run-discard" type="button">Descartar</button></div>
-            <p class="msg" id="run-live-msg" aria-live="polite"></p></section>
-          <section class="run-swipe__panel run-swipe__panel--stats"><h3>Parciales</h3><table class="run-swipe-table"><tbody>
-            <tr><td>Kilómetro</td><td><b id="run-live-distance2">${fmt(tracker.distanceKm(),2)}</b></td></tr>
-            <tr><td>Ritmo prom.</td><td><b id="run-live-pace2">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b></td></tr>
-            <tr><td>Variación</td><td><b id="run-live-current-pace">—</b></td></tr>
-            <tr><td>En movimiento*</td><td><b id="run-live-moving">${durationLabel(tracker.elapsedSeconds())}</b></td></tr>
-            <tr><td>Precisión GPS</td><td><b id="run-accuracy">—</b></td></tr></tbody></table>
-            <p class="run-note">* El tiempo en movimiento se estima con puntos GPS válidos.</p></section>
+    if (!state) {
+
+      box.innerHTML = `<div class="run-prep-card">
+        <div class="run-map-wrap run-map-wrap--boxed">
+          <div id="run-map-live" class="run-map run-map--boxed" role="application" aria-label="Mapa de ubicación"></div>
+          <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
+          <div class="run-map__tools"><span id="run-gps-status" class="run-gps-state">Ubicación lista al iniciar</span><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div>
+          <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
+          <div class="run-prep-overlay">
+            <p class="run-goal-label">${esc(goalSummary())}</p>
+            <div class="run-prep-controls">
+              <button type="button" class="run-float-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
+              <button type="button" class="run-circle-btn run-circle-btn--start" id="run-start">COMENZAR</button>
+              ${goalRadialMarkup()}
+            </div>
+          </div>
         </div>
-        <div class="run-swipe-dots" aria-hidden="true"><i></i><i></i><i></i></div>`
-      : `<div class="run-float run-float--bottom">
-          <button type="button" class="run-float-btn" id="run-settings-open" aria-label="Ajustes">⚙</button>
-          <button type="button" class="run-start-btn" id="run-start">COMENZAR</button>
-          <button type="button" class="run-float-btn" id="run-goal-open" aria-label="Objetivo">◎</button>
-        </div>
-        <button type="button" class="run-goal-pill" id="run-goal-pill">${esc(goalSummary())}</button>
-        <button type="button" class="link run-manual-floating" id="run-manual-open">Registrar manualmente</button>`}
+        <div id="goal-value-row" class="card goal-value-row" hidden><label><span id="goal-value-label"></span><input id="goal-value-input" type="number" min="0.1" step="0.1" inputmode="decimal"></label><button class="btn sm" id="goal-value-save" type="button">Guardar objetivo</button></div>
+        <details class="card run-manual-card"><summary>Registrar manualmente</summary><form id="run-manual-form">${manualFormMarkup()}</form></details>
+        <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
 
-    mapController = mountMap($('#run-map-live',box),state?.segments || [],{ locate: !state });
+      mapController = mountMap($('#run-map-live', box), [], {});
+      const center = $('#run-center', box); center.onclick = async () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { mapController?.then(({ map }) => map?.setView([p.coords.latitude, p.coords.longitude], 16)); }, () => notify('No se pudo obtener tu ubicación. Revisa el permiso GPS.'), { enableHighAccuracy: true, timeout: 10000 }); };
 
-    const center = $('#run-center',box); center.onclick = async () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { mapController?.then(({map})=>map?.setView([p.coords.latitude,p.coords.longitude],16)); }, () => notify('No se pudo obtener tu ubicación. Revisa el permiso GPS.'), {enableHighAccuracy:true,timeout:10000}); };
+      $('#run-start', box).onclick = () => { runCountdown(() => { const ok = tracker.start(paint, (message) => { const m = $('#run-live-msg', view); if (m) m.textContent = message; }); if (ok) { page = 'run'; render(); } }); };
 
-    const start = $('#run-start',box);
+      $('#run-settings-open', box).onclick = openSettingsDialog;
 
-    if (start) start.onclick = () => {
-
-      runCountdown(() => {
-
-        const ok = tracker.start(paint,(message)=>{ const m=$('#run-live-msg',view); if(m)m.textContent=message; });
-
-        if (ok) { page='run'; render(); }
-
+      bindGoalRadial(box, (type) => {
+        if (type === 'none') { prefs.goal = null; savePreferences(userId, prefs); renderRunScreen(box); return; }
+        const row = $('#goal-value-row', box);
+        $('#goal-value-label', box).textContent = type === 'distance' ? 'Distancia objetivo (km)' : 'Duración objetivo (minutos)';
+        const input = $('#goal-value-input', box); input.value = prefs.goal?.type === type ? prefs.goal.value : ''; input.placeholder = type === 'distance' ? '5' : '30';
+        row.hidden = false; row.dataset.type = type; input.focus();
       });
+      $('#goal-value-save', box).onclick = () => {
+        const row = $('#goal-value-row', box), type = row.dataset.type, value = Number($('#goal-value-input', box).value);
+        if (!(value > 0)) { notify('Indica un objetivo válido.'); return; }
+        prefs.goal = { type, value }; savePreferences(userId, prefs); row.hidden = true; renderRunScreen(box);
+      };
 
-    };
+      bindManual($('#run-manual-form', box), null);
 
-    $('#run-goal-open',box)?.addEventListener('click', openGoalDialog);
-    $('#run-goal-pill',box)?.addEventListener('click', openGoalDialog);
-    $('#run-settings-open',box)?.addEventListener('click', openSettingsDialog);
+      if (navigator.permissions?.query) navigator.permissions.query({ name: 'geolocation' }).then((p) => { const hint = $('#run-gps-hint', box); if (hint) hint.textContent = p.state === 'denied' ? 'Ubicación bloqueada. Habilítala en los permisos del navegador.' : p.state === 'granted' ? 'Permiso GPS concedido · se activará al iniciar.' : 'GPS listo · se pedirá permiso al iniciar.'; }).catch(() => {});
 
-    const manualButton = $('#run-manual-open',box);
-    if (manualButton) manualButton.onclick=()=>openManualDialog(null);
-
-    const swipe = $('#run-swipe',box);
-    if (swipe) {
-      requestAnimationFrame(()=>{ swipe.scrollLeft = swipe.clientWidth; });
-      const dots = box.querySelectorAll('.run-swipe-dots i');
-      swipe.addEventListener('scroll', () => { const idx=Math.round(swipe.scrollLeft/Math.max(1,swipe.clientWidth)); dots.forEach((dot,i)=>dot.classList.toggle('on',i===idx)); }, { passive: true });
+      return;
     }
 
-    if (state) {
+    if (state.status === 'paused') {
 
-      $('#run-pause',box)?.addEventListener('click',()=>{tracker.pause();render();});
+      const elevation = elevationGain(state.segments || []);
 
-      $('#run-resume',box)?.addEventListener('click',()=>{tracker.resume(paint,showGpsError);render();});
+      box.innerHTML = `<section class="card run-paused">
+        ${prefs.showMap ? `<div class="run-map-wrap run-map-wrap--boxed"><div id="run-map-live" class="run-map run-map--boxed" aria-label="Recorrido hasta ahora"></div><div class="run-map__fade" aria-hidden="true"></div></div>` : '<div class="card run-map-hidden">Mapa oculto (actívalo en Ajustes).</div>'}
+        <p class="run-live__label">ACTIVIDAD PAUSADA</p>
+        <div class="run-paused-stats">
+          <article><b id="run-live-distance">${fmt(tracker.distanceKm(),2)}</b><span>km</span></article>
+          <article><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></article>
+          <article><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></article>
+          <article><b id="run-elevation">${elevation===null?'—':elevation+' m'}</b><span>Elevación</span></article>
+        </div>
+        <div class="run-paused-actions">
+          <button type="button" class="run-circle-btn run-circle-btn--ghost" id="run-discard" aria-label="Descartar carrera">✕</button>
+          <button type="button" class="run-circle-btn run-circle-btn--start" id="run-resume" aria-label="Reanudar carrera">►</button>
+        </div>
+        <p class="msg" id="run-live-msg" aria-live="polite"></p>
+      </section>`;
 
-      $('#run-finish',box).onclick=async()=>{if(!(await confirmDialog('Finalizar y revisar esta carrera. Todavía podrás descartarla antes de guardar.','Finalizar carrera')))return;const result=tracker.finish();if(!result){notify('No se pudo finalizar la carrera.');return;}if(result.distance_km<.01){notify('La ruta tiene menos de 10 metros válidos. Puedes descartarla o revisar los datos GPS.');}page='review';render();};
+      if (prefs.showMap) mapController = mountMap($('#run-map-live', box), state.segments || []);
 
-      $('#run-discard',box).onclick=async()=>{if(await confirmDialog('Se eliminará el borrador local de esta carrera.','Descartar actividad')){tracker.discard();page='run';render();}};
+      $('#run-resume', box).onclick = () => { tracker.resume(paint, showGpsError); applyWakeLock(); render(); };
+      $('#run-discard', box).onclick = async () => { if (await confirmDialog('Se eliminará el borrador local de esta carrera.', 'Descartar actividad')) { applyWakeLock(); tracker.discard(); page = 'run'; render(); } };
 
-      tracker.restore(paint,showGpsError); paint();
-
-      document.addEventListener('visibilitychange',onVisibility,{once:true});
-
-    } else {
-
-      if(navigator.permissions?.query) navigator.permissions.query({name:'geolocation'}).then((p)=>{const hint=document.querySelector('#run-gps-hint');if(hint)hint.textContent=p.state==='denied'?'Ubicación bloqueada. Habilítala en los permisos del navegador.':p.state==='granted'?'Permiso GPS concedido · se activará al iniciar.':'GPS listo · se pedirá permiso al iniciar.';}).catch(()=>{});
-
+      tracker.restore(paint, showGpsError); paint();
+      return;
     }
 
+    // status === 'running'
+    box.innerHTML = `<div class="run-counter-stage">
+      <div class="run-swipe" id="run-swipe">
+        <section class="run-swipe__panel run-swipe__panel--stats"><h3>Parciales</h3><table class="run-swipe-table"><tbody>
+          <tr><td>Kilómetro</td><td><b id="run-live-distance2">${fmt(tracker.distanceKm(),2)}</b></td></tr>
+          <tr><td>Ritmo prom.</td><td><b id="run-live-pace2">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b></td></tr>
+          <tr><td>Variación</td><td><b id="run-live-current-pace">—</b></td></tr>
+          <tr><td>En movimiento*</td><td><b id="run-live-moving">${durationLabel(tracker.elapsedSeconds())}</b></td></tr>
+          <tr><td>Precisión GPS</td><td><b id="run-accuracy">—</b></td></tr>
+          <tr><td>Señal GPS</td><td><b id="run-gps-status">${esc(state.gps_status||'')}</b></td></tr>
+        </tbody></table><p class="run-note">* El tiempo en movimiento se estima con puntos GPS válidos.</p></section>
+        <section class="run-swipe__panel run-swipe__panel--counter"><span class="run-live__label">SEGUIMIENTO GPS</span>
+          <div class="run-counter"><b id="run-live-distance">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div>
+          <div class="run-counter-sub"><div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div><div><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div></div>
+          ${renderGoalProgress(state)}
+          <div class="run-actions"><button class="run-circle-btn" id="run-pause" type="button" aria-label="Pausar">❚❚</button><button class="btn run-start-btn" id="run-finish" type="button">Finalizar</button></div>
+          <button class="link run-discard" id="run-discard" type="button">Descartar</button>
+          <p class="msg" id="run-live-msg" aria-live="polite"></p></section>
+        <section class="run-swipe__panel run-swipe__panel--config"><h3>Configuración</h3>${settingsToggleFields('cfg')}</section>
+      </div>
+      <div class="run-swipe-dots" aria-hidden="true"><i></i><i class="on"></i><i></i></div>
+    </div>`;
+
+    bindSettingsToggleFields(box, 'cfg');
+
+    const swipe = $('#run-swipe', box);
+    requestAnimationFrame(() => { swipe.scrollLeft = swipe.clientWidth; });
+    const dots = box.querySelectorAll('.run-swipe-dots i');
+    swipe.addEventListener('scroll', () => { const idx = Math.round(swipe.scrollLeft / Math.max(1, swipe.clientWidth)); dots.forEach((dot, i) => dot.classList.toggle('on', i === idx)); }, { passive: true });
+
+    $('#run-pause', box).onclick = () => { tracker.pause(); applyWakeLock(); render(); };
+    $('#run-finish', box).onclick = async () => { if (!(await confirmDialog('Finalizar y revisar esta carrera. Todavía podrás descartarla antes de guardar.', 'Finalizar carrera'))) return; const result = tracker.finish(); applyWakeLock(); if (!result) { notify('No se pudo finalizar la carrera.'); return; } if (result.distance_km < .01) { notify('La ruta tiene menos de 10 metros válidos. Puedes descartarla o revisar los datos GPS.'); } page = 'review'; render(); };
+    $('#run-discard', box).onclick = async () => { if (await confirmDialog('Se eliminará el borrador local de esta carrera.', 'Descartar actividad')) { applyWakeLock(); tracker.discard(); page = 'run'; render(); } };
+
+    tracker.restore(paint, showGpsError); paint(); applyWakeLock();
+    document.addEventListener('visibilitychange', onVisibility, { once: true });
+
+  }
+
+  let wakeLock = null;
+  async function applyWakeLock() {
+    try {
+      if (prefs.wakeLock && tracker.state?.status === 'running' && 'wakeLock' in navigator) { if (!wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }
+      else if (wakeLock) { await wakeLock.release().catch(() => {}); wakeLock = null; }
+    } catch { /* pantalla encendida es una comodidad, no algo crítico */ }
+  }
+  function speak(text) {
+    if (!prefs.voice || !('speechSynthesis' in window)) return;
+    try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'es-BO'; window.speechSynthesis.speak(u); } catch { /* ignorar */ }
   }
 
   function runCountdown(done) {
@@ -367,43 +458,12 @@ async function renderRun(view, ctx) {
     tick();
   }
 
-  function openGoalDialog() {
-    const dlg = document.createElement('dialog'); dlg.className = 'run-detail-dialog';
-    let chosen = prefs.goal?.type || 'none';
-    const valueField = () => chosen === 'distance' ? `<label>Distancia objetivo (km)<input id="goal-value" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="5" value="${prefs.goal?.type==='distance'?esc(String(prefs.goal.value)):''}"></label>` : chosen === 'duration' ? `<label>Duración objetivo (minutos)<input id="goal-value" type="number" min="1" step="1" inputmode="numeric" placeholder="30" value="${prefs.goal?.type==='duration'?esc(String(prefs.goal.value)):''}"></label>` : '';
-    dlg.innerHTML = `<div class="run-detail-sheet"><button class="link run-detail-close" type="button" id="goal-close">Cerrar</button><h2>Objetivo de la carrera</h2>
-      <div class="run-goal-options">
-        <button type="button" class="run-goal-opt ${chosen==='none'?'on':''}" data-goal="none">Libre</button>
-        <button type="button" class="run-goal-opt ${chosen==='distance'?'on':''}" data-goal="distance">Distancia</button>
-        <button type="button" class="run-goal-opt ${chosen==='duration'?'on':''}" data-goal="duration">Duración</button>
-      </div>
-      <div id="goal-value-wrap">${valueField()}</div>
-      <button class="btn" id="goal-save" type="button">Guardar</button></div>`;
-    document.body.append(dlg); dlg.showModal();
-    dlg.querySelectorAll('[data-goal]').forEach((b) => (b.onclick = () => { chosen = b.dataset.goal; dlg.querySelectorAll('[data-goal]').forEach((x) => x.classList.toggle('on', x === b)); $('#goal-value-wrap', dlg).innerHTML = valueField(); }));
-    $('#goal-close', dlg).onclick = () => dlg.close();
-    $('#goal-save', dlg).onclick = () => {
-      const value = Number($('#goal-value', dlg)?.value);
-      if (chosen !== 'none' && !(value > 0)) { notify('Indica un objetivo válido.'); return; }
-      prefs.goal = chosen === 'none' ? null : { type: chosen, value }; savePreferences(userId, prefs);
-      dlg.close(); render();
-    };
-    dlg.addEventListener('close', () => dlg.remove());
-  }
-
   function openSettingsDialog() {
     const dlg = document.createElement('dialog'); dlg.className = 'run-detail-dialog';
-    dlg.innerHTML = `<div class="run-detail-sheet"><button class="link run-detail-close" type="button" id="settings-close">Cerrar</button><h2>Ajustes de carrera</h2>
-      <label>Distancia<select id="settings-unit"><option value="km">Kilómetros</option><option value="mi">Millas</option></select></label>
-      <label class="run-check"><input id="settings-announce" type="checkbox" ${prefs.announce?'checked':''}> Avisar cada kilómetro</label>
-      <button class="btn ghost" id="settings-manual" type="button">Registrar manualmente</button>
-      <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p></div>`;
+    dlg.innerHTML = `<div class="run-detail-sheet"><button class="link run-detail-close" type="button" id="settings-close">Cerrar</button><h2>Ajustes de carrera</h2>${settingsToggleFields('settings')}</div>`;
     document.body.append(dlg); dlg.showModal();
-    $('#settings-unit', dlg).value = prefs.unit;
-    $('#settings-unit', dlg).onchange = (e) => { prefs.unit = e.target.value; savePreferences(userId, prefs); };
-    $('#settings-announce', dlg).onchange = (e) => { prefs.announce = e.target.checked; savePreferences(userId, prefs); };
+    bindSettingsToggleFields(dlg, 'settings');
     $('#settings-close', dlg).onclick = () => dlg.close();
-    $('#settings-manual', dlg).onclick = () => { dlg.close(); openManualDialog(null); };
     dlg.addEventListener('close', () => dlg.remove());
   }
 
@@ -424,7 +484,7 @@ async function renderRun(view, ctx) {
 
   }
 
-  function onVisibility(){if(document.visibilityState==='hidden'&&tracker.state?.status==='running'){const msg=$('#run-live-msg',view);if(msg)msg.textContent='La app quedó en segundo plano. Algunos navegadores pueden interrumpir la ubicación; vuelve a esta pestaña para revisar el GPS.';}}
+  function onVisibility(){if(document.visibilityState==='hidden'&&tracker.state?.status==='running'){const msg=$('#run-live-msg',view);if(msg)msg.textContent='La app quedó en segundo plano. Algunos navegadores pueden interrumpir la ubicación; vuelve a esta pestaña para revisar el GPS.';}if(document.visibilityState==='visible'&&tracker.state?.status==='running'){applyWakeLock();document.addEventListener('visibilitychange',onVisibility,{once:true});}}
 
   function showGpsError(message){const el=$('#run-live-msg',view);if(el)el.textContent=message;}
 
@@ -438,7 +498,7 @@ async function renderRun(view, ctx) {
 
     const write=(id,value)=>{const node=$(`#${id}`,view);if(node)node.textContent=value;};
 
-    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('#run-live-distance',view)?.nextElementSibling;if(unitNode)unitNode.textContent=distUnit;write('run-live-pace',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-gps-status',state.gps_status);
+    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('#run-live-distance',view)?.nextElementSibling;if(unitNode)unitNode.textContent=distUnit;write('run-live-pace',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
 
     const acc=flat.at(-1)?.accuracy;write('run-accuracy',acc?`Precisión ${acc} m`: '');
 
@@ -448,7 +508,7 @@ async function renderRun(view, ctx) {
 
     if(end&&start&&end.at>start.at){const current=kmPace(Math.max(.001,Math.round(earthDistance(start,end))/1000*(prefs.unit==='mi' ? 0.621371 : 1)),(end.at-start.at)/60000);write('run-live-current-pace',`${current} min/${distUnit}`);}
 
-    const threshold=Math.floor(km);if(prefs.announce&&threshold>announcedKm){announcedKm=threshold;notify(`Kilómetro ${threshold} · ritmo medio ${kmPace(km,seconds/60)}`);}
+    const threshold=Math.floor(km);if(threshold>announcedKm){announcedKm=threshold;if(prefs.announce)notify(`Kilómetro ${threshold} · ritmo medio ${kmPace(km,seconds/60)}`);if(prefs.voice)speak(`Kilómetro ${threshold}. Ritmo medio ${kmPace(km,seconds/60).replace(':',' con ')} minutos por kilómetro.`);}
 
     if(mapController?.then) mapController.then(({update})=>update?.(state.segments||[]));
 
