@@ -162,8 +162,6 @@ function buildUnifiedCalendar() {
     </div>
 
     <div class="cal10__grid" id="cal10Grid"></div>
-    <div class="cal10__legend" aria-label="Indicadores del calendario"><span><i class="cal10__dot cal10__dot--green"></i> Evento</span><span><i class="cal10__dot cal10__dot--routine"></i> Rutina</span><span><i class="cal10__dot cal10__dot--completed"></i> Completado</span><span><i class="cal10__dot cal10__dot--challenge"></i> Reto</span></div>
-
     <div class="cal10__drawer" id="cal10-drawer">
       <div class="cal10__footer" id="cal10-footer">
         <div class="cal10__footer-label" id="cal10-footer-label">Agenda</div>
@@ -216,6 +214,7 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   const activities = (agenda.activities || []).filter((item) => agenda.modules?.[item.discipline]);
   const workouts = (agenda.workouts || []).filter((item) => item.kind === 'training' ? agenda.modules?.training : item.kind === 'plyometrics' ? agenda.modules?.plyo : true);
   const challenges = agenda.challenges || [];
+  const agendaErrors = agenda.errors || {};
   const routeByDiscipline = { running: '#running', cycling: '#cycling', swimming: '#swimming', plyometrics: '#plyo', training: '#gym' };
 
   function getEventsForDate(dateObj) {
@@ -382,15 +381,15 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
       return { dayIso, routineEntries, eventEntries: [...eventEntries, ...challengeEntries], completionEntries };
     });
     const sections = [
-      ['Entrenamientos y rutinas', dayGroups.flatMap((group) => group.routineEntries)],
-      ['Eventos y retos del Club', dayGroups.flatMap((group) => group.eventEntries)],
-      ['Actividad completada', dayGroups.flatMap((group) => group.completionEntries)],
-    ].filter(([, entries]) => entries.length);
+      ['Entrenamientos y rutinas', dayGroups.flatMap((group) => group.routineEntries), [agendaErrors.plan, agendaErrors.exercises].filter(Boolean)],
+      ['Eventos y retos del Club', dayGroups.flatMap((group) => group.eventEntries), [agendaErrors.events, agendaErrors.challenges].filter(Boolean)],
+      ['Actividad completada', dayGroups.flatMap((group) => group.completionEntries), [agendaErrors.activities].filter(Boolean)],
+    ].filter(([, entries, warnings]) => entries.length || warnings.length);
     if (!sections.length) {
       eventsList.innerHTML = `<div class="cal10__ev-empty">No hay actividades ni eventos programados para esta fecha.</div>`;
       return;
     }
-    eventsList.innerHTML = sections.map(([heading, entries]) => `<section class="cal10__agenda-section"><h3>${esc(heading)}</h3>${entries.map((item) => {
+    eventsList.innerHTML = sections.map(([heading, entries, warnings]) => `<section class="cal10__agenda-section"><h3>${esc(heading)}</h3>${warnings.map((warning) => `<p class="cal10__agenda-warning">${esc(warning)}</p>`).join('')}${entries.map((item) => {
       if (item.kind === 'event') return `<button type="button" class="cal10__ev" data-event-id="${esc(item.id)}">${item.image_url ? `<img class="cal10__ev-img" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="cal10__agenda-symbol" aria-hidden="true">BC</span>'}<span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)}${item.location ? ` · ${esc(item.location)}` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></button>`;
       return `<a class="cal10__ev cal10__agenda-link cal10__agenda-${esc(item.kind)}" href="${esc(item.route || '#training')}"><span class="cal10__agenda-symbol" aria-hidden="true">${item.kind === 'routine' ? 'R' : item.kind === 'challenge' ? 'C' : '✓'}</span><span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)} · ${esc(item.detail)}${item.kind === 'routine' && item.duration ? ` · ${fmt(item.duration, 0)} min` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></a>`;
     }).join('')}</section>`).join('');
@@ -521,7 +520,6 @@ async function renderHome(v) {
   const plannedDays = weekDays.filter((date) => ctx.modules.training && (plan[dayLabels[date.getDay()]] || []).length > 0);
   const completedTrainingDates = new Set(weekWorkouts.filter((item) => item.kind === 'training').map((item) => item.performed_on));
   const completedPlannedDays = plannedDays.filter((date) => completedTrainingDates.has(iso(date))).length;
-  const dateLabel = todayDate.toLocaleDateString('es-BO', { weekday: 'long', day: 'numeric', month: 'long' });
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const userName = (ctx.profile?.full_name || ctx.user?.user_metadata?.full_name || ctx.user?.email || 'Atleta').trim().split(/[ @]/)[0];
@@ -535,7 +533,6 @@ async function renderHome(v) {
   const eventError = eventResult.error ? 'No se pudieron cargar los eventos del Club.' : '';
   const challengeError = challengeResult.error ? 'Los retos del Club no están disponibles en el calendario.' : '';
   const exerciseError = exerciseResult.error && hasWeeklyPlan ? 'No se pudieron cargar los nombres de ejercicios de tu rutina.' : '';
-  const agendaWarnings = [planError, exerciseError, activityError, eventError, challengeError].filter(Boolean);
 
   const getWeeklyActivities = (discipline) => weekActs.filter((item) => item.discipline === discipline);
   const weeklyCard = (key, title, items, isDistance = false) => {
@@ -564,19 +561,22 @@ async function renderHome(v) {
   const membershipNotice = membershipResult.error ? '<div class="card warn">No se pudo consultar el estado de tu membresía.</div>' : ctx.isAdmin ? '' : !currentMembership || currentMembership.status === 'rejected'
     ? '<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>'
     : currentMembership.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : '';
-  const todayPlanDetails = !ctx.modules.training ? 'El módulo de Gimnasio no está activo para tu cuenta.' : planResult.error ? 'No se pudo cargar la rutina de hoy.' : todaysPlan.length
-    ? `${todaysPlan.length} ejercicios${plannedExerciseNames.length ? ` · ${plannedExerciseNames.join(', ')}` : ''}${todaysWorkouts.some((item) => item.kind === 'training') ? ' · Sesión completada' : ''}`
-    : 'No hay una rutina de gimnasio programada para hoy.';
   const recentUnavailable = (activityResult.error || workoutResult.error) && !recentItems.length;
   const recentMarkup = `<details class="card home-recent"><summary><span>Actividad reciente</span><small>${recentUnavailable ? 'No disponible' : recentItems.length ? `${recentItems.length} esta semana` : 'Sin actividad esta semana'}</small></summary>${recentItems.length ? `<div class="home-recent-list">${recentItems.map((item) => `<a class="home-recent-item" href="${esc(item.route)}"><span><b>${esc(item.title)}</b><small>${esc(item.detail)}</small></span><time datetime="${esc(item.date)}">${new Date(`${item.date}T12:00:00`).toLocaleDateString('es-BO', { day: 'numeric', month: 'short' })}</time></a>`).join('')}</div>` : `<p class="muted">${recentUnavailable ? 'No se pudo cargar la actividad reciente.' : 'Tus actividades completadas aparecerán aquí.'}</p>`}</details>`;
 
-  v.innerHTML = `<section class="home-greeting" aria-label="Resumen del día"><div class="home-greeting__title"><p>${greeting},</p><h1>${esc(userName)}</h1><time datetime="${todayIso}">${esc(dateLabel)}</time></div><div class="home-compliance"><div><span>Plan semanal</span><b>${plannedDays.length ? `${completedPlannedDays} / ${plannedDays.length}` : '—'}</b></div><div class="home-compliance__track" role="progressbar" aria-label="Cumplimiento de rutinas semanales" aria-valuemin="0" aria-valuemax="${plannedDays.length || 1}" aria-valuenow="${completedPlannedDays}"><i style="width:${plannedDays.length ? completedPlannedDays / plannedDays.length * 100 : 0}%"></i></div><small>${esc(planSummary)}</small></div><p class="home-greeting__today">Hoy: ${todayCompleted ? `${todayCompleted} ${todayCompleted === 1 ? 'actividad completada' : 'actividades completadas'}` : 'sin actividades completadas'}${todaysPlan.length ? ` · ${todaysPlan.length} ejercicios planificados` : ''}</p></section>
-    ${buildUnifiedCalendar()}${agendaWarnings.length ? `<div class="card warn home-data-warning">${agendaWarnings.map(esc).join(' ')}</div>` : ''}${statusNotice}${membershipNotice}
-    <section class="card rest-card home-today"><div class="cal-rest-halo"><div class="cal-halo-ring"><div class="cal-halo-core"></div></div></div><h2 class="cal-rest-title">Entrenamiento de hoy</h2><p class="cal-rest-desc">${esc(todayPlanDetails)}</p></section>
+  const todayStatus = todayCompleted ? `${todayCompleted} ${todayCompleted === 1 ? 'actividad completada' : 'actividades completadas'}` : 'sin actividades completadas';
+  v.innerHTML = `<section class="home-greeting" aria-label="Resumen del día"><div class="home-greeting__title"><p>${greeting},</p><h1>${esc(userName)}</h1><span class="home-greeting__today">Hoy · ${esc(todayStatus)}${todaysPlan.length ? ` · ${todaysPlan.length} ejercicios planificados` : ''}</span></div><div class="home-compliance"><div><span>Plan semanal</span><b>${plannedDays.length ? `${completedPlannedDays} / ${plannedDays.length}` : '—'}</b></div><div class="home-compliance__track" role="progressbar" aria-label="Cumplimiento de rutinas semanales" aria-valuemin="0" aria-valuemax="${plannedDays.length || 1}" aria-valuenow="${completedPlannedDays}"><i style="width:${plannedDays.length ? completedPlannedDays / plannedDays.length * 100 : 0}%"></i></div><small>${esc(planSummary)}</small></div></section>
+    ${buildUnifiedCalendar()}${statusNotice}${membershipNotice}
+    <section class="card rest-card">
+      <div class="cal-rest-halo"><div class="cal-halo-ring"><div class="cal-halo-core"></div></div></div>
+      <h2 class="cal-rest-title">Descansa, ${esc(userName)}</h2>
+      <p class="cal-rest-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p>
+      <a href="${ctx.modules.running ? '#running' : '#training'}" class="btn cal-btn-primary"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:6px;"><path d="M8 5v14l11-7z"/></svg>Registrar entrenamiento</a>
+    </section>
     ${weeklyCards.length ? `<section class="home-weekly"><div class="home-section-heading"><div><span class="muted">Resumen</span><h2>Esta semana</h2></div><small>${weekActs.length + weekWorkouts.length} ${weekActs.length + weekWorkouts.length === 1 ? 'actividad' : 'actividades'}</small></div>${activityError ? '<p class="muted">Métricas semanales no disponibles.</p>' : `<div class="home-week-grid">${weeklyCards.join('')}</div>`}</section>` : ''}
     <section class="home-recent-section"><h2>Lo que ya hiciste</h2>${recentMarkup}</section>`;
 
-  setupUnifiedCalendar(v, calendarEvents, { plan, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules });
+  setupUnifiedCalendar(v, calendarEvents, { plan, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
   const eventBell=v.querySelector('#cal10-bell');
   if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);
