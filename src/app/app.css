@@ -1098,16 +1098,16 @@ body.run-takeover .run-module__head{display:none}
 
 /* Mapa contenido (no a pantalla completa): tarjeta con alto limitado, sin borde, desvanecido suave y acotado. */
 .run-prep-card{display:grid;gap:12px}
-.run-map-wrap--boxed{position:relative;overflow:hidden;height:min(52vh,420px);min-height:260px;border:0;border-radius:var(--card-radius,18px);background:var(--run-surface)}
+.run-map-wrap--boxed{position:relative;overflow:hidden;height:min(68vh,620px);min-height:380px;border:0;border-radius:var(--card-radius,18px);background:var(--run-surface)}
 .run-map--boxed{width:100%;height:100%}
-.run-map__fade--soft{box-shadow:inset 0 0 36px 14px var(--surface)}
+.run-map__fade--soft{position:absolute;inset:0;z-index:400;pointer-events:none;background:linear-gradient(to bottom,var(--surface) 0%,color-mix(in srgb,var(--surface) 55%,transparent) 14%,transparent 34%,transparent 78%,color-mix(in srgb,var(--surface) 70%,transparent) 100%)}
 .run-prep-overlay{position:absolute;left:0;right:0;bottom:14px;z-index:500;display:grid;justify-items:center;gap:10px;padding:0 10px}
 .run-goal-label{margin:0;padding:6px 14px;border-radius:99px;background:var(--surface);color:var(--ink);font-size:11px;box-shadow:0 2px 10px #0002}
 .run-prep-controls{display:flex;align-items:center;justify-content:center;gap:22px}
 
 /* Los iconos de al lado (ajustes) son solo iconos: sin fondo ni borde de botón. */
 .run-icon-btn{display:grid;place-items:center;width:44px;height:44px;flex:0 0 auto;border:0;background:transparent;color:var(--ink)}
-.run-icon-btn svg{width:22px;height:22px}
+.run-icon-btn svg{width:22px;height:22px;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--surface) 80%,transparent)) drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
 .run-circle-btn{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto;border:0;border-radius:50%;background:color-mix(in srgb,var(--ink) 10%,var(--surface));color:var(--ink);font-size:18px;box-shadow:0 2px 10px #0002}
 .run-circle-btn--start{width:92px;height:92px;background:radial-gradient(circle at 32% 26%,#2b2b2b,#000 70%);color:#fff;font:700 14px 'Inter';letter-spacing:.04em;box-shadow:0 10px 24px #00000055,inset 0 1px 0 #ffffff22}
@@ -1122,9 +1122,9 @@ body.run-takeover .run-module__head{display:none}
 /* ---------- Menú radial del objetivo: misma mecánica que el código de referencia (anillo + :has()), con nuestros iconos ---------- */
 @property --selected-angle{syntax:'<angle>';inherits:true;initial-value:0deg}
 .goal-radial{--options:3;--selected:1;--selected-angle:calc(360deg / var(--options) * var(--selected));--button-size:44px;--ring-thickness:30px;--ring-dist:10px;--option-size:36px;--icon-size:16px;--duration:.4s;--easing:cubic-bezier(.22,1,.36,1.15);position:relative;width:var(--button-size);height:var(--button-size);isolation:isolate}
-.goal-btn{position:relative;width:100%;height:100%;border-radius:50%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;z-index:2}
-.goal-btn-icon{width:55%;height:55%;pointer-events:none}
-.goal-btn-icon svg{width:100%;height:100%;display:block}
+.goal-btn{position:relative;width:100%;height:100%;border-radius:50%;background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;z-index:2}
+.goal-btn-icon{width:60%;height:60%;pointer-events:none}
+.goal-btn-icon svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--surface) 80%,transparent)) drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 .goal-menu-input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;border-radius:50%}
 .goal-options{position:absolute;inset:calc(-1 * (var(--ring-thickness) + var(--ring-dist)));border-radius:50%;z-index:1;pointer-events:none}
 .goal-option{position:absolute;left:50%;top:50%;width:var(--option-size);height:var(--option-size);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transform:translate(-50%,-50%) rotate(calc(360deg / var(--options) * var(--i))) translateY(0px);transition:transform var(--duration) var(--easing),opacity .25s ease}

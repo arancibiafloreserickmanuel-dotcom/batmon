@@ -123,7 +123,7 @@ function splitRuns(points) {
 
 
 
-async function mountMap(el, segments, { center = null, locate = null } = {}) {
+async function mountMap(el, segments, { center = null, locate = null, zoomControl = true } = {}) {
 
   if (!el) return { map: null, recenter() {} };
 
@@ -145,7 +145,7 @@ async function mountMap(el, segments, { center = null, locate = null } = {}) {
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>' }).addTo(map);
 
-    L.control.zoom({ position: 'topright' }).addTo(map);
+    if (zoomControl) L.control.zoom({ position: 'topright' }).addTo(map);
 
     map.on('tileerror', () => { const msg = el.parentElement?.querySelector('.run-map__error'); if (msg) msg.hidden = false; });
 
@@ -271,7 +271,7 @@ async function renderRun(view, ctx) {
 
 
 
-  function goalSummary(){ const g=prefs.goal; if(!g) return 'Objetivo: libre'; return g.type==='distance' ? `Objetivo: ${fmt(g.value,1)} km` : `Objetivo: ${fmt(g.value,0)} min`; }
+  function goalSummary(){ const g=prefs.goal; if(!g) return 'Establece un objetivo'; return g.type==='distance' ? `Objetivo: ${fmt(g.value,1)} km` : `Objetivo: ${fmt(g.value,0)} min`; }
 
   const goalIcon = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const GOAL_ICONS = { none: goalIcon('<path d="M8 5v14l11-7z"/>'), distance: goalIcon('<rect x="3" y="10" width="18" height="4" rx="1"/><path d="M7 10v2M11 10v3M15 10v2"/>'), duration: goalIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>') };
@@ -328,7 +328,6 @@ async function renderRun(view, ctx) {
         <div class="run-map-wrap run-map-wrap--boxed">
           <div id="run-map-live" class="run-map run-map--boxed" role="application" aria-label="Mapa de ubicación"></div>
           <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
-          <div class="run-map__tools"><span id="run-gps-status" class="run-gps-state">Ubicación lista al iniciar</span><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div>
           <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
           <div class="run-prep-overlay">
             <p class="run-goal-label">${esc(goalSummary())}</p>
@@ -343,8 +342,7 @@ async function renderRun(view, ctx) {
         <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
 
-      mapController = mountMap($('#run-map-live', box), [], {});
-      const center = $('#run-center', box); center.onclick = async () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { mapController?.then(({ map }) => map?.setView([p.coords.latitude, p.coords.longitude], 16)); }, () => notify('No se pudo obtener tu ubicación. Revisa el permiso GPS.'), { enableHighAccuracy: true, timeout: 10000 }); };
+      mapController = mountMap($('#run-map-live', box), [], { zoomControl: false });
 
       $('#run-start', box).onclick = () => { runCountdown(() => { const ok = tracker.start(paint, (message) => { const m = $('#run-live-msg', view); if (m) m.textContent = message; }); if (ok) { page = 'run'; render(); } }); };
 

@@ -307,6 +307,14 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - **Pruebas:** `npm run build` pasa. Sigue sin probarse en vivo (requiere sesión real; no se usan credenciales). Falta verificar en el teléfono: el menú radial del objetivo, el Wake Lock (pantalla encendida), la voz, y que deslizando desde el contador la configuración aparezca a la izquierda y los parciales a la derecha.
 - **Archivos:** `src/app/running.js`, `src/app/app.css`.
 
+## Running — tercera ronda: pantalla "Correr" antes de empezar (16 nov)
+- **Mapa más largo** (antes ~52vh, ahora ~68vh) y el desvanecido ahora es un degradado de arriba hacia abajo (fuerte arriba, casi nada en el medio, leve abajo), en vez del sombreado uniforme en los 4 bordes.
+- **Se quitaron los controles de más:** el texto "Ubicación lista al iniciar", el botón de centrar mapa y los botones de zoom (+/−) de Leaflet. Ahora solo quedan los 3 controles de abajo (ajustes, COMENZAR, objetivo), como se pidió.
+- **"Objetivo: libre" era un error:** ahora, cuando no hay objetivo elegido, la píldora dice "Establece un objetivo" (como el diseño de referencia); si eliges distancia o duración, ahí sí muestra la meta.
+- **Ajustes y Objetivo vuelven a ser solo iconos:** el círculo negro del botón de Objetivo se quitó (era el mismo error que en la ronda anterior); ahora es un icono igual que Ajustes, sin fondo ni borde, con una sombra sutil para que se lea sobre cualquier color de mapa.
+- **Pruebas:** `npm run build` pasa. Sigue sin probarse en vivo.
+- **Archivos:** `src/app/running.js`, `src/app/app.css`.
+
 ## Running — segunda ronda de correcciones: menú radial real, mapa mientras corres, pestañas con inputs reales (16 nov)
 - **Pestañas Correr/Progreso/Historial:** reescritas con la mecánica exacta pedida (inputs de radio reales + `label` + `~` para mover el indicador en CSS puro), con nuestra tipografía (Inter), en vez de botones con JS calculando la posición.
 - **Menú del objetivo:** implementado con la misma mecánica del código de referencia (anillo que crece con `:has()`, luz selectora con `conic-gradient`, `@property --selected-angle` para que la rotación se anime), con 3 opciones (Libre/Distancia/Duración) en vez de 8, y nuestros propios iconos. El nombre de cada opción aparece debajo del icono mientras el menú está abierto (no depende de `:hover`, para que funcione en el teléfono). Elegir Distancia o Duración ya no abre una fila debajo: abre un modal, como el de Ajustes.
