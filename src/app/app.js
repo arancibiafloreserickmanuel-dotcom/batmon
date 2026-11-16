@@ -97,6 +97,7 @@ function renderTrainingHub() {
 
 function route() {
   if (!ctx) return;
+  if (location.hash.slice(1) !== 'running') document.body.classList.remove('run-takeover');
   const tab = (location.hash.slice(1) || 'inicio');
   const isTrainingRoute = tab === 'training' || TRAINING_MODULES.some((item) => item.route === tab);
   document.querySelectorAll('#tabs a').forEach((a) => {
