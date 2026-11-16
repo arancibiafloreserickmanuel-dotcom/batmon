@@ -257,19 +257,18 @@ body.appbody[data-theme="light"] .cal10 {
   background: var(--bg);
 }
 .cal10__dot {
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border: 1px solid transparent;
-  border-radius: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
+  display:block;width:5px;height:5px;flex:0 0 5px;border:1px solid transparent;border-radius:50%;pointer-events:none;
 }
+.cal10__dots{position:absolute;bottom:2px;left:50%;display:flex;gap:2px;transform:translateX(-50%);pointer-events:none}
 .cal10__dot--green { background: #24553a; border-color: #427552; }
 .cal10__dot--yellow { background: #705516; border-color: #987a2e; }
 .cal10__dot--red { background: #6b2029; border-color: #91333d; }
+.cal10__dot--routine{background:#315b3b;border-color:#52775a}
+.cal10__dot--completed{background:var(--ink);border-color:var(--surface)}
+.cal10__dot--challenge{background:#705516;border-color:#987a2e}
+.cal10__legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 2px 0;color:var(--text2);font-size:9px}
+.cal10__legend>span{display:inline-flex;align-items:center;gap:5px}
+.cal10__legend .cal10__dot{width:6px;height:6px;flex-basis:6px}
 .cal10__cell:hover {
   box-shadow: var(--shadow-in-sm);
 }
@@ -970,6 +969,60 @@ body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:1
 @media(max-width:559px){.event-detail-modal{align-items:center}.event-detail-sheet{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);padding:10px;border-radius:18px}.event-detail-cover{min-height:clamp(190px,30vh,260px)}.event-detail-content{gap:10px;padding:10px 2px 3px}.event-detail-meta{grid-template-columns:.8fr 1.2fr;gap:8px}.event-detail-info-card{min-height:64px;padding:10px}.event-detail-desc{padding:14px}body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:9px;right:9px}}
 
 /* Selector único de disciplinas deportivas */
+.home-greeting{display:grid;grid-template-columns:minmax(0,1fr) minmax(140px,.8fr);align-items:center;gap:8px 18px;margin:0 2px 14px}
+.home-greeting__title{display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:6px}
+.home-greeting__title>p{grid-column:1/-1;margin:0;color:var(--muted);font-size:12px}
+.home-greeting__title h1{margin:0;font-size:clamp(27px,7vw,36px);line-height:1.08}
+.home-greeting__title time{color:var(--muted);font-size:11px;text-transform:capitalize}
+.home-greeting__today{grid-column:1/-1;margin:0;color:var(--muted);font-size:12px}
+.home-compliance{display:grid;gap:5px;min-width:0}
+.home-compliance>div:first-child{display:flex;justify-content:space-between;gap:6px;font-size:11px}
+.home-compliance>div:first-child span,.home-compliance small{color:var(--muted)}
+.home-compliance__track{height:6px;overflow:hidden;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.home-compliance__track i{display:block;height:100%;border-radius:inherit;background:var(--ink);transition:width .25s ease}
+.home-compliance small{font-size:10px;line-height:1.35}
+.home-data-warning{font-size:12px;line-height:1.45}
+.home-today .cal-rest-halo{width:68px;height:68px;margin-bottom:10px}
+.home-today .cal-halo-ring{width:48px;height:48px}
+.home-today .cal-rest-title{margin:0 0 6px}
+.home-today .cal-rest-desc{max-width:600px;margin:auto;line-height:1.5}
+.home-weekly,.home-recent-section{margin-top:22px}
+.home-section-heading{display:flex;align-items:end;justify-content:space-between;gap:8px;margin-bottom:10px}
+.home-section-heading h2,.home-recent-section>h2{margin:3px 0 0}
+.home-section-heading>small{color:var(--muted);font-size:11px}
+.home-week-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px}
+.home-week-card{display:grid;gap:8px;margin:0;padding:14px}
+.home-week-card__head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.home-week-card__head h3{margin:0;font-size:13px}
+.home-week-card__head strong,.home-week-empty{font-size:10px;color:var(--muted);text-align:right}
+.home-week-card__metric{font:24px Anton,sans-serif;line-height:1.1}
+.home-week-card>p{margin:0;font-size:10px}
+.home-recent-section>h2{margin-bottom:10px}
+.home-recent{margin:0;padding:0 14px}
+.home-recent>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;cursor:pointer;list-style:none;font-size:14px;font-weight:700}
+.home-recent>summary::-webkit-details-marker{display:none}
+.home-recent>summary::after{content:'+';font-size:20px;font-weight:400}
+.home-recent[open]>summary::after{content:'−'}
+.home-recent>summary small{margin-left:auto;color:var(--muted);font-size:11px;font-weight:400}
+.home-recent>p{padding:0 0 14px;margin:0}
+.home-recent-list{display:grid;padding-bottom:4px}
+.home-recent-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);color:var(--ink);text-decoration:none}
+.home-recent-item>span{display:grid;gap:3px;min-width:0}
+.home-recent-item b{font-size:12px}
+.home-recent-item small,.home-recent-item time{color:var(--muted);font-size:11px}
+.home-recent-item small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-recent-item time{flex:0 0 auto}
+.cal10__agenda-section{margin-top:10px}
+.cal10__agenda-section h3{padding:8px 6px 5px;border-top:1px solid color-mix(in srgb,var(--text3) 25%,transparent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.cal10__agenda-symbol{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-out-sm);color:var(--text);font-size:13px;font-weight:700}
+.cal10__agenda-link{color:var(--text);text-decoration:none}
+.cal10__agenda-link .cal10__ev-body{display:grid}
+.cal10__agenda-link .cal10__ev-time{white-space:normal;line-height:1.4}
+.cal10__agenda-link .cal10__ev-pill{color:var(--text2)}
+.cal10__agenda-routine .cal10__agenda-symbol{color:#24553a}
+.cal10__agenda-challenge .cal10__agenda-symbol{color:#705516}
+.cal10__agenda-completed .cal10__agenda-symbol{color:var(--text)}
+.cal10__agenda-link:focus-visible{outline:2px solid var(--text);outline-offset:2px}
 .training-hub{display:grid;gap:16px}
 .training-hub__intro{display:grid;gap:8px}
 .training-hub__intro h1{margin:0}
@@ -985,4 +1038,5 @@ body.appbody .event-detail-sheet .event-detail-close.animated-back-compact{top:1
 .training-module-card__arrow{font-size:20px;color:var(--muted)}
 .training-back-button{display:inline-flex;margin:0 0 10px;padding:7px 10px;font-size:10px}
 @media(max-width:520px){.training-hub__grid{grid-template-columns:1fr}.training-module-card{min-height:94px}.training-hub{gap:14px}}
+@media(max-width:520px){.home-greeting{grid-template-columns:1fr;gap:8px;margin-bottom:12px}.home-compliance{grid-template-columns:1fr;gap:4px}.home-compliance small{font-size:10px}.home-week-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.home-week-card{padding:12px}.home-week-card__head{align-items:flex-start;flex-direction:column;gap:3px}.home-week-card__head strong,.home-week-empty{text-align:left}.home-recent{padding-inline:12px}.cal10__agenda-section h3{margin-top:6px}.cal10__ev{gap:8px}.cal10__ev-pill{padding:4px 6px;font-size:9px}.cal10__legend{gap:6px 10px}}
 @media(prefers-reduced-motion:reduce){.training-module-card{transition:none}}

@@ -216,6 +216,13 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - La fecha del evento se compara en hora local, evitando desplazar al día siguiente eventos próximos a medianoche. El calendario carga eventos pasados y futuros para marcar todas sus fechas.
 - `npm run build` pasó; `git diff --check` limpio. No requiere migración.
 
+## Inicio: agenda y resumen semanal (15 nov)
+- Inicio conserva el calendario existente y suma saludo/fecha compactos, cumplimiento de los días configurados en `training_plans` y resumen real del día.
+- El calendario combina eventos actuales, fechas de inicio/fin de retos de `club_challenges`, rutinas semanales de Gimnasio y actividades/sesiones guardadas. Los indicadores tienen leyenda; al elegir un día, la agenda separa rutinas, eventos/retos y actividad completada. Los eventos siguen abriendo su ficha actual.
+- Se conservó el bloque visual de «Entrenamiento de hoy», ahora sin acciones simuladas y basado en el plan existente. Resumen semanal presenta métricas por disciplina (km solo para Running/Ciclismo/Natación; sesiones para Pliometría/Gimnasio), duración disponible y estados sin registros. «Actividad reciente» es un desplegable limitado a la semana actual.
+- Respeta módulos habilitados y temas existentes. No se agregó esquema ni migración. Competiciones y recordatorios personales no tienen una fuente/categoría independiente en el modelo actual; no se inventan. Si la consulta de retos falla (p. ej. la 0015 aún no está aplicada), Inicio lo informa y sigue funcionando con el calendario/eventos disponibles.
+- Archivos: `src/app/app.js`, `src/app/app.css`. `npm run build` pasó y `git diff --check` limpio; no existe script de pruebas en `package.json`. Pendiente validación visual y con sesión real en móvil/escritorio.
+
 ## Menú único de Entrenamiento (15 nov)
 - El menú inferior agrupa Running, Ciclismo, Natación, Pliometría y Gimnasio bajo una única pestaña «Entrenamiento».
 - La pantalla de selección muestra únicamente las disciplinas habilitadas globalmente y para el socio. Cada una conserva su página, datos, estadísticas e historial; se añadió un acceso para volver al selector.
