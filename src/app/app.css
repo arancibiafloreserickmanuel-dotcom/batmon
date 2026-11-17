@@ -1429,3 +1429,84 @@ body.run-takeover .run-module>.training-back-button{display:none}
 body.appbody .plyo-hero .btn{box-shadow:0 2px 6px rgba(0,0,0,.28)}
 body.appbody .module-back.animated-back,body.appbody .run-module>.training-back-button{box-shadow:0 1px 3px rgba(0,0,0,.18);margin-bottom:14px;position:relative;z-index:0}
 body.appbody .module-back.animated-back+*{position:relative;z-index:1}
+
+/* Pliometría · Entrenar: botón con menos luz */
+body.appbody .plyo-hero .btn.cal-btn-primary{box-shadow:0 1px 3px rgba(0,0,0,.22)!important;filter:none!important}
+body.appbody .plyo-hero .btn.cal-btn-primary::before,body.appbody .plyo-hero .btn.cal-btn-primary::after{display:none!important}
+
+/* Pliometría · Mi plan: tarjeta activa como botón + páginas de días */
+button.plyo-plan-card{display:block;width:100%;padding:0;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.plyo-plan-card__chev{transform:none!important}
+.plyo-plan-card:active{transform:scale(.99)}
+:has(.plyo-subpage-marker)>.module-back{display:none}
+.pd-head{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.pd-head h2{margin:0;font:400 24px Anton,sans-serif;text-transform:uppercase}
+.pd-back{margin:0!important}
+.pd-days{display:grid;gap:10px}
+.pd-day{display:flex;align-items:center;gap:8px;padding:8px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.pd-day.is-rest{opacity:.8}
+.pd-day__main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0;border:0;background:none;text-align:left;color:inherit;cursor:pointer}
+.pd-day__photo{flex:0 0 58px;height:58px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 10%,var(--surface)) center/cover no-repeat;color:var(--muted)}
+.pd-day__photo.has-photo{background-image:var(--p)}
+.pd-day__photo svg{width:22px;height:22px}
+.pd-day__text{display:grid;gap:2px;min-width:0}
+.pd-day__text b{font-size:15px}
+.pd-day__text small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pd-day__tools{display:flex;gap:6px;flex:0 0 auto}
+.pd-day__tools .plyo-icon-btn{width:34px;height:34px;border-radius:9px}
+.pd-day__tools .plyo-icon-btn svg{width:17px;height:17px}
+.pd-day__tools .plyo-icon-btn:disabled{opacity:.35}
+.pd-day__tools .plyo-icon-btn.is-on{background:#111;color:#fff}
+.pd-card{display:grid;gap:8px;margin:0 0 14px}
+.pd-chips,.pd-cats{display:flex;flex-wrap:wrap;gap:6px}
+.pd-cats{margin:8px 0}
+.pd-chip{padding:6px 12px;min-height:0;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer}
+.pd-chip.on{background:#111;color:#fff;border-color:#111}
+.pd-order{margin:0 0 14px}
+.pd-order__head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.pd-order__head small{color:var(--muted);font-size:11px}
+.pd-strip{display:flex;gap:10px;overflow-x:auto;padding:6px 2px 8px;scrollbar-width:none;touch-action:pan-x;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pd-strip::-webkit-scrollbar{display:none}
+.pd-circle{position:relative;flex:0 0 58px;width:58px;height:58px;padding:0;border-radius:50%;border:2px solid transparent;background:color-mix(in srgb,var(--ink) 10%,var(--surface));display:grid;place-items:center;color:var(--ink);cursor:pointer;overflow:visible;transition:transform .15s ease,box-shadow .15s ease}
+.pd-circle img{width:100%;height:100%;border-radius:50%;object-fit:cover;pointer-events:none}
+.pd-circle i{position:absolute;right:-3px;bottom:-3px;min-width:18px;height:18px;border-radius:99px;background:#111;color:#fff;font:700 10px/18px Inter,sans-serif;text-align:center;font-style:normal;pointer-events:none}
+.pd-circle.on{border-color:#111;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.pd-circle.is-dragging{z-index:5;box-shadow:0 8px 18px rgba(0,0,0,.35);transition:none}
+.pd-circle--add{border:1.5px dashed var(--line);background:transparent;color:var(--muted)}
+.pd-circle--add svg{width:22px;height:22px}
+.pd-ex{display:grid;gap:12px;margin:0 0 14px}
+.pd-ex h3{margin:0;font-size:17px}
+.pd-ex__img{aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:color-mix(in srgb,var(--ink) 8%,var(--surface));display:grid;place-items:center;color:var(--muted)}
+.pd-ex__img img{width:100%;height:100%;object-fit:cover}
+.pd-pills{display:flex;flex-wrap:wrap;gap:8px}
+.pd-pill{display:inline-flex;align-items:center;gap:6px;min-height:0;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer}
+.pd-pill svg{width:16px;height:16px}
+.pd-pill em{font-style:normal;color:var(--muted)}
+.pd-pill.on{background:#111;color:#fff;border-color:#111}
+.pd-pill--danger{margin-left:auto;color:#c0392b}
+.pd-ex textarea{width:100%;resize:none}
+.pd-table{display:grid;gap:6px}
+.pd-row{display:grid;grid-template-columns:34px 56px 1fr 1fr 32px;gap:8px;align-items:center}
+.pd-table.solo .pd-row{grid-template-columns:34px 56px 0 1fr 32px}
+.pd-row--head{font:700 10px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
+.pd-row:not(.pd-row--head){padding:6px;border-radius:12px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pd-n{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--ink) 12%,transparent);font:800 12px Inter,sans-serif}
+.pd-prev{text-align:center;font-size:11px;color:var(--muted)}
+.pd-row input{width:100%;min-width:0;text-align:center;padding:7px 4px}
+.pd-x{display:grid;place-items:center;width:28px;height:28px;padding:0;min-height:0;border:0;background:none;color:var(--muted);cursor:pointer}
+.pd-x svg{width:16px;height:16px}
+.pd-addset{padding:9px;border-radius:12px;border:1.5px dashed var(--line);background:none;color:var(--muted);font:600 12px Inter,sans-serif;cursor:pointer}
+.pd-empty{display:grid;gap:10px;justify-items:center;text-align:center}
+.running-pages[hidden]{display:none!important}
+body.appbody .pd-day__main{box-shadow:none;background:none;border:0;min-height:0;padding:0}
+body.appbody .pd-chip,body.appbody .pd-pill,body.appbody .pd-addset{box-shadow:none}
+body.appbody .pd-chip.on,body.appbody .pd-pill.on{background:#111;color:#fff}
+body.appbody .pd-circle{width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;aspect-ratio:1/1;border-radius:50%!important;padding:0!important;box-shadow:none;background-clip:padding-box}
+body.appbody .pd-circle.on{box-shadow:0 0 0 2px #111}
+body.appbody .pd-circle.is-dragging{box-shadow:0 8px 18px rgba(0,0,0,.35)}
+body.appbody .pd-circle--add{background:transparent;border:1.5px dashed var(--line)}
+body.appbody .pd-circle img{border-radius:50%}
+body.appbody .pd-circle img{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none;object-fit:cover}
+/* Menos luz en los botones principales (Inicio y Pliometría). */
+body.appbody .btn.cal-btn-primary{box-shadow:0 1px 3px rgba(0,0,0,.22)!important;filter:none!important;text-shadow:none!important}
+body.appbody .btn.cal-btn-primary::before,body.appbody .btn.cal-btn-primary::after{display:none!important}

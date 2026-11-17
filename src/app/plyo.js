@@ -54,7 +54,7 @@ export async function renderPlyo(view, ctx) {
     view.innerHTML = '<h1>Pliometría</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar sesiones. <a href="#pago">Ir a Membresía</a></div>';
     return;
   }
-  if (ownerKey !== ctx.user.id) { ownerKey = ctx.user.id; W = null; section = 'train'; activeView = 'home'; }
+  if (ownerKey !== ctx.user.id) { ownerKey = ctx.user.id; W = null; section = 'train'; activeView = 'home'; planPage = null; dayDraft = null; }
   const [{ data: exData = [], error: exError }, { data: planRow }, { data: routineRows = [], error: routineError }] = await Promise.all([
     supabase.from('exercises').select('*').eq('category', 'plyometrics').eq('is_active', true).order('name'),
     supabase.from('plyo_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
@@ -65,15 +65,16 @@ export async function renderPlyo(view, ctx) {
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
   W = W || draft.get(userDraftKey());
 
-  view.innerHTML = `<h1>Pliometría</h1>
-    <nav class="running-pages tabs-pill" aria-label="Secciones de Pliometría">
+  const sub = section === 'plan' && !!planPage;
+  view.innerHTML = `${sub ? '' : '<h1>Pliometría</h1>'}
+    <nav class="running-pages tabs-pill"${sub ? ' hidden' : ''} aria-label="Secciones de Pliometría">
       <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-train" value="train"><label class="tabs-pill__label" for="plyo-sec-train">Entrenar</label>
       <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-plan" value="plan"><label class="tabs-pill__label" for="plyo-sec-plan">Mi plan</label>
       <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-progress" value="progress"><label class="tabs-pill__label" for="plyo-sec-progress">Progreso</label>
       <div class="tabs-pill__indicator" aria-hidden="true"></div>
     </nav>
     <div id="sub"></div>`;
-  view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; renderPlyo(view, ctx); }; });
+  view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; planPage = null; renderPlyo(view, ctx); }; });
   const box = $('#sub', view);
   if (!catalog.length) {
     box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y pulsa “Importar catálogo base”.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
@@ -130,7 +131,7 @@ async function startRoutineSession(routine, planDay, view, ctx) {
     const count = Math.max(1, it.target_sets || 3);
     const sets = Array.from({ length: count }, (_, i) => {
       const recent = oldSets[i] || oldSets.at(-1);
-      const s = {}; fields.forEach((f) => { s[f] = String(recent?.[f] ?? it.targets?.[f] ?? ''); });
+      const s = {}; fields.forEach((f) => { s[f] = String(recent?.[f] ?? it.sets?.[i]?.[f] ?? it.targets?.[f] ?? ''); });
       return s;
     });
     return { ex: it.exercise_id, sets, done: false, restSec: it.rest_sec || 60 };
@@ -257,15 +258,20 @@ async function maybeUpdateRoutine(ctx, w) {
 }
 
 /* ----------------------------------- Mi plan ----------------------------------- */
-let planOpen = false;
-
 function weekDates() {
   const now = new Date(); const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   return DAYS.map((_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
 }
 
 function renderPlan(box, view, ctx) {
-  const dates = weekDates();
+  if (planPage) {
+    box.innerHTML = '<i class="plyo-subpage-marker" hidden></i>';
+    const host = document.createElement('div'); box.appendChild(host);
+    if (planPage === 'days') drawDays(host, view, ctx);
+    else if (dayDraft) drawDayEditor(host, view, ctx);
+    else openDayEditor(planPage.day, host, view, ctx);
+    return;
+  }
   const firstDay = DAYS.find((d) => weekPlan[d]?.routineId && routines.some((r) => r.id === weekPlan[d].routineId));
   const firstRoutine = firstDay ? routines.find((r) => r.id === weekPlan[firstDay].routineId) : null;
   const chosen = routines.find((r) => r.id === weekPlan._active) || null;
@@ -275,23 +281,14 @@ function renderPlan(box, view, ctx) {
   const photo = coverEx?.images?.[0] ? `/exercises/${encodeURI(coverEx.images[0])}` : '';
   const plannedDays = DAYS.filter((d) => weekPlan[d]?.routineId).length;
   box.innerHTML = `
-    <details class="plyo-plan-card" id="plyo-plan-card" ${planOpen ? 'open' : ''}>
-      <summary class="plyo-plan-card__cover${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
+    <button type="button" class="plyo-plan-card" id="plyo-plan-open" aria-label="Abrir mi plan: ver y editar los días">
+      <span class="plyo-plan-card__cover${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
         <span class="plyo-plan-card__badge">${activeR ? 'Activo' : 'Sin plan'}</span>
         <b class="plyo-plan-card__title">${activeR ? name(activeR) : 'Arma tu semana'}</b>
         <small>${plannedDays ? `${plannedDays} día${plannedDays === 1 ? '' : 's'} con rutina · toca para ver y editar` : 'Asigna una rutina a tus días · toca para empezar'}</small>
-        <svg class="plyo-plan-card__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-      </summary>
-      <div class="plyo-plan-card__body">
-        <div class="plyo-week-nav" role="tablist" aria-label="Días de la semana">${DAYS.map((d, i) => {
-          const entry = weekPlan[d];
-          const state = entry?.rest ? 'rest' : entry?.routineId ? 'set' : 'empty';
-          return `<button type="button" class="plyo-day-chip ${state} ${d === selectedPlanDay ? 'sel' : ''}" data-day="${d}"><span>${d.slice(0, 3)}</span><small>${dates[i].getDate()}</small></button>`;
-        }).join('')}</div>
-        <div id="plyo-day-detail"></div>
-        ${activeR ? '<button class="btn sm ghost" id="plyo-edit-active" type="button">Editar rutina activa</button>' : ''}
-      </div>
-    </details>
+        <svg class="plyo-plan-card__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </span>
+    </button>
     <details class="card plyo-routines" id="plyo-routines">
       <summary><span>Mis rutinas guardadas</span><small>${routines.length}</small></summary>
       <div class="plyo-routines__list">${routines.length ? routines.map((r) => `<div class="plyo-routine-row${weekPlan._active === r.id ? ' is-active' : ''}">
@@ -303,10 +300,7 @@ function renderPlan(box, view, ctx) {
       <button class="btn ghost" id="plyo-new-routine" type="button">+ Crear rutina nueva</button>
       <button class="link" id="open-lib-plan" type="button">Ver biblioteca de ejercicios</button></div>
     </details>`;
-  drawDayDetail(box, view, ctx);
-  $('#plyo-plan-card', box).addEventListener('toggle', (e) => { planOpen = e.target.open; });
-  box.querySelectorAll('[data-day]').forEach((b) => (b.onclick = () => { selectedPlanDay = b.dataset.day; drawDayDetail(box, view, ctx); box.querySelectorAll('[data-day]').forEach((c) => c.classList.toggle('sel', c.dataset.day === selectedPlanDay)); }));
-  $('#plyo-edit-active', box)?.addEventListener('click', () => routineForm(ctx, activeR, () => renderPlyo(view, ctx)));
+  $('#plyo-plan-open', box).onclick = () => { planPage = 'days'; renderPlyo(view, ctx); };
   box.querySelectorAll('[data-routine-edit]').forEach((b) => (b.onclick = () => routineForm(ctx, routines.find((r) => r.id === b.dataset.routineEdit), () => renderPlyo(view, ctx))));
   box.querySelectorAll('[data-routine-dup]').forEach((b) => (b.onclick = () => duplicateRoutine(ctx, b.dataset.routineDup, view)));
   box.querySelectorAll('[data-routine-del]').forEach((b) => (b.onclick = () => deleteRoutine(ctx, b.dataset.routineDel, view)));
@@ -314,52 +308,286 @@ function renderPlan(box, view, ctx) {
     weekPlan = { ...weekPlan, _active: b.dataset.routineSelect };
     const { error } = await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
     if (error) { notify('No se pudo guardar el plan: ' + error.message); return; }
-    planOpen = true; renderPlan(box, view, ctx);
+    renderPlan(box, view, ctx);
   }));
   $('#plyo-new-routine', box).onclick = () => routineForm(ctx, null, () => renderPlyo(view, ctx));
   $('#open-lib-plan', box).onclick = () => openLibrary(ctx, view);
 }
 
-function drawDayDetail(box, view, ctx) {
-  const host = $('#plyo-day-detail', box);
-  const entry = weekPlan[selectedPlanDay];
-  const routine = entry?.routineId ? routines.find((r) => r.id === entry.routineId) : null;
-  host.innerHTML = `<div class="card plyo-day-detail">
-    <h3>${selectedPlanDay}</h3>
-    ${entry?.rest ? '<p class="muted">Día de descanso.</p>' : routine ? `<p><b>${esc(routine.name)}</b>${routine.focus ? ` · ${esc(routine.focus)}` : ''}</p><p class="muted">${routine.items.length} ejercicios</p>` : '<p class="muted">Sin configurar.</p>'}
-    <div class="quick-actions">
-      ${routine ? '<button class="btn sm ghost" data-day-edit type="button">Editar rutina</button><button class="btn sm ghost" data-day-clear type="button">Quitar</button>' : ''}
-      ${!entry?.rest ? '<button class="btn sm ghost" data-day-assign type="button">Asignar rutina</button><button class="btn sm ghost" data-day-newroutine type="button">Crear rutina</button>' : ''}
-      <button class="btn sm ghost" data-day-rest type="button">${entry?.rest ? 'Quitar descanso' : 'Marcar descanso'}</button>
-      <button class="btn sm ghost" data-day-copy type="button">Copiar día</button>
-      <button class="btn sm ghost" data-day-paste type="button" ${copiedDay ? '' : 'disabled'}>Pegar día</button>
-    </div></div>`;
-  host.querySelector('[data-day-assign]')?.addEventListener('click', () => assignRoutineModal(async (routineId) => { await setDayPlan(ctx, selectedPlanDay, { routineId }); drawDayDetail(box, view, ctx); }));
-  host.querySelector('[data-day-newroutine]')?.addEventListener('click', () => routineForm(ctx, null, async (newRoutine) => { await setDayPlan(ctx, selectedPlanDay, { routineId: newRoutine.id }); renderPlyo(view, ctx); }));
-  host.querySelector('[data-day-edit]')?.addEventListener('click', () => routineForm(ctx, routine, () => renderPlyo(view, ctx)));
-  host.querySelector('[data-day-clear]')?.addEventListener('click', async () => { if (!(await confirmDialog('¿Quitar la rutina de este día?', 'Quitar'))) return; await setDayPlan(ctx, selectedPlanDay, null); drawDayDetail(box, view, ctx); });
-  host.querySelector('[data-day-rest]')?.addEventListener('click', async () => { const isRest = !!entry?.rest; await setDayPlan(ctx, selectedPlanDay, isRest ? null : { rest: true }); renderPlan(box, view, ctx); });
-  host.querySelector('[data-day-copy]')?.addEventListener('click', () => { copiedDay = entry ? { ...entry } : { rest: false, routineId: null }; notify(`${selectedPlanDay} copiado.`, 'success'); renderPlan(box, view, ctx); });
-  host.querySelector('[data-day-paste]')?.addEventListener('click', async () => {
-    if (!copiedDay) return;
-    if (weekPlan[selectedPlanDay]) { const ok = await confirmDialog(`${selectedPlanDay} ya tiene una planificación. ¿Reemplazarla con la copiada?`, 'Reemplazar'); if (!ok) return; }
-    await setDayPlan(ctx, selectedPlanDay, copiedDay.rest ? { rest: true } : copiedDay.routineId ? { routineId: copiedDay.routineId } : null);
-    renderPlan(box, view, ctx);
+/* --------------------- Mi plan · página de días y editor de día --------------------- */
+const ICON = {
+  back: '<svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.4"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>',
+  paste: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.4"/><path d="M9 4h6v3H9z"/><path d="M9 13h6M9 17h4"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5M8 13h8M8 17h5"/></svg>',
+  reps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+};
+const backBtn = (id) => `<button type="button" class="training-back-button animated-back animated-back-compact pd-back" id="${id}"><span class="animated-back-sweep" aria-hidden="true">${ICON.back}</span><span class="animated-back-label">Volver</span></button>`;
+
+// Grupos de trabajo propios de la pliometría (se deducen del nombre/identificador del ejercicio).
+const PLYO_GROUPS = [
+  ['lanzamientos', 'Lanzamientos', /medicine|ball|throw|slam|toss|chest.?pass|overhead/],
+  ['velocidad', 'Velocidad y agilidad', /sprint|speed|agility|cone|shuttle|skater|run|ladder|shuffle/],
+  ['cajon', 'Cajón y banco', /box|bench|step|stair|platform/],
+  ['superior', 'Tren superior', /push|clap|pull|row|chest|shoulder|burpee/],
+  ['core', 'Core', /crunch|plank|sit.?up|core|twist|abdominal|v.?up|mountain/],
+  ['rebotes', 'Rebotes y reactividad', /drop|hop|depth|rebound|pogo|rope|hurdle|bounce|ankle/],
+  ['horizontal', 'Saltos horizontales', /bound|broad|horizontal|long|skip|lunge|diagonal|lateral|split/],
+  ['vertical', 'Salto vertical', /jump|squat|tuck|vertical|cmj|leap|star|knee/],
+];
+const groupLabel = (id) => PLYO_GROUPS.find((g) => g[0] === id)?.[1] || id;
+function plyoGroup(e) {
+  const s = `${e?.id || ''} ${e?.name || ''} ${e?.name_es || ''}`.toLowerCase().replace(/_/g, ' ');
+  return (PLYO_GROUPS.find((g) => g[2].test(s)) || ['otros'])[0];
+}
+const exPhoto = (e) => (e?.images?.[0] ? `/exercises/${encodeURI(e.images[0])}` : '');
+const exById = (id) => catalog.find((e) => e.id === id);
+const setSummary = (it) => { const s = it.sets?.[0]; return `${it.sets?.length || it.target_sets || 1} × ${s?.reps || it.targets?.reps || '—'}`; };
+
+// Normaliza un ejercicio de rutina antiguo (series/targets) a la forma con tabla de series.
+function normItem(it) {
+  if (Array.isArray(it.sets) && it.sets.length) return { ...it };
+  const n = Math.max(1, it.target_sets || 3);
+  const base = { weight_kg: it.targets?.weight_kg ?? '', reps: it.targets?.reps ?? it.targets?.contacts ?? '' };
+  return { ...it, sets: Array.from({ length: n }, () => ({ ...base })) };
+}
+// Deja el ejercicio listo para guardar, manteniendo los campos que ya usa la sesión en vivo.
+function packItem(it) {
+  const sets = it.sets.map((s) => ({ weight_kg: s.weight_kg === '' ? '' : Number(s.weight_kg) || 0, reps: s.reps === '' ? '' : Number(s.reps) || 0 }));
+  const first = sets[0] || {};
+  const targets = { ...(it.targets || {}) };
+  if (first.reps !== '' && first.reps != null) targets.reps = first.reps; else delete targets.reps;
+  if (first.weight_kg !== '' && first.weight_kg != null && !it.solo_reps) targets.weight_kg = first.weight_kg; else delete targets.weight_kg;
+  const out = { exercise_id: it.exercise_id, target_sets: Math.max(1, sets.length), rest_sec: it.rest_sec ?? 60, targets, sets };
+  if (it.solo_reps) out.solo_reps = true;
+  if (it.note) out.note = it.note;
+  return out;
+}
+
+let planPage = null;        // null | 'days' | { day }
+let dayDraft = null;        // { day, name, groups:[], items:[], routineId }
+let dayActive = 0;
+let dayNoteOpen = false;
+let prevSets = {};          // exercise_id -> series de la última sesión (columna "Antes")
+let saveTimer = 0, saveChain = Promise.resolve();
+
+async function loadPrevSets() {
+  const { data = [] } = await supabase.from('workouts').select('id, performed_on, workout_sets(*)').eq('kind', 'plyometrics').order('performed_on', { ascending: false }).limit(40);
+  prevSets = {};
+  data.forEach((w) => (w.workout_sets || []).forEach((s) => { (prevSets[s.exercise_id] ||= []).push(s); }));
+}
+
+function dayPhoto(entry) {
+  const r = entry?.routineId ? routines.find((x) => x.id === entry.routineId) : null;
+  return exPhoto(exById(r?.items?.[0]?.exercise_id));
+}
+function daySubtitle(entry) {
+  if (entry?.rest) return 'Descanso';
+  if (entry?.name) return esc(entry.name);
+  const r = entry?.routineId ? routines.find((x) => x.id === entry.routineId) : null;
+  const names = (r?.items || []).slice(0, 2).map((it) => name(exById(it.exercise_id)));
+  return names.length ? names.join(' · ') + (r.items.length > 2 ? '…' : '') : 'Sin configurar';
+}
+
+/* ---- página: los 7 días en fila vertical ---- */
+function drawDays(box, view, ctx) {
+  const dates = weekDates();
+  box.innerHTML = `<div class="pd-head">${backBtn('pd-back')}<h2>Mi plan</h2></div>
+    <div class="pd-days">${DAYS.map((d, i) => {
+      const entry = weekPlan[d]; const photo = dayPhoto(entry);
+      return `<article class="pd-day${entry?.rest ? ' is-rest' : ''}">
+        <button type="button" class="pd-day__main" data-open="${d}">
+          <span class="pd-day__photo${photo ? ' has-photo' : ''}"${photo ? ` style="--p:url('${photo}')"` : ''}>${entry?.rest ? ICON.moon : photo ? '' : ICON.plus}</span>
+          <span class="pd-day__text"><b>${d}</b><small>${dates[i].getDate()}/${dates[i].getMonth() + 1} · ${daySubtitle(entry)}</small></span>
+        </button>
+        <div class="pd-day__tools">
+          <button type="button" class="plyo-icon-btn" data-copy="${d}" aria-label="Copiar ${d}">${ICON.copy}</button>
+          <button type="button" class="plyo-icon-btn" data-paste="${d}" aria-label="Pegar en ${d}" ${copiedDay ? '' : 'disabled'}>${ICON.paste}</button>
+          <button type="button" class="plyo-icon-btn${entry?.rest ? ' is-on' : ''}" data-rest="${d}" aria-label="Descanso ${d}">${ICON.moon}</button>
+        </div></article>`;
+    }).join('')}</div>`;
+  $('#pd-back', box).onclick = () => { planPage = null; renderPlyo(view, ctx); };
+  box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => openDayEditor(b.dataset.open, box, view, ctx)));
+  box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = weekPlan[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} copiado.`, 'success'); drawDays(box, view, ctx); }));
+  box.querySelectorAll('[data-paste]').forEach((b) => (b.onclick = () => pasteDay(b.dataset.paste, box, view, ctx)));
+  box.querySelectorAll('[data-rest]').forEach((b) => (b.onclick = async () => {
+    const d = b.dataset.rest, e = weekPlan[d];
+    if (e?.rest) await setDayPlan(ctx, d, null);
+    else { if (e?.routineId && !(await confirmDialog(`${d} tiene una rutina. ¿Marcarlo como descanso? La rutina se conserva en “Mis rutinas”.`, 'Marcar descanso'))) return; await setDayPlan(ctx, d, { rest: true }); }
+    drawDays(box, view, ctx);
+  }));
+}
+
+async function pasteDay(day, box, view, ctx) {
+  if (!copiedDay) return;
+  if (weekPlan[day] && !(await confirmDialog(`${day} ya tiene una planificación. ¿Reemplazarla con la copiada?`, 'Reemplazar'))) return;
+  if (copiedDay.empty) await setDayPlan(ctx, day, null);
+  else if (copiedDay.rest) await setDayPlan(ctx, day, { rest: true });
+  else {
+    const src = routines.find((r) => r.id === copiedDay.routineId);
+    let routineId = null;
+    if (src) { // la rutina pegada es independiente de la original
+      const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, name: `${src.name} (copia)`.slice(0, 80), focus: src.focus, items: JSON.parse(JSON.stringify(src.items)) }).select('*').single();
+      if (error) { notify(error.message); return; }
+      routines = [...routines, data]; routineId = data.id;
+    }
+    await setDayPlan(ctx, day, { ...(routineId ? { routineId } : {}), ...(copiedDay.name ? { name: copiedDay.name } : {}), ...(copiedDay.groups?.length ? { groups: copiedDay.groups } : {}) });
+  }
+  notify(`Pegado en ${day}.`, 'success'); drawDays(box, view, ctx);
+}
+
+/* ---- editor de un día ---- */
+async function openDayEditor(day, box, view, ctx) {
+  const entry = weekPlan[day] || {};
+  const r = entry.routineId ? routines.find((x) => x.id === entry.routineId) : null;
+  dayDraft = { day, name: entry.name || '', groups: [...(entry.groups || [])], items: (r?.items || []).map(normItem), routineId: r?.id || null };
+  dayActive = 0; dayNoteOpen = false; planPage = { day };
+  await loadPrevSets().catch(() => { prevSets = {}; });
+  drawDayEditor(box, view, ctx);
+}
+
+function queueSave(ctx, delay = 500) {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => flushSave(ctx), delay);
+}
+function flushSave(ctx) {
+  clearTimeout(saveTimer);
+  saveChain = saveChain.then(() => persistDay(ctx)).catch((e) => notify('No se pudo guardar el día: ' + (e.message || e)));
+  return saveChain;
+}
+async function persistDay(ctx) {
+  const d = dayDraft; if (!d) return;
+  const items = d.items.map(packItem);
+  const groups = d.groups.length ? d.groups : [];
+  let routineId = d.routineId;
+  if (items.length || routineId) {
+    const auto = d.name || `Rutina de ${d.day}`;
+    const row = { name: auto.slice(0, 80), focus: groups.map(groupLabel).join(', ').slice(0, 200) || null, items, updated_at: new Date().toISOString() };
+    if (routineId) {
+      const { data, error } = await supabase.from('plyo_routines').update(row).eq('id', routineId).select('*').single();
+      if (error) throw error;
+      routines = routines.map((r) => (r.id === routineId ? data : r));
+    } else {
+      const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, ...row }).select('*').single();
+      if (error) throw error;
+      routines = [...routines, data]; routineId = data.id; d.routineId = routineId;
+    }
+  }
+  const entry = { ...(routineId ? { routineId } : {}), ...(d.name ? { name: d.name } : {}), ...(groups.length ? { groups } : {}) };
+  await setDayPlan(ctx, d.day, Object.keys(entry).length ? entry : null);
+}
+
+function drawDayEditor(box, view, ctx) {
+  const d = dayDraft;
+  if (dayActive >= d.items.length) dayActive = Math.max(0, d.items.length - 1);
+  const it = d.items[dayActive];
+  const ex = it ? exById(it.exercise_id) : null;
+  const auto = (() => { const c = {}; d.items.forEach((x) => { const g = plyoGroup(exById(x.exercise_id)); c[g] = (c[g] || 0) + 1; }); const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0]; return top ? groupLabel(top[0]) : '—'; })();
+  const prevLabel = (j) => { const p = (prevSets[it.exercise_id] || [])[j]; if (!p) return '—'; const w = Number(p.weight_kg) ? `${p.weight_kg}kg×` : ''; return `${w}${p.reps ?? p.contacts ?? '?'}`; };
+  box.innerHTML = `<div class="pd-head">${backBtn('pd-back')}<h2>Editar ${d.day}</h2></div>
+    <section class="card pd-card">
+      <label for="pd-name">Nombre del día</label>
+      <input id="pd-name" maxlength="60" placeholder="${d.items.length ? `Ej. ${esc(name(exById(d.items[0].exercise_id)))}…` : 'Ej. Potencia de piernas'}" value="${esc(d.name)}">
+      <label>Grupo que trabaja <span class="muted">· automático: ${esc(auto)}</span></label>
+      <div class="pd-chips">${PLYO_GROUPS.map((g) => `<button type="button" class="pd-chip${d.groups.includes(g[0]) ? ' on' : ''}" data-group="${g[0]}">${g[1]}</button>`).join('')}</div>
+    </section>
+    <section class="pd-order">
+      <div class="pd-order__head"><b>Orden de ejercicios</b><small>${d.items.length > 1 ? 'Mantén pulsado y arrastra' : ''}</small></div>
+      <div class="pd-strip" id="pd-strip">${d.items.map((x, i) => { const e = exById(x.exercise_id); const p = exPhoto(e); return `<button type="button" class="pd-circle${i === dayActive ? ' on' : ''}" data-id="${esc(x.exercise_id)}" aria-label="${name(e)}">${p ? `<img src="${p}" alt="" draggable="false">` : '<span>?</span>'}<i>${i + 1}</i></button>`; }).join('')}<button type="button" class="pd-circle pd-circle--add" id="pd-add" aria-label="Agregar ejercicios">${ICON.plus}</button></div>
+    </section>
+    ${it ? `<article class="card pd-ex">
+      <div class="pd-ex__img${exPhoto(ex) ? '' : ' ph'}">${exPhoto(ex) ? `<img src="${exPhoto(ex)}" alt="">` : '?'}</div>
+      <h3>${name(ex)}</h3>
+      <div class="pd-pills">
+        <button type="button" class="pd-pill" id="pd-rest">${ICON.clock}<span>Descanso</span><em>${it.rest_sec ?? 60}s</em></button>
+        <button type="button" class="pd-pill${it.note || dayNoteOpen ? ' on' : ''}" id="pd-note">${ICON.note}<span>Nota</span></button>
+        <button type="button" class="pd-pill${it.solo_reps ? ' on' : ''}" id="pd-solo">${ICON.reps}<span>Solo reps</span></button>
+        <button type="button" class="pd-pill pd-pill--danger" id="pd-del" aria-label="Quitar ejercicio">${ICON.trash}</button>
+      </div>
+      ${dayNoteOpen ? `<textarea id="pd-note-text" rows="2" maxlength="300" placeholder="Agregar una nota…">${esc(it.note || '')}</textarea>` : ''}
+      <div class="pd-table${it.solo_reps ? ' solo' : ''}">
+        <div class="pd-row pd-row--head"><span>Serie</span><span>Antes</span><span>${it.solo_reps ? '' : 'Peso'}</span><span>Reps</span><span></span></div>
+        ${it.sets.map((s, j) => `<div class="pd-row" data-j="${j}"><span class="pd-n">${j + 1}</span><span class="pd-prev">${esc(prevLabel(j))}</span>${it.solo_reps ? '<span></span>' : `<input data-f="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" aria-label="Peso serie ${j + 1}" value="${s.weight_kg ?? ''}">`}<input data-f="reps" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Reps serie ${j + 1}" value="${s.reps ?? ''}"><button type="button" class="pd-x" data-rmset="${j}" aria-label="Quitar serie">${ICON.trash}</button></div>`).join('')}
+        <button type="button" class="pd-addset" id="pd-addset">+ Añadir serie</button>
+      </div></article>` : `<div class="card pd-empty"><p class="muted">Este día aún no tiene ejercicios.</p><button type="button" class="btn" id="pd-add2">+ Agregar ejercicios</button></div>`}`;
+
+  const redraw = () => drawDayEditor(box, view, ctx);
+  $('#pd-back', box).onclick = async () => { await flushSave(ctx); planPage = 'days'; dayDraft = null; renderPlyo(view, ctx); };
+  $('#pd-name', box).oninput = (e) => { d.name = e.target.value.trim(); queueSave(ctx); };
+  box.querySelectorAll('[data-group]').forEach((b) => (b.onclick = () => { const g = b.dataset.group; d.groups = d.groups.includes(g) ? d.groups.filter((x) => x !== g) : [...d.groups, g]; b.classList.toggle('on'); queueSave(ctx); }));
+  const addPicker = () => picker(ctx, (ids) => {
+    const firstNew = d.items.length;
+    ids.filter((id) => !d.items.some((x) => x.exercise_id === id)).forEach((id) => { d.items.push(normItem({ exercise_id: id, target_sets: 3, rest_sec: 60, targets: {} })); });
+    if (d.items.length > firstNew) dayActive = firstNew;
+    dayNoteOpen = false; queueSave(ctx, 200); redraw();
   });
+  $('#pd-add', box).onclick = addPicker; $('#pd-add2', box)?.addEventListener('click', addPicker);
+  const strip = $('#pd-strip', box);
+  strip.querySelectorAll('.pd-circle[data-id]').forEach((c) => (c.onclick = () => { if (strip._drag) return; dayActive = d.items.findIndex((x) => x.exercise_id === c.dataset.id); dayNoteOpen = false; redraw(); }));
+  bindStripDrag(strip, (ids) => { const cur = d.items[dayActive]?.exercise_id; d.items = ids.map((id) => d.items.find((x) => x.exercise_id === id)); dayActive = Math.max(0, d.items.findIndex((x) => x.exercise_id === cur)); queueSave(ctx, 200); redraw(); });
+  if (!it) return;
+  $('#pd-rest', box).onclick = () => restModal(it.rest_sec ?? 60, (v) => { it.rest_sec = v; queueSave(ctx); redraw(); });
+  $('#pd-note', box).onclick = () => { dayNoteOpen = !dayNoteOpen; redraw(); };
+  $('#pd-note-text', box)?.addEventListener('input', (e) => { it.note = e.target.value.trim(); queueSave(ctx); });
+  $('#pd-solo', box).onclick = () => { it.solo_reps = !it.solo_reps; queueSave(ctx); redraw(); };
+  $('#pd-del', box).onclick = () => { d.items.splice(dayActive, 1); queueSave(ctx, 200); redraw(); };
+  box.querySelectorAll('.pd-row[data-j] input').forEach((inp) => (inp.oninput = () => { it.sets[+inp.closest('.pd-row').dataset.j][inp.dataset.f] = inp.value; queueSave(ctx); }));
+  box.querySelectorAll('[data-rmset]').forEach((b) => (b.onclick = () => { if (it.sets.length > 1) it.sets.splice(+b.dataset.rmset, 1); queueSave(ctx); redraw(); }));
+  $('#pd-addset', box).onclick = () => { const last = it.sets[it.sets.length - 1] || {}; it.sets.push({ weight_kg: last.weight_kg ?? '', reps: last.reps ?? '' }); queueSave(ctx); redraw(); };
+}
+
+function restModal(current, onPick) {
+  const m = modal(`<div class="sheet-h"><b>Descanso entre series</b><button class="link" data-close>Cerrar</button></div>
+    <div class="rest-presets">${REST_PRESETS.map((s) => `<button type="button" class="btn sm ${s === current ? '' : 'ghost'}" data-s="${s}">${s} s</button>`).join('')}</div>
+    <label for="rc">Personalizado (segundos)</label><input id="rc" type="number" min="0" step="5" inputmode="numeric" value="${current}">
+    <div class="sheet-f"><button class="btn" id="rok" type="button">Listo</button></div>`);
+  m.querySelector('[data-close]').onclick = () => m.remove();
+  m.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => { onPick(Number(b.dataset.s)); m.remove(); }));
+  $('#rok', m).onclick = () => { onPick(Math.max(0, Number($('#rc', m).value) || 0)); m.remove(); };
+}
+
+// Arrastrar para cambiar el orden: mantener pulsado ~⅓ de segundo y mover; un toque corto selecciona.
+function bindStripDrag(strip, onDrop) {
+  let drag = null, timer = 0;
+  strip.addEventListener('touchmove', (e) => { if (drag?.active) e.preventDefault(); }, { passive: false });
+  strip.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('.pd-circle[data-id]'); if (!el) return;
+    const rect = el.getBoundingClientRect();
+    drag = { el, pid: e.pointerId, x0: e.clientX, y0: e.clientY, grab: e.clientX - rect.left, active: false };
+    timer = setTimeout(() => { if (!drag) return; drag.active = true; strip._drag = true; el.classList.add('is-dragging'); try { el.setPointerCapture(drag.pid); } catch { /* sin captura */ } navigator.vibrate?.(15); }, 320);
+  });
+  strip.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.active) { if (Math.abs(e.clientX - drag.x0) > 8 || Math.abs(e.clientY - drag.y0) > 8) { clearTimeout(timer); drag = null; } return; }
+    const el = drag.el;
+    [...strip.querySelectorAll('.pd-circle[data-id]')].filter((s) => s !== el).forEach((s) => {
+      const r = s.getBoundingClientRect();
+      if (e.clientX > r.left && e.clientX < r.right) { if (el.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING) s.after(el); else s.before(el); }
+    });
+    el.style.transform = ''; const left = el.getBoundingClientRect().left;
+    el.style.transform = `translateX(${e.clientX - drag.grab - left}px) scale(1.12)`;
+  });
+  const end = () => {
+    clearTimeout(timer);
+    if (drag?.active) {
+      const el = drag.el; el.classList.remove('is-dragging'); el.style.transform = '';
+      const ids = [...strip.querySelectorAll('.pd-circle[data-id]')].map((x) => x.dataset.id);
+      setTimeout(() => { strip._drag = false; }, 60);
+      drag = null; onDrop(ids); return;
+    }
+    drag = null;
+  };
+  strip.addEventListener('pointerup', end); strip.addEventListener('pointercancel', end);
 }
 
 async function setDayPlan(ctx, day, value) {
   weekPlan = { ...weekPlan }; if (value) weekPlan[day] = value; else delete weekPlan[day];
   const { error } = await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   if (error) notify('No se pudo guardar el plan: ' + error.message);
-}
-
-function assignRoutineModal(onPick) {
-  if (!routines.length) { notify('Primero crea una rutina.'); return; }
-  const m = modal(`<div class="sheet-h"><b>Asignar rutina</b><button class="link" data-close>Cerrar</button></div>
-    <div class="activity-list">${routines.map((r) => `<button type="button" class="card" data-pick="${r.id}"><b>${esc(r.name)}</b><p class="muted">${r.items.length} ejercicios</p></button>`).join('')}</div>`);
-  m.querySelector('[data-close]').onclick = () => m.remove();
-  m.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => { onPick(b.dataset.pick); m.remove(); }));
 }
 
 function routineForm(ctx, existing, onDone) {
@@ -574,14 +802,17 @@ function picker(ctx, onPick) {
   const equips = [...new Set(catalog.map((e) => e.equipment || 'none'))].sort();
   const m = modal(`<div class="sheet-h"><b>Agregar ejercicios</b><button class="link" data-close>Cerrar</button></div>
     <input id="q" type="search" placeholder="Buscar ejercicio…">
+    <div class="pd-cats" id="cats"><button type="button" class="pd-chip on" data-cat="">Todos</button>${PLYO_GROUPS.map((g) => `<button type="button" class="pd-chip" data-cat="${g[0]}">${g[1]}</button>`).join('')}</div>
     <div class="row"><select id="lv"><option value="">Todos los niveles</option>${levels.map((l) => `<option value="${l}">${LEVEL[l] || l}</option>`).join('')}</select>
     <select id="eq"><option value="">Todo el equipo</option>${equips.map((l) => `<option value="${l}">${l === 'none' ? 'Sin equipo' : l}</option>`).join('')}</select></div>
     <div id="grid" class="egrid"></div>
     <div class="sheet-f"><button class="btn" id="ok">Agregar</button> <button class="link" id="newex">Crear ejercicio propio</button></div>`);
   const grid = $('#grid', m);
+  let cat = '';
+  m.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; m.querySelectorAll('[data-cat]').forEach((c) => c.classList.toggle('on', c === b)); draw(); }));
   const draw = () => {
     const q = $('#q', m).value.trim().toLowerCase(), lv = $('#lv', m).value, eq = $('#eq', m).value;
-    const list = catalog.filter((e) => (!q || (e.name + ' ' + (e.name_es || '')).toLowerCase().includes(q)) && (!lv || e.level === lv) && (!eq || (e.equipment || 'none') === eq));
+    const list = catalog.filter((e) => (!q || (e.name + ' ' + (e.name_es || '')).toLowerCase().includes(q)) && (!lv || e.level === lv) && (!eq || (e.equipment || 'none') === eq) && (!cat || plyoGroup(e) === cat));
     grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard ${chosen.has(e.id) ? 'sel' : ''}" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados.</p>';
     grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => { chosen.has(c.dataset.id) ? chosen.delete(c.dataset.id) : chosen.add(c.dataset.id); c.classList.toggle('sel'); $('#ok', m).textContent = chosen.size ? `Agregar ${chosen.size}` : 'Agregar'; }));
   };

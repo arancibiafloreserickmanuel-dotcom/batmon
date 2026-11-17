@@ -340,3 +340,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Arriba: tarjeta grande "Activo" con el nombre y la foto del primer ejercicio (de la rutina elegida con "Seleccionar", o la del primer día planificado); al tocarla se despliega con los días y sus fechas (de la semana actual), el detalle del día y "Editar rutina activa".
 - Abajo: "Mis rutinas guardadas" ahora es una tarjeta desplegable; cada rutina tiene icono de editar y botón Seleccionar (la marca como activa); Duplicar/Eliminar quedan como enlaces pequeños. La rutina activa se guarda en `plyo_plans.plan._active` (sin migración nueva).
 - No probado con sesión real.
+
+## Pliometría · Mi plan por días (editor)
+- La tarjeta "Activo" ahora es un botón: abre una página con los 7 días en fila vertical (foto del primer ejercicio, nombre del día, copiar / pegar / descanso) y un botón Volver.
+- Tocar un día abre su editor: nombre del día, grupos de pliometría, orden de ejercicios arrastrable (mantener pulsado), "+" con modal por categorías, descanso / nota / solo reps y tabla Serie · Antes · Peso · Reps. Guarda solo (debounce) en `plyo_routines` y `plyo_plans.plan[día]` ({routineId, name, groups}); sin migración nueva (requiere 0019).
+- Base copiada (lógica, no diseño) de `vida-total-web` → gym/planificaciones/[planId] y `exercise-session-builder`.
