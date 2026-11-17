@@ -1249,3 +1249,10 @@ dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
 body.run-takeover .run-module>.training-back-button{display:none}
 
 .module-back{margin:0 0 12px}
+
+/* Pantalla de preparación: mapa estático (sin zoom ni arrastre) y alto ajustado para que todo quepa sin scroll. */
+.run-map--static{pointer-events:none}
+.run-map-wrap--static{height:clamp(220px,calc(100dvh - 440px),480px);min-height:0}
+.run-map-wrap--static .run-prep-overlay{bottom:6%}
+.run-map-wrap--static .goal-panel{bottom:calc(100% + 60px)}
+@media(max-width:560px){.run-map-wrap--boxed.run-map-wrap--static{height:clamp(220px,calc(100dvh - 440px),480px);min-height:0}}

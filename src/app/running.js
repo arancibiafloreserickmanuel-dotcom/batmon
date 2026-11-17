@@ -127,7 +127,7 @@ function splitRuns(points) {
 
 
 
-async function mountMap(el, segments, { center = null, locate = null, zoomControl = true } = {}) {
+async function mountMap(el, segments, { center = null, locate = null, zoomControl = true, interactive = true } = {}) {
 
   if (!el) return { map: null, recenter() {} };
 
@@ -145,7 +145,7 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
 
     const startAt = center || (first ? [+first.lat, +first.lon] : [-19.0196, -65.2619]);
 
-    const map = L.map(el, { zoomControl: false, attributionControl: true, scrollWheelZoom: true }).setView(startAt, first || center ? 16 : 13);
+    const map = L.map(el, interactive ? { zoomControl: false, attributionControl: true, scrollWheelZoom: true } : { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false }).setView(startAt, first || center ? 16 : 13);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>' }).addTo(map);
 
@@ -408,8 +408,8 @@ async function renderRun(view, ctx) {
     if (!state) {
 
       box.innerHTML = `<div class="run-prep-card">
-        <div class="run-map-wrap run-map-wrap--boxed">
-          <div id="run-map-live" class="run-map run-map--boxed" role="application" aria-label="Mapa de ubicación"></div>
+        <div class="run-map-wrap run-map-wrap--boxed run-map-wrap--static">
+          <div id="run-map-live" class="run-map run-map--boxed run-map--static" role="img" aria-label="Mapa de ubicación"></div>
           <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
           <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
           <div class="run-prep-overlay">
@@ -426,7 +426,7 @@ async function renderRun(view, ctx) {
         <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
 
-      mapController = mountMap($('#run-map-live', box), [], { zoomControl: false });
+      mapController = mountMap($('#run-map-live', box), [], { zoomControl: false, interactive: false });
 
       $('#run-start', box).onclick = () => { runCountdown(() => { const ok = tracker.start(paint, (message) => { const m = $('#run-live-msg', view); if (m) m.textContent = message; }); if (ok) { page = 'run'; render(); } }); };
 
