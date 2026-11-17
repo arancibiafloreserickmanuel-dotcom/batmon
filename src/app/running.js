@@ -275,7 +275,7 @@ async function renderRun(view, ctx) {
 
   const goalIcon = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const GOAL_ICONS = { none: goalIcon('<path d="M8 5v14l11-7z"/>'), distance: goalIcon('<rect x="3" y="10" width="18" height="4" rx="1"/><path d="M7 10v2M11 10v3M15 10v2"/>'), duration: goalIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>') };
-  const SETTINGS_ICON = goalIcon('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>');
+  const SETTINGS_ICON = goalIcon('<path d="M4 6h16M4 12h16M4 18h16"/>');
 
   const GOAL_OPTIONS = [ { value: 'none', label: 'Libre', icon: GOAL_ICONS.none }, { value: 'distance', label: 'Distancia', icon: GOAL_ICONS.distance }, { value: 'duration', label: 'Duración', icon: GOAL_ICONS.duration } ];
 
