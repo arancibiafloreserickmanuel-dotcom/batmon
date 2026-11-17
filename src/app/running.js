@@ -281,15 +281,21 @@ async function renderRun(view, ctx) {
 
   const X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="morph-line top" d="M4 7 L20 7"/><path class="morph-line middle" d="M4 12 L20 12"/><path class="morph-line bottom" d="M4 17 L20 17"/></svg>';
 
-  // Nombres curvados siguiendo el anillo: cada uno rodea a su icono (en la mitad inferior se invierte el arco para que se lea derecho).
+  // Nombres curvados siguiendo el anillo, cada uno dentro de una cápsula ovalada que rodea a su icono
+  // (en la mitad inferior se invierte el arco para que el texto se lea derecho).
   function goalArcLabels(chosen) {
-    const OUT = 18 + 6 + 34, SIZE = 2 * (OUT + 36), C = SIZE / 2, SPAN = 46, n = GOAL_OPTIONS.length;
-    const pt = (r, deg) => { const a = deg * Math.PI / 180; return [(C + r * Math.sin(a)).toFixed(1), (C - r * Math.cos(a)).toFixed(1)]; };
+    const OUT = 18 + 6 + 34, RC = OUT + 22, SIZE = 2 * (RC + 28), C = SIZE / 2, n = GOAL_OPTIONS.length;
+    const rad = (d) => d * Math.PI / 180;
+    const pt = (r, deg) => [(C + r * Math.sin(rad(deg))).toFixed(1), (C - r * Math.cos(rad(deg))).toFixed(1)];
+    const arc = (id, r, from, to, sweep) => { const [x1, y1] = pt(r, from), [x2, y2] = pt(r, to); return `<path id="${id}" d="M${x1} ${y1} A${r} ${r} 0 0 ${sweep} ${x2} ${y2}"/>`; };
     const items = GOAL_OPTIONS.map((o, i) => {
-      const deg = (360 / n) * i, bottom = Math.cos(deg * Math.PI / 180) < -0.01, r = bottom ? OUT + 19 : OUT + 8;
-      const [x1, y1] = pt(r, bottom ? deg + SPAN : deg - SPAN), [x2, y2] = pt(r, bottom ? deg - SPAN : deg + SPAN);
-      const id = `goal-arc-${i}`;
-      return `<path id="${id}" d="M${x1} ${y1} A${r} ${r} 0 0 ${bottom ? 0 : 1} ${x2} ${y2}" fill="none"/><text class="goal-arc-text${chosen === o.value ? ' is-active' : ''}" data-value="${o.value}"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(o.label)}</textPath></text>`;
+      const deg = (360 / n) * i, bottom = Math.cos(rad(deg)) < -0.01;
+      const half = ((o.label.length * 7.4 + 22) / 2 / RC) * 180 / Math.PI;   // medio ancho de la cápsula, en grados
+      const rt = bottom ? RC + 4 : RC - 4;                                    // línea base del texto
+      const from = bottom ? deg + half : deg - half, to = bottom ? deg - half : deg + half, sweep = bottom ? 0 : 1;
+      const on = chosen === o.value ? ' is-active' : '';
+      return `<g class="goal-arc${on}" data-value="${o.value}"><defs>${arc(`goal-bg-${i}`, RC, from, to, sweep)}${arc(`goal-tx-${i}`, rt, bottom ? deg + 60 : deg - 60, bottom ? deg - 60 : deg + 60, sweep)}</defs>`
+        + `<use href="#goal-bg-${i}" class="goal-arc-bg"/><text class="goal-arc-text"><textPath href="#goal-tx-${i}" startOffset="50%" text-anchor="middle">${esc(o.label)}</textPath></text></g>`;
     }).join('');
     return `<svg class="goal-arcs" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" aria-hidden="true">${items}</svg>`;
   }
@@ -319,7 +325,7 @@ async function renderRun(view, ctx) {
   function bindGoalRadial(box, onPicked) {
     const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null;
     if (!radial || !toggle) return;
-    const texts = [...radial.querySelectorAll('.goal-arc-text')];
+    const texts = [...radial.querySelectorAll('.goal-arc')];
     const mark = (value) => texts.forEach((t) => t.classList.toggle('is-active', t.dataset.value === value));
     const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : ''; };
     // Al abrir: el menú se centra en la fila y los demás controles se atenúan, para que no se tapen entre sí.
