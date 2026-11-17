@@ -3,6 +3,7 @@ import { supabase, $, esc } from '../supabase.js';
 import { fmt, today, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
 
 import { createRunningTracker, distanceBetween } from './running-tracker.js';
+import { mapToolsMarkup, mountMapTools } from './running-map-tools.js';
 
 // Botón "volver a las disciplinas": vive dentro de la propia pantalla (antes lo añadía app.js al principio y cada render lo borraba).
 const BACK_HTML = '<button type="button" class="training-back-button animated-back animated-back-compact" id="run-back-training"><span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">Todas las disciplinas</span></button>';
@@ -147,7 +148,8 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
 
     const map = L.map(el, interactive ? { zoomControl: false, attributionControl: true, scrollWheelZoom: true } : { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false }).setView(startAt, first || center ? 16 : 13);
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>' }).addTo(map);
+    let baseLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>' }).addTo(map);
+    const setBase = (l) => { map.removeLayer(baseLayer); baseLayer = L.tileLayer(l.url, { maxZoom: l.max, attribution: l.attr, subdomains: 'abc' }).addTo(map); baseLayer.bringToBack(); };
 
     if (zoomControl) L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -175,7 +177,7 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
 
     requestAnimationFrame(() => map.invalidateSize());
 
-    return { map, update:drawSegments, recenter: () => { const latest=routeLayer.getBounds();if(latest.isValid())map.fitBounds(latest,{padding:[36,36],maxZoom:16});else {const point=segments.flat().at(-1);if(point)map.setView([point.lat,point.lon],16);else if(center)map.setView(center,16);} } };
+    return { map, L, setBase, update:drawSegments, recenter: () => { const latest=routeLayer.getBounds();if(latest.isValid())map.fitBounds(latest,{padding:[36,36],maxZoom:16});else {const point=segments.flat().at(-1);if(point)map.setView([point.lat,point.lon],16);else if(center)map.setView(center,16);} } };
 
   } catch (error) {
 
@@ -502,8 +504,9 @@ async function renderRun(view, ctx) {
             <p class="msg" id="run-live-msg" aria-live="polite"></p>
           </div>
         </section>
-        <section class="run-swipe__panel run-swipe__panel--map">
-          <div class="run-map-wrap run-map-wrap--boxed run-map-wrap--flex"><div id="run-map-live" class="run-map run-map--boxed" aria-label="Tu recorrido"></div><div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div>
+        <section class="run-swipe__panel run-swipe__panel--map run-maptools">
+          <div id="run-map-live" class="run-map run-map--full" aria-label="Tu recorrido"></div>
+          ${mapToolsMarkup()}
           <div class="run-map-keystats"><div><b id="run-live-distance3">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div><div><b id="run-live-time3">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div><div><b id="run-live-pace3">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div></div>
         </section>
         <section class="run-swipe__panel run-swipe__panel--config"><h3>Configuración</h3>${settingsToggleFields('cfg')}<button class="link run-discard" id="run-discard" type="button">Descartar carrera</button></section>
@@ -513,7 +516,7 @@ async function renderRun(view, ctx) {
 
     bindSettingsToggleFields(box, 'cfg');
     mapController = mountMap($('#run-map-live', box), state.segments || []);
-    $('#run-center', box).onclick = () => mapController?.then(({ recenter }) => recenter?.());
+    mountMapTools($('.run-maptools', box), { mapPromise: mapController, supabase, userId, userName: (ctx.profile?.full_name || ctx.user?.user_metadata?.full_name || '').trim(), isAdmin: !!ctx.isAdmin, notify });
 
     const swipe = $('#run-swipe', box);
     requestAnimationFrame(() => { swipe.scrollLeft = swipe.clientWidth; });
@@ -611,7 +614,7 @@ async function renderRun(view, ctx) {
 
     const write=(id,value)=>{const node=$(`#${id}`,view);if(node)node.textContent=value;};
 
-    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('.run-counter-unit',view);if(unitNode)unitNode.textContent=prefs.unit==='mi'?'millas':'kilómetros';write('run-live-pace',kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60));write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-live-distance3',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-time3',durationLabel(seconds));write('run-live-pace3',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
+    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('.run-counter-unit',view);if(unitNode)unitNode.textContent=prefs.unit==='mi'?'millas':'kilómetros';write('run-live-pace',kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60));write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-live-distance3',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-time3',durationLabel(seconds));write('run-live-pace3',kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60));
 
     const acc=flat.at(-1)?.accuracy;write('run-accuracy',acc?`Precisión ${acc} m`: '');
 

@@ -323,3 +323,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - **"Descartar" ya no está en la pantalla del contador:** se movió a la pestaña de Configuración, al final.
 - **Pruebas:** `npm run build` pasa. Sigue sin probarse en vivo (requiere sesión real; no se usan credenciales). Falta confirmar en el teléfono que el anillo del objetivo se abre y gira bien, que el nombre se lee, que el mapa se ve sin pausar, y que las pestañas de arriba cambian de sección correctamente.
 - **Archivos:** `src/app/running.js`, `src/app/app.css`.
+
+## Running — mapa con herramientas durante la carrera (rutas del club)
+- Panel derecho del contador: mapa a pantalla completa con buscador de rutas, filtros (Rutas, Longitud, Desnivel, Superficie, Dificultad), brújula, capas (Calle/Oscuro/Relieve/Satélite), "mi ubicación" y lápiz para dibujar y guardar rutas. Contadores grandes y gruesos abajo sobre el mapa.
+- Nuevo `src/app/running-map-tools.js`; `mountMap` ahora expone `L` y `setBase`. Franjas de 20 px en los bordes del mapa para poder deslizar entre paneles.
+- **Migración nueva `0020_club_routes.sql` (NO aplicada):** tabla `club_routes` con RLS (ven las compartidas, las propias y el admin; solo el admin marca oficiales). Sin ella el buscador muestra un aviso y no se pueden guardar rutas.
+- La brújula muestra hacia dónde apunta el teléfono (el mapa no rota). El desnivel de una ruta dibujada es opcional: se escribe a mano.
+- Probado solo en una página de prueba con datos de ejemplo (lista, detalle, seleccionar ruta, filtros); sin sesión real ni Supabase.
