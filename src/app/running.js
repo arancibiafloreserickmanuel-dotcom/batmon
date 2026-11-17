@@ -363,6 +363,10 @@ async function renderRun(view, ctx) {
     }
     toggle.addEventListener('change', place);
 
+    // Tocar el nombre equivale a tocar su icono: selecciona, no cierra.
+    radial.querySelectorAll('.goal-arc').forEach((g) => {
+      g.addEventListener('click', () => { const inp = radial.querySelector(`.goal-option-input[value="${g.dataset.value}"]`); if (inp) inp.click(); });
+    });
     radial.querySelectorAll('.goal-option').forEach((label) => {
       const input = label.querySelector('input');
       label.addEventListener('pointerenter', () => mark(input.value));

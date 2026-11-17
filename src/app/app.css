@@ -1233,3 +1233,10 @@ dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
 
 /* Icono de objetivo (cerrado): mismo tratamiento exacto que el icono de ajustes (trazo, tamaño y halo). */
 .goal-btn-icon svg{width:26px;height:26px;stroke-width:2.4;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--surface) 80%,transparent)) drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+
+/* Los nombres del menú reciben el toque (antes lo dejaban pasar al fondo y cerraban el menú). */
+.goal-radial:has(.goal-menu-input:checked) .goal-arc{pointer-events:auto;cursor:pointer}
+
+/* Contenedor igual para ajustes y objetivo: círculo translúcido ajustado al icono. */
+.run-icon-btn,.goal-radial:not(:has(.goal-menu-input:checked)) .goal-btn{width:36px;height:36px;border-radius:50%;background:color-mix(in srgb,var(--surface) 72%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 8px #0002}
+.run-icon-btn svg,.goal-btn-icon svg{width:22px;height:22px}
