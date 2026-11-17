@@ -1205,3 +1205,7 @@ body.run-takeover .run-module__head{display:none}
 
 /* Iconos del menú de objetivo: 5px más arriba (el contenedor interno ya está derecho). */
 .goal-option-inner svg{transform:translateY(-5px)}
+/* Ajuste por icono (suma al desplazamiento base de 5px): Libre +5, Distancia +5, Duración +8. */
+.goal-option:nth-child(1) .goal-option-inner svg{transform:translateY(-10px)}
+.goal-option:nth-child(2) .goal-option-inner svg{transform:translateY(-10px)}
+.goal-option:nth-child(3) .goal-option-inner svg{transform:translateY(-13px)}
