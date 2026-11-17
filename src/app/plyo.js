@@ -103,7 +103,7 @@ function renderTrain(box, view, ctx) {
       <div class="plyo-hero__body">
         <p class="plyo-hero__kicker">Inicio rápido</p>
         <h2 class="plyo-hero__title">${routine ? name(routine) : 'Sesión libre'}</h2>
-        ${routine ? `<button class="btn cal-btn-primary" id="start-today" type="button">Iniciar sesión</button><button class="link plyo-hero__free" id="start-quick" type="button">o empezar una sesión libre</button>`
+        ${routine ? `<button class="btn cal-btn-primary" id="start-today" type="button">Iniciar sesión</button>`
           : `<button class="btn cal-btn-primary" id="start-quick" type="button">Iniciar sesión rápida</button>
              ${routines.length ? `<div class="plyo-hero__saved"><select id="quick-routine" aria-label="Rutina guardada"><option value="">Elegir una rutina guardada…</option>${routines.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn sm ghost" id="start-saved" type="button">Iniciar</button></div>` : ''}`}
       </div>
