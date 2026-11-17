@@ -286,7 +286,7 @@ async function renderRun(view, ctx) {
     const selectedIndex = Math.max(1, GOAL_OPTIONS.findIndex((o) => o.value === chosen) + 1);
     const chosenLabel = GOAL_OPTIONS.find((o) => o.value === chosen)?.label || '';
     return `<div class="goal-radial" style="--options:${GOAL_OPTIONS.length};--selected:${selectedIndex}">
-      <span class="goal-label" aria-live="polite">${esc(chosenLabel)}</span>
+      <div class="goal-names">${GOAL_OPTIONS.map((o) => `<button type="button" class="goal-name${chosen === o.value ? ' is-active' : ''}" data-value="${o.value}">${esc(o.label)}</button>`).join('')}</div>
       <div class="goal-options">
         ${GOAL_OPTIONS.map((o, i) => `<label class="goal-option" style="--i:${i + 1}" title="${esc(o.label)}">
           <input class="goal-option-input" type="radio" name="goal-option" value="${o.value}" aria-label="${esc(o.label)}" ${chosen === o.value ? 'checked' : ''}>
@@ -304,23 +304,27 @@ async function renderRun(view, ctx) {
   }
 
   function bindGoalRadial(box, onPicked) {
-    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null, text = $('.goal-label', box);
+    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null;
     if (!radial || !toggle) return;
-    const chosenLabel = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.getAttribute('aria-label') : ''; };
+    const names = [...radial.querySelectorAll('.goal-name')];
+    const mark = (value) => names.forEach((n) => n.classList.toggle('is-active', n.dataset.value === value));
+    const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : ''; };
     // Al abrir: el menú se centra en la fila y los demás controles se atenúan, para que no se tapen entre sí.
     const place = () => {
       let shift = 0;
-      if (toggle.checked && row) { const r = radial.getBoundingClientRect(), w = row.getBoundingClientRect(); shift = (w.left + w.width / 2) - (r.left + r.width / 2) + (Number.parseFloat(radial.style.getPropertyValue('--shift')) || 0); }
+      if (toggle.checked && row) { const r = radial.getBoundingClientRect(), w = row.getBoundingClientRect(); shift = (w.left + w.width / 2) - (r.left + r.width / 2); }
       radial.style.setProperty('--shift', `${Math.round(shift)}px`);
-      if (text) text.textContent = chosenLabel();
+      mark(chosenValue());
     };
+    const pick = (value) => { toggle.checked = false; place(); onPicked(value); };
     toggle.addEventListener('change', place);
     radial.querySelectorAll('.goal-option').forEach((label) => {
-      const set = () => { if (text) text.textContent = label.title; };
-      label.addEventListener('pointerenter', set); label.addEventListener('focusin', set);
-      label.addEventListener('pointerleave', () => { if (text) text.textContent = chosenLabel(); });
+      const input = label.querySelector('input');
+      label.addEventListener('pointerenter', () => mark(input.value)); label.addEventListener('focusin', () => mark(input.value));
+      label.addEventListener('pointerleave', () => mark(chosenValue()));
+      input.onclick = () => pick(input.value);
     });
-    radial.querySelectorAll('.goal-option-input').forEach((input) => (input.onclick = () => { toggle.checked = false; place(); onPicked(input.value); }));
+    names.forEach((n) => (n.onclick = () => pick(n.dataset.value)));
     document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target)) { toggle.checked = false; place(); } });
   }
 
