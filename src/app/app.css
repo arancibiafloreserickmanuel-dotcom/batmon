@@ -1510,3 +1510,48 @@ body.appbody .pd-circle img{position:absolute;inset:0;width:100%!important;heigh
 /* Menos luz en los botones principales (Inicio y Pliometría). */
 body.appbody .btn.cal-btn-primary{box-shadow:0 1px 3px rgba(0,0,0,.22)!important;filter:none!important;text-shadow:none!important}
 body.appbody .btn.cal-btn-primary::before,body.appbody .btn.cal-btn-primary::after{display:none!important}
+
+/* ---- Marco negro en el ejercicio elegido (selector de ejercicios) ---- */
+body.appbody .ecard.sel,.ecard.sel{border:3px solid #000!important;padding:4px;box-shadow:none!important}
+
+/* ---- Sesión en vivo (página propia) ---- */
+.ses-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.ses-clock{font:400 26px Anton,sans-serif;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.ses-progress{margin:0 0 10px}
+.ses-card .ses-sub{margin:2px 0 0;font-size:12px}
+.ses-hint{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--ink) 6%,transparent);font-size:12px;line-height:1.4;color:var(--muted)}
+.ses-hint b{color:var(--ink)}
+.ses-table{display:grid;gap:6px}
+.ses-row{display:grid;grid-template-columns:30px 46px repeat(var(--c,2),minmax(0,1fr)) 40px 38px;gap:6px;align-items:center}
+.ses-row--head{font:700 10px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center}
+.ses-row:not(.ses-row--head){padding:6px;border-radius:14px;background:color-mix(in srgb,var(--ink) 5%,transparent);border:1px solid transparent;transition:background .15s,border-color .15s}
+.ses-row.is-done{background:color-mix(in srgb,#2e7d4f 16%,transparent);border-color:color-mix(in srgb,#2e7d4f 45%,transparent)}
+.ses-n{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--ink) 12%,transparent);font:800 12px Inter,sans-serif}
+.ses-prev{text-align:center;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ses-desc{text-align:center;font:700 10px Inter,sans-serif;color:var(--muted);font-variant-numeric:tabular-nums}
+.ses-desc.ok{color:#2e9d5f}.ses-desc.low{color:#d98a1f}
+body.appbody .ses-val{width:100%;min-width:0;min-height:0;height:34px;padding:0 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 14px Inter,sans-serif;text-align:center;box-shadow:none;cursor:pointer}
+.ses-val em{font-style:normal;opacity:.4}
+body.appbody .ses-check{display:grid;place-items:center;width:34px;height:34px;min-height:0;padding:0;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:color-mix(in srgb,var(--ink) 30%,transparent);box-shadow:none;cursor:pointer;transition:transform .12s,background .15s}
+body.appbody .ses-check:active{transform:scale(.9)}
+body.appbody .ses-check.on{background:#2e7d4f;border-color:#2e7d4f;color:#fff}
+.ses-check svg{width:17px;height:17px}
+.pd-circle .ses-tick{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;text-decoration:none;pointer-events:none}
+.pd-circle .ses-tick svg{width:20px;height:20px}
+.ses-bars{position:sticky;bottom:12px;z-index:6;display:grid;gap:8px;margin-top:12px}
+.ses-bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.ses-bar>div{flex:1;min-width:0}
+.ses-bar small{display:block;font-size:11px;color:var(--muted)}
+.ses-bar b{font:400 26px Anton,sans-serif;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.ses-bar__ic{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,#3b82f6 22%,transparent);color:#7db3ff}
+.ses-bar--trans .ses-bar__ic{background:color-mix(in srgb,#f59e0b 22%,transparent);color:#f5b53f}
+.ses-bar__ic svg{width:21px;height:21px}
+body.appbody .ses-bar button{min-height:0;padding:7px 10px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 12px Inter,sans-serif;box-shadow:none;cursor:pointer}
+body.appbody .ses-bar .ses-bar__go,body.appbody .ses-bar .ses-bar__ok{background:#111;color:#fff;border-color:#111}
+.ses-bar__go svg{width:16px;height:16px;display:block}
+/* Teclado numérico */
+.ses-pad__val{display:grid;place-items:center;height:64px;margin:6px 0 12px;border-radius:16px;background:color-mix(in srgb,var(--ink) 7%,transparent);font:400 38px Anton,sans-serif;font-variant-numeric:tabular-nums}
+.ses-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ses-pad__step{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+body.appbody .ses-pad button,body.appbody .ses-pad__step button{min-height:0;height:52px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 20px Inter,sans-serif;box-shadow:none;cursor:pointer}
+body.appbody .ses-pad__step button{height:44px;font-size:14px}

@@ -345,3 +345,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - La tarjeta "Activo" ahora es un botón: abre una página con los 7 días en fila vertical (foto del primer ejercicio, nombre del día, copiar / pegar / descanso) y un botón Volver.
 - Tocar un día abre su editor: nombre del día, grupos de pliometría, orden de ejercicios arrastrable (mantener pulsado), "+" con modal por categorías, descanso / nota / solo reps y tabla Serie · Antes · Peso · Reps. Guarda solo (debounce) en `plyo_routines` y `plyo_plans.plan[día]` ({routineId, name, groups}); sin migración nueva (requiere 0019).
 - Base copiada (lógica, no diseño) de `vida-total-web` → gym/planificaciones/[planId] y `exercise-session-builder`.
+
+## Pliometría · Sesión en vivo (página propia)
+- "Iniciar sesión" abre una página propia (sin título ni pestañas) con: cronómetro, barra de avance, círculos de ejercicios reordenables (mantener y arrastrar) con "+" para agregar, tarjeta del ejercicio, iconos Solo reps / Reemplazar / Nota / Descanso / Sacar, y tabla Serie · Antes · valores · Desc. · ✓ (series una por una).
+- Teclado numérico propio; valores atenuados = referencia (serie anterior o "Antes"), se registran al tildar.
+- Al tildar: barra de descanso (−15s/+15s/saltar, vibración y pitido al terminar) y al acabar un ejercicio pasa al siguiente con cronómetro de transición ("Aceptar"). Al terminar todo abre la pantalla de cierre (fecha, duración, RPE, notas).
+- Columna "Desc." guarda el descanso real tomado (verde si cumplió, ámbar si no) y se guarda en `rest_sec`.
+- Selector de ejercicios: el elegido lleva marco negro.

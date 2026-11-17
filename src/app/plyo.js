@@ -31,7 +31,6 @@ let catalog = [];          // ejercicios activos de pliometría
 let section = 'train';     // train | plan | progress
 let activeView = 'home';   // dentro de "train": home | session
 let W = null;               // sesión en construcción/continuación
-let restTimer = null, restLeft = 0, restRunning = false;
 let ownerKey = '';
 let weekPlan = {};          // { Lunes: {routineId} | {rest:true}, ... }
 let routines = [];          // rutinas guardadas (plyo_routines)
@@ -65,7 +64,7 @@ export async function renderPlyo(view, ctx) {
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
   W = W || draft.get(userDraftKey());
 
-  const sub = section === 'plan' && !!planPage;
+  const sub = (section === 'plan' && !!planPage) || (section === 'train' && activeView === 'session' && !!W);
   view.innerHTML = `${sub ? '' : '<h1>Pliometría</h1>'}
     <nav class="running-pages tabs-pill"${sub ? ' hidden' : ''} aria-label="Secciones de Pliometría">
       <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-train" value="train"><label class="tabs-pill__label" for="plyo-sec-train">Entrenar</label>
@@ -87,7 +86,7 @@ export async function renderPlyo(view, ctx) {
 
 /* --------------------------------- Entrenar --------------------------------- */
 function renderTrain(box, view, ctx) {
-  if (activeView === 'session' && W) { drawSession(box, view, ctx); return; }
+  if (activeView === 'session' && W) { box.innerHTML = '<i class="plyo-subpage-marker" hidden></i>'; const host = document.createElement('div'); box.appendChild(host); drawSession(host, view, ctx); return; }
   const todayDay = DAYS[(new Date().getDay() + 6) % 7];
   const entry = weekPlan[todayDay];
   const routine = entry?.routineId ? routines.find((r) => r.id === entry.routineId) : null;
@@ -114,108 +113,204 @@ function renderTrain(box, view, ctx) {
       : '<p class="plyo-notice"><b>Sin rutina programada hoy.</b> Arma tu semana en Mi plan o inicia una sesión libre.</p>'}
     ${hasPending ? `<article class="card plyo-pending"><span class="muted">Sesión en curso</span><h2>${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'} sin terminar</h2><div class="quick-actions"><button class="btn" id="continue-session" type="button">Continuar</button><button class="btn ghost" id="discard-session" type="button">Descartar</button></div></article>` : ''}`;
   $('#start-today', box)?.addEventListener('click', () => startRoutineSession(routine, todayDay, view, ctx));
-  $('#start-quick', box)?.addEventListener('click', () => { W = blankW(); draft.set(userDraftKey(), W); activeView = 'session'; renderPlyo(view, ctx); });
+  $('#start-quick', box)?.addEventListener('click', () => { sesReset(true); W = { ...blankW(), cur: 0, startedAt: Date.now() }; draft.set(userDraftKey(), W); activeView = 'session'; renderPlyo(view, ctx); });
   $('#start-saved', box)?.addEventListener('click', () => { const id = $('#quick-routine', box).value; if (!id) { notify('Elige una rutina.'); return; } startRoutineSession(routines.find((r) => r.id === id), null, view, ctx); });
-  $('#continue-session', box)?.addEventListener('click', () => { activeView = 'session'; renderPlyo(view, ctx); });
-  $('#discard-session', box)?.addEventListener('click', () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { clearInterval(restTimer); W = null; draft.del(userDraftKey()); renderPlyo(view, ctx); } }));
+  $('#continue-session', box)?.addEventListener('click', () => { sesReset(true); activeView = 'session'; renderPlyo(view, ctx); });
+  $('#discard-session', box)?.addEventListener('click', () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { sesReset(true); W = null; draft.del(userDraftKey()); renderPlyo(view, ctx); } }));
 }
 
 async function startRoutineSession(routine, planDay, view, ctx) {
   if (!routine) return;
-  const exIds = routine.items.map((it) => it.exercise_id);
-  const { data: last = [] } = await supabase.from('workouts').select('id, performed_on, workout_sets(*)').eq('kind', 'plyometrics').order('performed_on', { ascending: false }).limit(40);
   const items = routine.items.map((it) => {
     const exercise = catalog.find((e) => e.id === it.exercise_id) || { id: it.exercise_id };
     const fields = fieldsFor(exercise);
-    const oldSets = last.flatMap((w) => w.workout_sets.filter((s) => s.exercise_id === it.exercise_id).map((s) => ({ ...s, date: w.performed_on })));
-    const count = Math.max(1, it.target_sets || 3);
+    const count = Math.max(1, it.sets?.length || it.target_sets || 3);
     const sets = Array.from({ length: count }, (_, i) => {
-      const recent = oldSets[i] || oldSets.at(-1);
-      const s = {}; fields.forEach((f) => { s[f] = String(recent?.[f] ?? it.sets?.[i]?.[f] ?? it.targets?.[f] ?? ''); });
+      const s = {}; fields.forEach((f) => { s[f] = nz(it.sets?.[i]?.[f] ?? it.targets?.[f] ?? (f === 'contacts' ? it.sets?.[i]?.reps : undefined)); });
       return s;
     });
-    return { ex: it.exercise_id, sets, done: false, restSec: it.rest_sec || 60 };
+    return { ex: it.exercise_id, sets, done: false, restSec: it.rest_sec || 60, solo: !!it.solo_reps, note: it.note || '' };
   });
-  void exIds;
-  W = { ...blankW(), items, routineId: routine.id, planDay };
+  sesReset(true);
+  W = { ...blankW(), items, routineId: routine.id, planDay, cur: 0, startedAt: Date.now() };
   draft.set(userDraftKey(), W); activeView = 'session'; await renderPlyo(view, ctx);
 }
 
-/* --------------------------------- Sesión activa --------------------------------- */
+/* --------------------------------- Sesión activa (página propia) --------------------------------- */
+let sesRestEnd = 0, sesTransAt = 0, sesTick = 0, sesFinishing = false, sesNoteOpen = false, sesAudio = null, sesPrevReady = false;
+const sesSave = () => draft.set(userDraftKey(), W);
+function sesReset(full) { clearInterval(sesTick); sesRestEnd = 0; sesTransAt = 0; sesFinishing = false; sesNoteOpen = false; if (full) sesPrevReady = false; }
+function unlockAudio() { try { sesAudio ||= new (window.AudioContext || window.webkitAudioContext)(); if (sesAudio.state === 'suspended') sesAudio.resume(); } catch { /* sin audio */ } }
+function beep() {
+  try {
+    unlockAudio(); const c = sesAudio; if (!c) return;
+    [0, 0.3, 0.6].forEach((t) => { const o = c.createOscillator(), g = c.createGain(), at = c.currentTime + t; o.frequency.value = 880; g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.4, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24); o.connect(g); g.connect(c.destination); o.start(at); o.stop(at + 0.26); });
+  } catch { /* sin audio */ }
+}
+const sesFields = (it) => { let f = Object.keys(it.sets[0] || {}).filter((k) => k[0] !== '_' && k !== 'rest_sec'); if (it.solo) f = f.filter((k) => k !== 'weight_kg'); return f.length ? f : ['reps']; };
+const nz = (v) => (v == null || v === '' || Number(v) === 0 ? '' : String(v));
+const sesPrevVal = (it, j, k) => nz((prevSets[it.ex] || [])[j]?.[k]);
+function sesRef(it, j, k) { if (j > 0) { const v = it.sets[j - 1][k]; if (v !== '' && v != null) return String(v); } return sesPrevVal(it, j, k); }
+function sesPrevLabel(it, j) { const p = (prevSets[it.ex] || [])[j]; if (!p) return '-'; const main = p.reps ?? p.contacts; const w = Number(p.weight_kg) ? `${p.weight_kg}kg×` : ''; return `${w}${main ?? '?'}`; }
+const blankSetsFor = (ex, n = 3) => Array.from({ length: n }, () => blankSetFor(ex));
+
+function keypad(label, current, step, onSet) {
+  let val = current == null ? '' : String(current), fresh = true;
+  const m = modal(`<div class="sheet-h"><b>${esc(label)}</b><button class="link" data-close>Cerrar</button></div>
+    <div class="ses-pad__val" id="kv"></div>
+    <div class="ses-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, '⌫'].map((k) => `<button type="button" data-k="${k}">${k}</button>`).join('')}</div>
+    <div class="ses-pad__step"><button type="button" data-d="-1">− ${step}</button><button type="button" data-d="1">+ ${step}</button></div>
+    <div class="sheet-f"><button class="btn" id="kok" type="button">Listo</button></div>`);
+  const paint = () => { $('#kv', m).textContent = val === '' ? '0' : val; };
+  m.querySelector('[data-close]').onclick = () => m.remove();
+  m.querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => {
+    const k = b.dataset.k;
+    if (k === '⌫') { val = val.slice(0, -1); fresh = false; }
+    else { if (fresh) val = ''; fresh = false; if (k === '.' && val.includes('.')) return; if (val === '0' && k !== '.') val = ''; val += k; }
+    paint();
+  }));
+  m.querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { fresh = false; val = String(Math.max(0, +((Number(val || 0)) + Number(b.dataset.d) * step).toFixed(2))); paint(); }));
+  $('#kok', m).onclick = () => { onSet(val); m.remove(); };
+  paint();
+}
+
 function drawSession(box, view, ctx) {
-  const save = () => draft.set(userDraftKey(), W);
-  const completedCount = W.items.filter((it) => it.done).length;
-  const routineName = W.routineId ? routines.find((r) => r.id === W.routineId)?.name : '';
-  box.innerHTML = `
-    <div class="card plyo-session-head"><div class="plyo-progress"><i style="width:${W.items.length ? (completedCount / W.items.length) * 100 : 0}%"></i></div><span class="muted">${completedCount} de ${W.items.length} ejercicios completados${routineName ? ` · ${esc(routineName)}` : ' · Sesión libre'}</span></div>
-    ${W.items.map((it, i) => drawExerciseCard(it, i)).join('')}
-    <button class="btn ghost" id="addex" type="button">+ Agregar ejercicio</button>
-    <div class="card rest-control"><b>Temporizador de descanso</b>
-      <div class="rest-presets">${REST_PRESETS.map((s) => `<button type="button" class="btn sm ghost" data-rest-start="${s}">${s} s</button>`).join('')}<input id="rest-custom" type="number" min="5" max="900" step="5" inputmode="numeric" placeholder="Personalizado"><button class="btn sm ghost" id="rest-custom-start" type="button">Iniciar</button></div>
-      <div class="quick-actions"><button class="btn sm ghost" id="rest-pause" type="button">Pausar</button><button class="btn sm ghost" id="rest-resume" type="button">Reanudar</button><button class="btn sm ghost" id="rest-minus" type="button">−15 s</button><button class="btn sm ghost" id="rest-plus" type="button">+15 s</button><button class="btn sm ghost" id="rest-skip" type="button">Saltar</button><strong id="restleft" aria-live="polite">${fmtClock(restLeft)}</strong></div></div>
-    <div class="card"><label for="wd">Fecha</label><input id="wd" type="date" max="${today()}" value="${W.date}">
+  clearInterval(sesTick);
+  if (!W.startedAt) { W.startedAt = Date.now(); sesSave(); }
+  if (!sesPrevReady) { sesPrevReady = true; loadPrevSets().then(() => { if (box.isConnected && W && activeView === 'session') drawSession(box, view, ctx); }).catch(() => {}); }
+  if (sesFinishing) { drawFinish(box, view, ctx); return; }
+  W.cur = Math.min(Math.max(0, W.cur || 0), Math.max(0, W.items.length - 1));
+  const redraw = () => drawSession(box, view, ctx);
+  const it = W.items[W.cur]; const ex = it ? (catalog.find((c) => c.id === it.ex) || { id: it.ex, name: it.ex }) : null;
+  const totalSets = W.items.reduce((n, x) => n + x.sets.length, 0), doneSets = W.items.reduce((n, x) => n + x.sets.filter((s) => s._ok).length, 0);
+  const pct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+  let table = '';
+  if (it) {
+    const fields = sesFields(it);
+    const firstPending = it.sets.findIndex((s) => !s._ok);
+    const shown = firstPending === -1 ? it.sets.length : firstPending + 1;
+    table = `<div class="ses-table" style="--c:${fields.length}">
+      <div class="ses-row ses-row--head"><span>Serie</span><span>Antes</span>${fields.map((k) => `<span>${FIELD_LABELS[k]?.[0] || k}</span>`).join('')}<span>Desc.</span><span></span></div>
+      ${it.sets.slice(0, shown).map((s, j) => {
+        const need = it.restSec || 60;
+        const desc = s._rest == null ? '<span class="ses-desc">-</span>' : `<span class="ses-desc ${s._rest >= need ? 'ok' : 'low'}" title="Descansaste ${fmtClock(s._rest)} de ${fmtClock(need)}">${fmtClock(s._rest)}</span>`;
+        return `<div class="ses-row${s._ok ? ' is-done' : ''}" data-j="${j}"><span class="ses-n">${j + 1}</span><span class="ses-prev">${esc(sesPrevLabel(it, j))}</span>${fields.map((k) => { const v = s[k], r = v === '' || v == null ? sesRef(it, j, k) : ''; return `<button type="button" class="ses-val" data-f="${k}" aria-label="${FIELD_LABELS[k]?.[0] || k}, serie ${j + 1}">${v !== '' && v != null ? esc(v) : r ? `<em>${esc(r)}</em>` : '0'}</button>`; }).join('')}${desc}<button type="button" class="ses-check${s._ok ? ' on' : ''}" data-chk="${j}" aria-label="${s._ok ? 'Desmarcar' : 'Completar'} serie ${j + 1}">${ICON.check}</button></div>`;
+      }).join('')}
+      ${firstPending === -1 ? '<button type="button" class="pd-addset" id="ses-addset">+ Añadir serie</button>' : ''}</div>`;
+  }
+  const pv = it ? (prevSets[it.ex] || []).slice(0, it.sets.length).map((s) => s.reps ?? s.contacts).filter((v) => v != null) : [];
+  box.innerHTML = `<div class="ses-top">${backBtn('ses-back')}<b class="ses-clock" id="ses-clock">00:00</b><button type="button" class="btn sm" id="ses-finish">Terminar</button></div>
+    <div class="plyo-progress ses-progress" aria-label="Avance ${pct}%"><i style="width:${pct}%"></i></div>
+    <div class="pd-strip" id="pd-strip">${W.items.map((x, i) => { const e = catalog.find((c) => c.id === x.ex); const p = exPhoto(e); const done = x.sets.length && x.sets.every((s) => s._ok); return `<button type="button" class="pd-circle${i === W.cur ? ' on' : ''}${done ? ' ses-doneex' : ''}" data-id="${esc(x.ex)}" aria-label="${name(e)}">${p ? `<img src="${p}" alt="" draggable="false">` : '<span>?</span>'}<i>${i + 1}</i>${done ? `<u class="ses-tick">${ICON.check}</u>` : ''}</button>`; }).join('')}<button type="button" class="pd-circle pd-circle--add" id="ses-add" aria-label="Agregar ejercicio">${ICON.plus}</button></div>
+    ${it ? `<article class="card pd-ex ses-card">
+      <div class="pd-ex__img${exPhoto(ex) ? '' : ' ph'}">${exPhoto(ex) ? `<img src="${exPhoto(ex)}" alt="">` : '?'}</div>
+      <div><h3>${name(ex)}</h3><p class="muted ses-sub">${it.sets.filter((s) => s._ok).length}/${it.sets.length} series completadas</p>
+        ${pv.length ? `<p class="ses-hint">Última vez: <b>${pv.join(' · ')}</b> · intenta igualarlo o sumar 1</p>` : (ex.instructions || [])[0] ? `<p class="ses-hint">${esc(ex.instructions[0])}</p>` : ''}</div>
+      <div class="pd-pills">
+        <button type="button" class="pd-pill${it.solo ? ' on' : ''}" id="ses-solo">${ICON.reps}<span>Solo reps</span></button>
+        <button type="button" class="pd-pill" id="ses-swap">${ICON.swap}<span>Reemplazar</span></button>
+        <button type="button" class="pd-pill${it.note || sesNoteOpen ? ' on' : ''}" id="ses-note">${ICON.note}<span>Nota</span></button>
+        <button type="button" class="pd-pill" id="ses-rest">${ICON.clock}<span>Descanso</span><em>${it.restSec || 60}s</em></button>
+        <button type="button" class="pd-pill pd-pill--danger" id="ses-del" aria-label="Sacar ejercicio de hoy">${ICON.trash}</button>
+      </div>
+      ${sesNoteOpen ? `<textarea id="ses-note-text" rows="2" maxlength="300" placeholder="Agregar una nota…">${esc(it.note || '')}</textarea>` : ''}
+      ${table}</article>` : `<div class="card pd-empty"><p class="muted">Aún no hay ejercicios en esta sesión.</p><button type="button" class="btn" id="ses-add2">+ Agregar ejercicios</button></div>`}
+    <div id="ses-bars" class="ses-bars"></div>`;
+
+  $('#ses-back', box).onclick = () => { clearInterval(sesTick); activeView = 'home'; renderPlyo(view, ctx); };
+  $('#ses-finish', box).onclick = () => { sesFinishing = true; redraw(); };
+  const addPick = () => picker(ctx, (ids) => {
+    const first = W.items.length;
+    ids.filter((id) => !W.items.some((x) => x.ex === id)).forEach((id) => { const e = catalog.find((c) => c.id === id) || { id }; W.items.push({ ex: id, sets: blankSetsFor(e), done: false, restSec: 60 }); });
+    if (W.items.length > first) { W.cur = first; sesNoteOpen = false; }
+    sesSave(); redraw();
+  });
+  $('#ses-add', box).onclick = addPick; $('#ses-add2', box)?.addEventListener('click', addPick);
+  const strip = $('#pd-strip', box);
+  strip.querySelectorAll('.pd-circle[data-id]').forEach((c) => (c.onclick = () => { if (strip._drag) return; W.cur = W.items.findIndex((x) => x.ex === c.dataset.id); sesNoteOpen = false; sesSave(); redraw(); }));
+  bindStripDrag(strip, (ids) => { const cur = W.items[W.cur]?.ex; W.items = ids.map((id) => W.items.find((x) => x.ex === id)); W.cur = Math.max(0, W.items.findIndex((x) => x.ex === cur)); sesSave(); redraw(); });
+  if (it) {
+    $('#ses-solo', box).onclick = () => { it.solo = !it.solo; sesSave(); redraw(); };
+    $('#ses-swap', box).onclick = () => picker(ctx, (ids) => { const id = ids.find((i) => !W.items.some((x) => x.ex === i)); if (!id) { notify('Ese ejercicio ya está en la sesión.'); return; } const e = catalog.find((c) => c.id === id) || { id }; it.ex = id; it.sets = blankSetsFor(e, it.sets.length); it.done = false; sesSave(); redraw(); });
+    $('#ses-note', box).onclick = () => { sesNoteOpen = !sesNoteOpen; redraw(); };
+    $('#ses-note-text', box)?.addEventListener('input', (e) => { it.note = e.target.value.trim(); sesSave(); });
+    $('#ses-rest', box).onclick = () => restModal(it.restSec || 60, (v) => { it.restSec = v; sesSave(); redraw(); });
+    $('#ses-del', box).onclick = () => confirmDialog(`«${ex.name_es || ex.name || 'Este ejercicio'}» se saca solo del entrenamiento de hoy; tu rutina no cambia.`, 'Sacar ejercicio').then((ok) => { if (!ok) return; W.items.splice(W.cur, 1); sesNoteOpen = false; sesSave(); redraw(); });
+    box.querySelectorAll('.ses-val').forEach((b) => (b.onclick = () => {
+      const j = +b.closest('.ses-row').dataset.j, k = b.dataset.f, s = it.sets[j];
+      keypad(`Serie ${j + 1} · ${FIELD_LABELS[k]?.[0] || k}`, s[k], k === 'weight_kg' ? 2.5 : (FIELD_LABELS[k]?.[1] || 1), (v) => { s[k] = v; sesSave(); redraw(); });
+    }));
+    box.querySelectorAll('[data-chk]').forEach((b) => (b.onclick = () => sesToggle(it, +b.dataset.chk, box, view, ctx)));
+    $('#ses-addset', box)?.addEventListener('click', () => { it.sets.push(Object.fromEntries(Object.keys(it.sets[0] || blankSetFor(ex)).filter((k) => k[0] !== '_').map((k) => [k, '']))); it.done = false; sesSave(); redraw(); });
+  }
+  sesBars(box);
+  sesTickFn(box);
+  sesTick = setInterval(() => sesTickFn(box), 250);
+}
+
+function sesToggle(it, j, box, view, ctx) {
+  const s = it.sets[j]; const redraw = () => drawSession(box, view, ctx);
+  unlockAudio();
+  if (s._ok) { s._ok = false; delete s._t; delete s._rest; it.done = false; sesSave(); redraw(); return; }
+  sesFields(it).forEach((k) => { if (s[k] === '' || s[k] == null) { const r = sesRef(it, j, k); if (r) s[k] = r; } });
+  const now = Date.now(); s._ok = true; s._t = now;
+  const prev = it.sets[j - 1];
+  if (prev?._t) { s._rest = Math.round((now - prev._t) / 1000); s.rest_sec = String(s._rest); }
+  const pending = it.sets.some((x) => !x._ok);
+  it.done = !pending;
+  const all = W.items.every((x) => x.sets.every((y) => y._ok));
+  if (!all) sesRestEnd = now + (it.restSec || 60) * 1000;
+  sesSave(); redraw();
+  if (all) { sesRestEnd = 0; setTimeout(() => { if (W && box.isConnected && activeView === 'session') { sesFinishing = true; drawSession(box, view, ctx); } }, 700); }
+  else if (!pending && W.cur < W.items.length - 1) {
+    setTimeout(() => { if (!W || !box.isConnected || W.items[W.cur] !== it) return; W.cur += 1; sesTransAt = Date.now(); sesNoteOpen = false; sesSave(); redraw(); }, 500);
+  }
+}
+
+function sesBars(box) {
+  const host = $('#ses-bars', box); if (!host) return;
+  const rem = Math.max(0, Math.round((sesRestEnd - Date.now()) / 1000));
+  host.innerHTML = `${sesRestEnd ? `<div class="ses-bar ses-bar--rest"><span class="ses-bar__ic">${ICON.moon}</span><div><small>Descanso</small><b id="rest-left">${fmtClock(rem)}</b></div><button type="button" data-r="-15">-15s</button><button type="button" data-r="15">+15s</button><button type="button" class="ses-bar__go" data-r="skip" aria-label="Saltar descanso">${ICON.skip}</button></div>` : ''}
+    ${sesTransAt ? `<div class="ses-bar ses-bar--trans"><span class="ses-bar__ic">${ICON.walk}</span><div><small>Pasando al siguiente ejercicio</small><b id="trans-left">${fmtClock((Date.now() - sesTransAt) / 1000)}</b></div><button type="button" class="ses-bar__ok" data-t="ok">Aceptar</button></div>` : ''}`;
+  host.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => { unlockAudio(); if (b.dataset.r === 'skip') sesRestEnd = 0; else sesRestEnd += Number(b.dataset.r) * 1000; sesBars(box); sesTickFn(box); }));
+  host.querySelector('[data-t]')?.addEventListener('click', () => { const it = W.items[W.cur]; if (it) it.trans = Math.round((Date.now() - sesTransAt) / 1000); sesTransAt = 0; sesSave(); sesBars(box); });
+}
+
+function sesTickFn(box) {
+  if (!box.isConnected || !W) { clearInterval(sesTick); return; }
+  const clock = $('#ses-clock', box);
+  if (clock) { const s = Math.floor((Date.now() - W.startedAt) / 1000); clock.textContent = s >= 3600 ? `${Math.floor(s / 3600)}:${fmtClock(s % 3600)}` : fmtClock(s); }
+  if (sesRestEnd) {
+    const rem = Math.max(0, Math.round((sesRestEnd - Date.now()) / 1000)); const el = $('#rest-left', box); if (el) el.textContent = fmtClock(rem);
+    if (rem <= 0) { sesRestEnd = 0; navigator.vibrate?.([500, 200, 500, 200, 500, 200, 500]); beep(); notify('Descanso terminado', 'success'); sesBars(box); }
+  }
+  if (sesTransAt) { const el = $('#trans-left', box); if (el) el.textContent = fmtClock((Date.now() - sesTransAt) / 1000); }
+}
+
+function drawFinish(box, view, ctx) {
+  const total = W.items.reduce((n, x) => n + x.sets.length, 0), done = W.items.reduce((n, x) => n + x.sets.filter((s) => s._ok).length, 0);
+  if (!W.duration) { W.duration = String(Math.max(1, Math.round((Date.now() - (W.startedAt || Date.now())) / 60000))); sesSave(); }
+  box.innerHTML = `<div class="pd-head">${backBtn('fin-back')}<h2>Terminar</h2></div>
+    <section class="card pd-card"><p><b>${done}</b> de ${total} series completadas · ${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'}</p>
+      <label for="wd">Fecha</label><input id="wd" type="date" max="${today()}" value="${W.date}">
       <label for="wm">Duración (min)</label><input id="wm" type="number" min="1" inputmode="numeric" value="${W.duration}">
       <label for="wr">Esfuerzo (RPE 1-10)</label><input id="wr" type="number" min="1" max="10" inputmode="numeric" value="${W.rpe}">
-      <label for="wn">Notas</label><input id="wn" type="text" maxlength="300" value="${esc(W.notes)}"></div>
-    <div><button class="btn" id="savew" type="button">Finalizar y guardar</button> <button class="link" id="clr" type="button">Descartar sesión</button></div><p class="msg" id="wm2"></p>`;
-
-  box.querySelectorAll('.ex').forEach((card) => {
-    const it = W.items[+card.dataset.i];
-    card.querySelectorAll('input[data-k]').forEach((inp) => (inp.oninput = () => { it.sets[+inp.closest('.set-card').dataset.j][inp.dataset.k] = inp.value; save(); }));
-    card.querySelectorAll('[data-step]').forEach((b) => (b.onclick = () => {
-      const input = b.parentElement.querySelector('input'); const step = Number(input.step) || 1;
-      const value = Math.max(0, (Number(input.value) || 0) + (b.dataset.step === '+' ? step : -step));
-      input.value = String(value); input.dispatchEvent(new Event('input', { bubbles: true }));
-    }));
-    card.querySelector('[data-act=addset]').onclick = () => { const last = it.sets[it.sets.length - 1]; it.sets.push(last ? { ...last } : blankSetFor(catalog.find((c) => c.id === it.ex) || {})); save(); drawSession(box, view, ctx); };
-    card.querySelector('[data-act=rmset]').onclick = () => { if (it.sets.length > 1) it.sets.pop(); save(); drawSession(box, view, ctx); };
-    card.querySelector('[data-act=copyset]').onclick = () => { if (it.sets.length > 1) it.sets[it.sets.length - 1] = { ...it.sets[it.sets.length - 2] }; save(); drawSession(box, view, ctx); };
-    card.querySelector('[data-act=rmex]').onclick = () => { W.items.splice(+card.dataset.i, 1); save(); drawSession(box, view, ctx); };
-    card.querySelector('[data-act=done]').onchange = (e) => { it.done = e.target.checked; if (it.done) startRest(box, it.restSec || 60); save(); drawSession(box, view, ctx); };
-  });
-  $('#addex', box).onclick = () => picker(ctx, (ids) => { ids.forEach((id) => { const ex = catalog.find((c) => c.id === id) || { id }; W.items.push({ ex: id, sets: [blankSetFor(ex), blankSetFor(ex), blankSetFor(ex)], done: false, restSec: 60 }); }); save(); drawSession(box, view, ctx); });
-  box.querySelectorAll('[data-rest-start]').forEach((b) => (b.onclick = () => startRest(box, Number(b.dataset.restStart))));
-  $('#rest-custom-start', box).onclick = () => { const v = Number($('#rest-custom', box).value); if (v > 0) startRest(box, v); };
-  $('#rest-pause', box).onclick = () => { restRunning = false; };
-  $('#rest-resume', box).onclick = () => { if (restLeft > 0) restRunning = true; };
-  $('#rest-minus', box).onclick = () => { restLeft = Math.max(0, restLeft - 15); const el = $('#restleft', box); if (el) el.textContent = fmtClock(restLeft); };
-  $('#rest-plus', box).onclick = () => { restLeft += 15; const el = $('#restleft', box); if (el) el.textContent = fmtClock(restLeft); };
-  $('#rest-skip', box).onclick = () => { clearInterval(restTimer); restRunning = false; restLeft = 0; const el = $('#restleft', box); if (el) el.textContent = fmtClock(0); };
-  $('#wd', box).oninput = (e) => { W.date = e.target.value; save(); };
-  $('#wm', box).oninput = (e) => { W.duration = e.target.value; save(); };
-  $('#wr', box).oninput = (e) => { W.rpe = e.target.value; save(); };
-  $('#wn', box).oninput = (e) => { W.notes = e.target.value; save(); };
-  $('#clr', box).onclick = () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { clearInterval(restTimer); W = null; draft.del(userDraftKey()); activeView = 'home'; renderPlyo(view, ctx); } });
+      <label for="wn">Notas</label><input id="wn" type="text" maxlength="300" value="${esc(W.notes)}">
+      <button class="btn" id="savew" type="button">Finalizar y guardar</button><button class="link" id="clr" type="button">Descartar sesión</button><p class="msg" id="wm2"></p></section>`;
+  $('#fin-back', box).onclick = () => { sesFinishing = false; drawSession(box, view, ctx); };
+  $('#wd', box).oninput = (e) => { W.date = e.target.value; sesSave(); };
+  $('#wm', box).oninput = (e) => { W.duration = e.target.value; sesSave(); };
+  $('#wr', box).oninput = (e) => { W.rpe = e.target.value; sesSave(); };
+  $('#wn', box).oninput = (e) => { W.notes = e.target.value; sesSave(); };
+  $('#clr', box).onclick = () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { sesReset(true); W = null; draft.del(userDraftKey()); activeView = 'home'; renderPlyo(view, ctx); } });
   $('#savew', box).onclick = () => finishSession(box, view, ctx);
-}
-
-function drawExerciseCard(it, i) {
-  const e = catalog.find((c) => c.id === it.ex) || { id: it.ex, name: it.ex, images: [] };
-  const fields = it.sets[0] ? Object.keys(it.sets[0]) : fieldsFor(e);
-  return `<article class="card ex ${it.done ? 'is-done' : ''}" data-i="${i}">
-    <div class="exh">${thumb(e)}<div><b>${name(e)}</b><br><span class="muted">${esc((e.primary_muscles || []).join(', '))}</span></div>
-      <label class="plyo-done-toggle"><input type="checkbox" data-act="done" ${it.done ? 'checked' : ''}> Hecho</label>
-      <button class="link" data-act="rmex" aria-label="Quitar ejercicio">✕</button></div>
-    ${(e.instructions || [])[0] ? `<p class="muted plyo-hint">${esc(e.instructions[0])}</p>` : ''}
-    <div class="set-list">${it.sets.map((s, j) => `<div class="set-card" data-j="${j}"><b>Serie ${j + 1}</b>${fields.map((k) => `<label>${FIELD_LABELS[k][0]}<span class="stepper"><button type="button" data-step="-" data-k="${k}" aria-label="Restar">−</button><input aria-label="${FIELD_LABELS[k][0]}, serie ${j + 1}" type="number" min="0" step="${FIELD_LABELS[k][1]}" inputmode="decimal" data-k="${k}" value="${s[k]}"><button type="button" data-step="+" data-k="${k}" aria-label="Sumar">+</button></span></label>`).join('')}</div>`).join('')}</div>
-    <div class="quick-actions"><button class="btn sm ghost" data-act="addset">+ Serie</button><button class="btn sm ghost" data-act="rmset">− Serie</button><button class="btn sm ghost" data-act="copyset">Copiar serie anterior</button></div></article>`;
-}
-
-function startRest(box, seconds) {
-  clearInterval(restTimer); restLeft = Math.max(0, seconds); restRunning = true;
-  const paint = () => { const el = $('#restleft', box); if (el) el.textContent = fmtClock(restLeft); };
-  paint();
-  restTimer = setInterval(() => {
-    if (!restRunning) return;
-    restLeft -= 1; paint();
-    if (restLeft <= 0) { clearInterval(restTimer); restRunning = false; notify('Descanso terminado', 'success'); }
-  }, 1000);
 }
 
 async function finishSession(box, view, ctx) {
   const msg = $('#wm2', box); msg.textContent = '';
-  const items = W.items.map((it, pos) => ({ ex: it.ex, pos, sets: it.sets.filter((s) => Object.values(s).some((v) => v !== '' && Number(v) > 0)) })).filter((it) => it.sets.length);
-  if (!items.length) { msg.textContent = 'Agrega al menos un ejercicio con una serie completada.'; return; }
+  const real = (s) => s._ok || Object.entries(s).some(([k, v]) => k[0] !== '_' && v !== '' && Number(v) > 0);
+  const items = W.items.map((it, pos) => ({ ex: it.ex, pos, sets: it.sets.filter(real) })).filter((it) => it.sets.length);
+  if (!items.length) { msg.textContent = 'Completa al menos una serie.'; return; }
   const btn = $('#savew', box); btn.disabled = true;
   const { data: w, error } = await supabase.from('workouts').insert({
     kind: 'plyometrics', performed_on: W.date, duration_min: num(W.duration), rpe: num(W.rpe), notes: W.notes.trim() || null,
@@ -224,13 +319,13 @@ async function finishSession(box, view, ctx) {
   if (error) { msg.textContent = 'Error: ' + error.message; btn.disabled = false; return; }
   const rows = items.flatMap((it) => it.sets.map((s, j) => {
     const r = { workout_id: w.id, exercise_id: it.ex, position: it.pos, set_no: j + 1 };
-    Object.entries(s).forEach(([k, v]) => { r[k] = num(v); });
+    Object.entries(s).forEach(([k, v]) => { if (k[0] !== '_') r[k] = num(v); });
     return r;
   }));
   const { error: e2 } = await supabase.from('workout_sets').insert(rows);
   if (e2) { await supabase.from('workouts').delete().eq('id', w.id); msg.textContent = 'Error en las series: ' + e2.message; btn.disabled = false; return; }
-  const finishedW = { ...W, items };
-  W = null; draft.del(userDraftKey()); activeView = 'home';
+  const finishedW = { ...W, items: W.items.map((it) => ({ ...it, sets: it.sets.filter(real) })).filter((it) => it.sets.length) };
+  sesReset(true); W = null; draft.del(userDraftKey()); activeView = 'home';
   if (finishedW.routineId) await maybeUpdateRoutine(ctx, finishedW);
   notify('Sesión guardada.', 'success');
   await renderPlyo(view, ctx);
@@ -251,7 +346,9 @@ async function maybeUpdateRoutine(ctx, w) {
     const last = it.sets[it.sets.length - 1] || {};
     const targets = {}; fields.forEach((f) => { if (last[f] !== '' && last[f] != null) targets[f] = Number(last[f]); });
     const prev = routine.items.find((x) => x.exercise_id === it.ex);
-    return { exercise_id: it.ex, target_sets: it.sets.length, rest_sec: prev?.rest_sec || 60, targets };
+    const out = { exercise_id: it.ex, target_sets: it.sets.length, rest_sec: it.restSec || prev?.rest_sec || 60, targets, sets: it.sets.map((x) => ({ weight_kg: x.weight_kg ?? '', reps: x.reps ?? x.contacts ?? '' })) };
+    if (it.solo) out.solo_reps = true; if (it.note) out.note = it.note;
+    return out;
   });
   const { error } = await supabase.from('plyo_routines').update({ items: newItems, updated_at: new Date().toISOString() }).eq('id', routine.id);
   if (error) notify('No se pudo actualizar la rutina: ' + error.message); else notify('Rutina actualizada.', 'success');
@@ -325,6 +422,10 @@ const ICON = {
   reps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+  walk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.5" r="1.8"/><path d="M9 21l2-6 3 2v5M11 15l-1-5 4-2 2 3 3 1M9 12l-3 1"/></svg>',
+  skip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 7 5 5-5 5M13 7l5 5-5 5"/></svg>',
 };
 const backBtn = (id) => `<button type="button" class="training-back-button animated-back animated-back-compact pd-back" id="${id}"><span class="animated-back-sweep" aria-hidden="true">${ICON.back}</span><span class="animated-back-label">Volver</span></button>`;
 
