@@ -1274,3 +1274,24 @@ body.run-takeover .run-module>.training-back-button{display:none}
 .run-progress .run-records>div{padding:5px 0;gap:8px;font-size:11px}
 .run-progress .run-weekly__chart{height:clamp(90px,calc(100dvh - 665px),170px)}
 .run-progress .run-weekly__bar{padding:2px 1px;gap:3px}
+
+/* Cuenta atrás: "¡Vamos!" cabe completo en pantalla. */
+.run-countdown.is-go{font-size:min(22vw,120px);white-space:nowrap;padding:0 12px;text-align:center}
+
+/* Contador en curso (estilo Nike Run): ritmo / PPM / tiempo arriba, kilómetros en grande al centro y botones abajo. */
+.run-swipe__panel--counter{justify-content:space-between;align-items:stretch;gap:0;padding:calc(env(safe-area-inset-top) + 36px) 18px calc(env(safe-area-inset-bottom) + 44px)}
+.run-counter-top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.run-counter-top b{display:block;font:800 clamp(24px,7.5vw,34px)/1.05 Inter,sans-serif;color:var(--ink);letter-spacing:-.02em}
+.run-counter-top span{display:block;margin-top:4px;font:600 clamp(13px,3.6vw,16px) Inter,sans-serif;color:var(--muted)}
+.run-counter-main{display:grid;justify-items:center;gap:6px}
+.run-counter-main .run-counter{display:block}
+.run-counter-main .run-counter b{font:italic 900 clamp(92px,30vw,150px)/.9 Inter,sans-serif;letter-spacing:-.04em;color:var(--ink)}
+.run-counter-unit{font:600 clamp(15px,4.2vw,19px) Inter,sans-serif;color:var(--muted)}
+.run-counter-bottom{display:grid;justify-items:center;gap:6px}
+.run-counter-bottom .run-actions{display:flex;justify-content:center;align-items:flex-start;gap:34px;margin:0}
+.run-action{display:grid;justify-items:center;gap:8px}
+.run-action>span{font:600 12px Inter,sans-serif;color:var(--muted)}
+.run-circle-btn--big{width:84px;height:84px;min-width:84px;min-height:84px;aspect-ratio:1/1;padding:0;border-radius:50%!important;background:radial-gradient(circle at 32% 26%,#2b2b2b,#000 70%);color:#fff;box-shadow:0 10px 24px #00000055,inset 0 1px 0 #ffffff22}
+.run-circle-btn--big svg{width:30px;height:30px}
+.run-circle-btn--big.run-circle-btn--outline{background:transparent;color:var(--ink);border:2px solid var(--ink);box-shadow:none}
+.run-circle-btn--big:active{transform:scale(.96)}

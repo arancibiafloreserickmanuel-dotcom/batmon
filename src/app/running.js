@@ -481,12 +481,25 @@ async function renderRun(view, ctx) {
           <tr><td>Precisión GPS</td><td><b id="run-accuracy">—</b></td></tr>
           <tr><td>Señal GPS</td><td><b id="run-gps-status">${esc(state.gps_status||'')}</b></td></tr>
         </tbody></table><p class="run-note">* El tiempo en movimiento se estima con puntos GPS válidos.</p></section>
-        <section class="run-swipe__panel run-swipe__panel--counter"><span class="run-live__label">SEGUIMIENTO GPS</span>
-          <div class="run-counter"><b id="run-live-distance">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div>
-          <div class="run-counter-sub"><div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div><div><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div></div>
-          ${renderGoalProgress(state)}
-          <div class="run-actions"><button class="run-circle-btn" id="run-pause" type="button" aria-label="Pausar">❚❚</button><button class="btn run-start-btn" id="run-finish" type="button">Finalizar</button></div>
-          <p class="msg" id="run-live-msg" aria-live="polite"></p></section>
+        <section class="run-swipe__panel run-swipe__panel--counter">
+          <div class="run-counter-top">
+            <div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div>
+            <div><b id="run-live-ppm">--</b><span>PPM</span></div>
+            <div><b id="run-live-time">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div>
+          </div>
+          <div class="run-counter-main">
+            <div class="run-counter"><b id="run-live-distance">${fmt(tracker.distanceKm(),2)}</b></div>
+            <span class="run-counter-unit">kilómetros</span>
+            ${renderGoalProgress(state)}
+          </div>
+          <div class="run-counter-bottom">
+            <div class="run-actions">
+              <div class="run-action"><button class="run-circle-btn run-circle-btn--big" id="run-pause" type="button" aria-label="Pausar"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button><span>Pausar</span></div>
+              <div class="run-action"><button class="run-circle-btn run-circle-btn--big run-circle-btn--outline" id="run-finish" type="button" aria-label="Finalizar"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button><span>Finalizar</span></div>
+            </div>
+            <p class="msg" id="run-live-msg" aria-live="polite"></p>
+          </div>
+        </section>
         <section class="run-swipe__panel run-swipe__panel--map">
           <div class="run-map-wrap run-map-wrap--boxed run-map-wrap--flex"><div id="run-map-live" class="run-map run-map--boxed" aria-label="Tu recorrido"></div><div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div><button type="button" class="run-map__locate" id="run-center" aria-label="Centrar mapa">◎</button></div>
           <div class="run-map-keystats"><div><b id="run-live-distance3">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div><div><b id="run-live-time3">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div><div><b id="run-live-pace3">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div></div>
@@ -531,7 +544,7 @@ async function renderRun(view, ctx) {
     document.body.appendChild(host);
     let n = 3;
     const tick = () => {
-      if (n <= 0) { host.textContent = '¡Vamos!'; setTimeout(() => { host.remove(); done(); }, 450); return; }
+      if (n <= 0) { host.classList.add('is-go'); host.textContent = '¡Vamos!'; setTimeout(() => { host.remove(); done(); }, 450); return; }
       host.textContent = String(n); n -= 1; setTimeout(tick, 800);
     };
     tick();
@@ -596,7 +609,7 @@ async function renderRun(view, ctx) {
 
     const write=(id,value)=>{const node=$(`#${id}`,view);if(node)node.textContent=value;};
 
-    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('#run-live-distance',view)?.nextElementSibling;if(unitNode)unitNode.textContent=distUnit;write('run-live-pace',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-live-distance3',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-time3',durationLabel(seconds));write('run-live-pace3',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
+    write('run-live-time',durationLabel(seconds));write('run-live-distance',fmt(prefs.unit==='mi'?km*.621371:km,2));const distUnit=prefs.unit==='mi'?'mi':'km';const unitNode=$('.run-counter-unit',view);if(unitNode)unitNode.textContent=prefs.unit==='mi'?'millas':'kilómetros';write('run-live-pace',kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60));write('run-gps-status',state.gps_status);write('run-live-distance2',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-pace2',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);write('run-live-distance3',fmt(prefs.unit==='mi'?km*.621371:km,2));write('run-live-time3',durationLabel(seconds));write('run-live-pace3',`${kmPace(prefs.unit==='mi'?km*.621371:km,seconds/60)} min/${distUnit}`);
 
     const acc=flat.at(-1)?.accuracy;write('run-accuracy',acc?`Precisión ${acc} m`: '');
 
