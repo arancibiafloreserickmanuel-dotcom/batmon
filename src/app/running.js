@@ -473,14 +473,16 @@ async function renderRun(view, ctx) {
     // status === 'running'
     box.innerHTML = `<div class="run-counter-stage">
       <div class="run-swipe" id="run-swipe">
-        <section class="run-swipe__panel run-swipe__panel--stats"><h3>Parciales</h3><table class="run-swipe-table"><tbody>
-          <tr><td>Kilómetro</td><td><b id="run-live-distance2">${fmt(tracker.distanceKm(),2)}</b></td></tr>
-          <tr><td>Ritmo prom.</td><td><b id="run-live-pace2">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b></td></tr>
-          <tr><td>Variación</td><td><b id="run-live-current-pace">—</b></td></tr>
-          <tr><td>En movimiento*</td><td><b id="run-live-moving">${durationLabel(tracker.elapsedSeconds())}</b></td></tr>
-          <tr><td>Precisión GPS</td><td><b id="run-accuracy">—</b></td></tr>
-          <tr><td>Señal GPS</td><td><b id="run-gps-status">${esc(state.gps_status||'')}</b></td></tr>
-        </tbody></table><p class="run-note">* El tiempo en movimiento se estima con puntos GPS válidos.</p></section>
+        <section class="run-swipe__panel run-swipe__panel--stats"><h3>Parciales</h3>
+          <div class="run-stat-rows">
+            <div class="run-stat-row"><span>Kilómetro</span><b id="run-live-distance2">${fmt(tracker.distanceKm(),2)}</b></div>
+            <div class="run-stat-row"><span>Ritmo prom.</span><b id="run-live-pace2">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b></div>
+            <div class="run-stat-row"><span>Variación</span><b id="run-live-current-pace">—</b></div>
+            <div class="run-stat-row"><span>En movimiento*</span><b id="run-live-moving">${durationLabel(tracker.elapsedSeconds())}</b></div>
+            <div class="run-stat-row"><span>Precisión GPS</span><b id="run-accuracy">—</b></div>
+            <div class="run-stat-row"><span>Señal GPS</span><b id="run-gps-status">${esc(state.gps_status||'')}</b></div>
+          </div>
+          <p class="run-note">* El tiempo en movimiento se estima con puntos GPS válidos.</p></section>
         <section class="run-swipe__panel run-swipe__panel--counter">
           <div class="run-counter-top">
             <div><b id="run-live-pace">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div>
