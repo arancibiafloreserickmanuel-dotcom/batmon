@@ -281,6 +281,19 @@ async function renderRun(view, ctx) {
 
   const X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="morph-line top" d="M4 7 L20 7"/><path class="morph-line middle" d="M4 12 L20 12"/><path class="morph-line bottom" d="M4 17 L20 17"/></svg>';
 
+  // Nombres curvados siguiendo el anillo: cada uno rodea a su icono (en la mitad inferior se invierte el arco para que se lea derecho).
+  function goalArcLabels(chosen) {
+    const OUT = 18 + 6 + 34, SIZE = 2 * (OUT + 36), C = SIZE / 2, SPAN = 46, n = GOAL_OPTIONS.length;
+    const pt = (r, deg) => { const a = deg * Math.PI / 180; return [(C + r * Math.sin(a)).toFixed(1), (C - r * Math.cos(a)).toFixed(1)]; };
+    const items = GOAL_OPTIONS.map((o, i) => {
+      const deg = (360 / n) * i, bottom = Math.cos(deg * Math.PI / 180) < -0.01, r = bottom ? OUT + 19 : OUT + 8;
+      const [x1, y1] = pt(r, bottom ? deg + SPAN : deg - SPAN), [x2, y2] = pt(r, bottom ? deg - SPAN : deg + SPAN);
+      const id = `goal-arc-${i}`;
+      return `<path id="${id}" d="M${x1} ${y1} A${r} ${r} 0 0 ${bottom ? 0 : 1} ${x2} ${y2}" fill="none"/><text class="goal-arc-text${chosen === o.value ? ' is-active' : ''}" data-value="${o.value}"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(o.label)}</textPath></text>`;
+    }).join('');
+    return `<svg class="goal-arcs" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" aria-hidden="true">${items}</svg>`;
+  }
+
   function goalRadialMarkup() {
     const chosen = prefs.goal?.type || 'none';
     const selectedIndex = Math.max(1, GOAL_OPTIONS.findIndex((o) => o.value === chosen) + 1);
@@ -289,9 +302,10 @@ async function renderRun(view, ctx) {
       <div class="goal-options">
         ${GOAL_OPTIONS.map((o, i) => `<label class="goal-option" style="--i:${i + 1}" title="${esc(o.label)}">
           <input class="goal-option-input" type="radio" name="goal-option" value="${o.value}" aria-label="${esc(o.label)}" ${chosen === o.value ? 'checked' : ''}>
-          <span class="goal-option-inner">${o.icon}<span class="goal-option-name">${esc(o.label)}</span></span>
+          <span class="goal-option-inner">${o.icon}</span>
         </label>`).join('')}
       </div>
+      ${goalArcLabels(chosen)}
       <div class="goal-menu-ring" aria-hidden="true"></div>
       <div class="goal-selector-light" aria-hidden="true"></div>
       <div class="goal-btn">
@@ -305,14 +319,23 @@ async function renderRun(view, ctx) {
   function bindGoalRadial(box, onPicked) {
     const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null;
     if (!radial || !toggle) return;
+    const texts = [...radial.querySelectorAll('.goal-arc-text')];
+    const mark = (value) => texts.forEach((t) => t.classList.toggle('is-active', t.dataset.value === value));
+    const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : ''; };
     // Al abrir: el menú se centra en la fila y los demás controles se atenúan, para que no se tapen entre sí.
     const place = () => {
       let shift = 0;
       if (toggle.checked && row) { const r = radial.getBoundingClientRect(), w = row.getBoundingClientRect(); shift = (w.left + w.width / 2) - (r.left + r.width / 2); }
       radial.style.setProperty('--shift', `${Math.round(shift)}px`);
+      mark(chosenValue());
     };
     toggle.addEventListener('change', place);
-    radial.querySelectorAll('.goal-option-input').forEach((input) => (input.onclick = () => { toggle.checked = false; place(); onPicked(input.value); }));
+    radial.querySelectorAll('.goal-option').forEach((label) => {
+      const input = label.querySelector('input');
+      label.addEventListener('pointerenter', () => mark(input.value));
+      label.addEventListener('pointerleave', () => mark(chosenValue()));
+      input.onclick = () => { toggle.checked = false; place(); onPicked(input.value); };
+    });
     document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target)) { toggle.checked = false; place(); } });
   }
 

@@ -1120,7 +1120,7 @@ body.run-takeover .run-module__head{display:none}
 
 /* ---------- Menú radial del objetivo: misma mecánica que el código de referencia (anillo + :has()), con nuestros iconos ---------- */
 @property --selected-angle{syntax:'<angle>';inherits:true;initial-value:0deg}
-.goal-radial{--options:3;--selected:1;--col-ring:color-mix(in srgb,var(--ink) 4%,var(--surface));--col-accent:#111;--col-btn-close:color-mix(in srgb,var(--ink) 18%,var(--surface));--icon-col:color-mix(in srgb,var(--ink) 72%,var(--surface));--button-size:36px;--ring-thickness:36px;--ring-dist:10px;--option-size:36px;--icon-size:20px;--duration:.5s;--easing:cubic-bezier(.22,1,.36,1.15);--ring-radius:calc(var(--button-size) / 2 + var(--ring-dist) + var(--ring-thickness) / 2);--outer-radius:calc(var(--button-size) / 2 + var(--ring-dist) + var(--ring-thickness));--selected-angle:calc(360deg / var(--options) * (var(--selected) - 1));--shift:0px;position:relative;width:var(--button-size);height:var(--button-size);isolation:isolate;transform:translateX(var(--shift));transition:transform var(--duration) var(--easing)}
+.goal-radial{--options:3;--selected:1;--col-ring:color-mix(in srgb,var(--ink) 4%,var(--surface));--col-accent:#111;--col-btn-close:color-mix(in srgb,var(--ink) 18%,var(--surface));--icon-col:color-mix(in srgb,var(--ink) 72%,var(--surface));--button-size:36px;--ring-thickness:34px;--ring-dist:6px;--option-size:34px;--icon-size:20px;--duration:.5s;--easing:cubic-bezier(.22,1,.36,1.15);--ring-radius:calc(var(--button-size) / 2 + var(--ring-dist) + var(--ring-thickness) / 2);--outer-radius:calc(var(--button-size) / 2 + var(--ring-dist) + var(--ring-thickness));--selected-angle:calc(360deg / var(--options) * (var(--selected) - 1));--shift:0px;position:relative;width:var(--button-size);height:var(--button-size);isolation:isolate;transform:translateX(var(--shift));transition:transform var(--duration) var(--easing)}
 .goal-radial:has(.goal-menu-input:checked){filter:drop-shadow(0 6px 2px #0001) drop-shadow(0 12px 12px #0001)}
 .goal-btn{position:relative;width:100%;height:100%;border-radius:50%;background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;z-index:2;transition:background-color .3s ease}
 .goal-btn-icon,.goal-btn-x{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;transition:opacity .25s ease}
@@ -1128,7 +1128,7 @@ body.run-takeover .run-module__head{display:none}
 .goal-btn-x{opacity:0;color:#fff}.goal-btn-x svg{width:60%;height:60%}
 .goal-menu-input::before,.goal-menu-input::after{content:none!important;display:none!important}
 .goal-menu-input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0!important;appearance:none;-webkit-appearance:none;border:0!important;background:none!important;box-shadow:none!important;outline:0;border-radius:50%;cursor:pointer}
-.goal-radial:has(.goal-menu-input:checked) .goal-btn{background:var(--col-btn-close);box-shadow:inset 0 -2px 1px #0001,inset 0 -4px 2px #0001,inset 0 8px 16px #fff7,0 2px 1px #0002,0 4px 4px #0002}
+.goal-radial:has(.goal-menu-input:checked) .goal-btn{background:radial-gradient(circle at 32% 26%,#2b2b2b,#000 70%);box-shadow:0 4px 10px #0004,inset 0 1px 0 #ffffff22}
 .goal-radial:has(.goal-menu-input:checked) .goal-btn-icon{opacity:0}
 .goal-radial:has(.goal-menu-input:checked) .goal-btn-x{opacity:1}
 .goal-btn-x .morph-line{transition:d .45s cubic-bezier(.22,1,.36,1),opacity .2s ease}
@@ -1143,9 +1143,11 @@ body.run-takeover .run-module__head{display:none}
 .goal-option:hover .goal-option-inner svg,.goal-option:focus-within .goal-option-inner svg{color:color-mix(in oklab,var(--col-accent) 75%,white)}
 .goal-option:has(.goal-option-input:checked) .goal-option-inner svg{color:#fff}
 .goal-option:has(.goal-option-input:focus-visible){outline:2px solid var(--col-accent);outline-offset:3px}
-/* Nombre de cada objetivo: sobre un círculo exterior, alineado con su icono y siempre derecho. */
-.goal-option-name{--angle:calc(360deg / var(--options) * (var(--i) - 1));--gap:8px;position:absolute;left:50%;top:50%;padding:3px 10px;border-radius:99px;background:var(--surface);color:var(--ink);font:600 12px/1.2 'Inter',sans-serif;white-space:nowrap;box-shadow:0 2px 8px #0002;transform:translate(calc(-50% + sin(var(--angle)) * (50% + var(--option-size) / 2 + var(--gap))),calc(-50% - cos(var(--angle)) * (50% + var(--option-size) / 2 + var(--gap))));pointer-events:none}
-.goal-option:has(.goal-option-input:checked) .goal-option-name{background:var(--col-accent);color:#fff}
+/* Nombres curvados alrededor del anillo, cada uno rodeando a su icono. */
+.goal-arcs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);overflow:visible;pointer-events:none;z-index:3;opacity:0;transition:opacity .3s ease .12s}
+.goal-radial:has(.goal-menu-input:checked) .goal-arcs{opacity:1}
+.goal-arc-text{font:600 12px 'Inter',sans-serif;fill:color-mix(in srgb,var(--ink) 60%,var(--surface));stroke:var(--surface);stroke-width:4px;paint-order:stroke;stroke-linejoin:round;letter-spacing:.02em;transition:fill .2s ease}
+.goal-arc-text.is-active{fill:var(--ink);font-weight:800}
 .goal-menu-ring{position:absolute;inset:calc(-1 * (var(--ring-thickness) + var(--ring-dist)));z-index:-1;border-radius:50%;background:radial-gradient(circle at 50% -100%,#7f8f9b66 0%,#0001 75%),var(--col-ring);mask:radial-gradient(circle,#0000 calc(var(--button-size) / 2 + var(--ring-dist)),#000 calc(var(--button-size) / 2 + var(--ring-dist) + 1px),#000 calc(var(--outer-radius) - 1px),#0000 var(--outer-radius));transform:scale(0);opacity:0;transition:transform var(--duration) var(--easing),opacity .3s ease}
 .goal-selector-light{position:absolute;inset:calc(-1 * (var(--ring-thickness) + var(--ring-dist)));z-index:-1;border-radius:50%;background-image:conic-gradient(from calc(-180deg / var(--options)),#0000 0deg,var(--col-accent) 1deg,var(--col-accent) calc(360deg / var(--options) - 1deg),#0000 calc(360deg / var(--options)));mask:radial-gradient(circle,#0000 calc(var(--button-size) / 2 + var(--ring-dist)),#000 calc(var(--button-size) / 2 + var(--ring-dist) + 1px),#000 calc(var(--outer-radius) - 1px),#0000 var(--outer-radius));transform:rotate(var(--selected-angle)) scale(0);opacity:0;transition:transform var(--duration) var(--easing),opacity .3s ease}
 .goal-radial:has(.goal-menu-input:checked) .goal-menu-ring{transform:scale(1);opacity:1}
