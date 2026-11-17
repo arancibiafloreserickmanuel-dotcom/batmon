@@ -1304,3 +1304,5 @@ body.run-takeover .run-module>.training-back-button{display:none}
 .run-stat-row span{font:600 clamp(14px,4vw,17px) Inter,sans-serif;color:var(--muted)}
 .run-stat-row b{font:800 clamp(20px,6vw,28px) Inter,sans-serif;color:var(--ink);text-align:right;letter-spacing:-.01em}
 .run-swipe__panel--stats .run-note{margin:10px 0 0;text-align:left}
+.run-circle-btn--big:not(.run-circle-btn--outline){color:#fff!important}
+.run-circle-btn--big:not(.run-circle-btn--outline) svg,.run-circle-btn--big:not(.run-circle-btn--outline) svg rect{fill:#fff!important;color:#fff!important}
