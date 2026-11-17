@@ -1256,3 +1256,8 @@ body.run-takeover .run-module>.training-back-button{display:none}
 .run-map-wrap--static .run-prep-overlay{bottom:6%}
 .run-map-wrap--static .goal-panel{bottom:calc(100% + 60px)}
 @media(max-width:560px){.run-map-wrap--boxed.run-map-wrap--static{height:clamp(220px,calc(100dvh - 440px),480px);min-height:0}}
+
+/* Menú Correr / Progreso / Historial: más bajo (menos alto vertical). */
+.running-pages.tabs-pill{padding:2px;margin:0 auto 8px;width:min(300px,100%)}
+.running-pages.tabs-pill .tabs-pill__label{min-height:26px;height:26px;padding:0;margin:0;line-height:1;font-size:12px}
+.running-pages.tabs-pill .tabs-pill__indicator{top:2px;bottom:2px;left:2px;width:calc(33.333% - 1.4px)}
