@@ -507,6 +507,8 @@ async function renderRun(view, ctx) {
         <section class="run-swipe__panel run-swipe__panel--map run-maptools">
           <div id="run-map-live" class="run-map run-map--full" aria-label="Tu recorrido"></div>
           ${mapToolsMarkup()}
+          <button type="button" class="run-pagearrow run-pagearrow--l" data-goto="1" aria-label="Ir al contador"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+          <button type="button" class="run-pagearrow run-pagearrow--r" data-goto="3" aria-label="Ir a configuración"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
           <div class="run-map-keystats"><div><b id="run-live-distance3">${fmt(tracker.distanceKm(),2)}</b><span>km</span></div><div><b id="run-live-time3">${durationLabel(tracker.elapsedSeconds())}</b><span>Tiempo</span></div><div><b id="run-live-pace3">${kmPace(tracker.distanceKm(),tracker.elapsedSeconds()/60)}</b><span>Ritmo</span></div></div>
         </section>
         <section class="run-swipe__panel run-swipe__panel--config"><h3>Configuración</h3>${settingsToggleFields('cfg')}<button class="link run-discard" id="run-discard" type="button">Descartar carrera</button></section>
@@ -521,6 +523,7 @@ async function renderRun(view, ctx) {
     const swipe = $('#run-swipe', box);
     requestAnimationFrame(() => { swipe.scrollLeft = swipe.clientWidth; });
     const dots = box.querySelectorAll('.run-swipe-dots i');
+    box.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => swipe.scrollTo({ left: swipe.clientWidth * Number(b.dataset.goto), behavior: 'smooth' })));
     swipe.addEventListener('scroll', () => { const idx = Math.round(swipe.scrollLeft / Math.max(1, swipe.clientWidth)); dots.forEach((dot, i) => dot.classList.toggle('on', i === idx)); }, { passive: true });
 
     $('#run-pause', box).onclick = () => { tracker.pause(); applyWakeLock(); render(); };

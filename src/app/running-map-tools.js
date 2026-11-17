@@ -63,7 +63,6 @@ export const mapToolsMarkup = () => `
     <button type="button" class="mt-fab" id="mt-draw" aria-label="Dibujar una ruta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17l-1 3Z"/><path d="m14 7 3 3"/></svg></button>
     <div class="mt-layer-menu" id="mt-layer-menu" hidden></div>
   </div>
-  <div class="mt-pad" role="group" aria-label="Mover el mapa"><button type="button" class="mt-arrow mt-arrow--up" data-pan="up" aria-label="Mover mapa up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg></button><button type="button" class="mt-arrow mt-arrow--left" data-pan="left" aria-label="Mover mapa left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><button type="button" class="mt-arrow mt-arrow--right" data-pan="right" aria-label="Mover mapa right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button><button type="button" class="mt-arrow mt-arrow--down" data-pan="down" aria-label="Mover mapa down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg></button></div>
   <div class="mt-sheet" id="mt-sheet" hidden></div>
   <div class="mt-draw" id="mt-drawbar" hidden></div>`;
 
@@ -88,15 +87,6 @@ export async function mountMapTools(root, { mapPromise, supabase, userId, userNa
     layerMenu.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.layer === layerId));
     root.classList.toggle('mt-dark', l.id === 'dark' || l.id === 'sat');
   };
-
-  /* ---------- Flechas para mover el mapa (mantener pulsado = seguir moviendo) ---------- */
-  root.querySelectorAll('[data-pan]').forEach((b) => {
-    const d = b.dataset.pan, step = () => map.panBy([d === 'left' ? -120 : d === 'right' ? 120 : 0, d === 'up' ? -120 : d === 'down' ? 120 : 0], { animate: true, duration: 0.25 });
-    let t = 0;
-    const stop = () => { clearInterval(t); t = 0; };
-    b.addEventListener('pointerdown', (e) => { e.preventDefault(); stop(); step(); t = setInterval(step, 260); });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
-  });
 
   /* ---------- Mi ubicación ---------- */
   $('#mt-locate').onclick = () => {
