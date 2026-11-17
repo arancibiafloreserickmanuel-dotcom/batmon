@@ -128,7 +128,7 @@ function splitRuns(points) {
 
 
 
-async function mountMap(el, segments, { center = null, locate = null, zoomControl = true, interactive = true } = {}) {
+async function mountMap(el, segments, { center = null, locate = null, zoomControl = false, interactive = true } = {}) {
 
   if (!el) return { map: null, recenter() {} };
 
