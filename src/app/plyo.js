@@ -90,6 +90,7 @@ function renderTrain(box, view, ctx) {
   const todayDay = DAYS[(new Date().getDay() + 6) % 7];
   const entry = weekPlan[todayDay];
   const routine = entry?.routineId ? routines.find((r) => r.id === entry.routineId) : null;
+  const isRest = !!entry?.rest && !routine;
   const hasPending = W && W.status !== 'done';
   const firstEx = routine ? catalog.find((e) => e.id === routine.items[0]?.exercise_id) : null;
   const photo = firstEx?.images?.[0] ? `/exercises/${encodeURI(firstEx.images[0])}` : '';
@@ -101,15 +102,15 @@ function renderTrain(box, view, ctx) {
   box.innerHTML = `
     <article class="card rest-card plyo-hero${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
       <div class="plyo-hero__body">
-        <p class="plyo-hero__kicker">Inicio rápido</p>
-        <h2 class="plyo-hero__title">${routine ? name(routine) : 'Sesión libre'}</h2>
-        ${routine ? `<button class="btn cal-btn-primary" id="start-today" type="button">Iniciar sesión</button>`
+        <p class="plyo-hero__kicker">${isRest ? 'Hoy' : 'Inicio rápido'}</p>
+        <h2 class="plyo-hero__title">${isRest ? 'Descansa' : routine ? name(routine) : 'Sesión libre'}</h2>
+        ${isRest ? '<p class="plyo-hero__rest">Recuperación</p>' : routine ? `<button class="btn cal-btn-primary" id="start-today" type="button">Iniciar sesión</button>`
           : `<button class="btn cal-btn-primary" id="start-quick" type="button">Iniciar sesión rápida</button>
              ${routines.length ? `<div class="plyo-hero__saved"><select id="quick-routine" aria-label="Rutina guardada"><option value="">Elegir una rutina guardada…</option>${routines.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn sm ghost" id="start-saved" type="button">Iniciar</button></div>` : ''}`}
       </div>
     </article>
     ${routine ? `<section class="plyo-sum" aria-label="Ejercicios de hoy"><div class="plyo-sum__head"><span>Ejercicio</span><span>Ser/Reps</span></div><div class="plyo-sum__list">${rows}</div></section>`
-      : entry?.rest ? '<p class="plyo-notice"><b>Hoy es tu día de descanso.</b> Consulta tu planificación en Mi plan.</p>'
+      : isRest ? ''
       : '<p class="plyo-notice"><b>Sin rutina programada hoy.</b> Arma tu semana en Mi plan o inicia una sesión libre.</p>'}
     ${hasPending ? `<article class="card plyo-pending"><span class="muted">Sesión en curso</span><h2>${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'} sin terminar</h2><div class="quick-actions"><button class="btn" id="continue-session" type="button">Continuar</button><button class="btn ghost" id="discard-session" type="button">Descartar</button></div></article>` : ''}`;
   $('#start-today', box)?.addEventListener('click', () => startRoutineSession(routine, todayDay, view, ctx));
@@ -377,7 +378,7 @@ function renderPlan(box, view, ctx) {
   const coverEx = coverR ? catalog.find((e) => e.id === coverR.items[0]?.exercise_id) : null;
   const photo = coverEx?.images?.[0] ? `/exercises/${encodeURI(coverEx.images[0])}` : '';
   const plannedDays = DAYS.filter((d) => weekPlan[d]?.routineId).length;
-  box.innerHTML = `
+  box.innerHTML = `<i class="plyo-subpage-marker" hidden></i>
     <button type="button" class="plyo-plan-card" id="plyo-plan-open" aria-label="Abrir mi plan: ver y editar los días">
       <span class="plyo-plan-card__cover${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
         <span class="plyo-plan-card__badge">${activeR ? 'Activo' : 'Sin plan'}</span>
@@ -487,7 +488,7 @@ function dayPhoto(entry) {
   return exPhoto(exById(r?.items?.[0]?.exercise_id));
 }
 function daySubtitle(entry) {
-  if (entry?.rest) return 'Descanso';
+  if (entry?.rest) return 'Recuperación';
   if (entry?.name) return esc(entry.name);
   const r = entry?.routineId ? routines.find((x) => x.id === entry.routineId) : null;
   const names = (r?.items || []).slice(0, 2).map((it) => name(exById(it.exercise_id)));
@@ -512,7 +513,7 @@ function drawDays(box, view, ctx) {
         </div></article>`;
     }).join('')}</div>`;
   $('#pd-back', box).onclick = () => { planPage = null; renderPlyo(view, ctx); };
-  box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => openDayEditor(b.dataset.open, box, view, ctx)));
+  box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => { if (weekPlan[b.dataset.open]?.rest) { notify('Es día de descanso: quita la luna para configurarlo.'); return; } openDayEditor(b.dataset.open, box, view, ctx); }));
   box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = weekPlan[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} copiado.`, 'success'); drawDays(box, view, ctx); }));
   box.querySelectorAll('[data-paste]').forEach((b) => (b.onclick = () => pasteDay(b.dataset.paste, box, view, ctx)));
   box.querySelectorAll('[data-rest]').forEach((b) => (b.onclick = async () => {

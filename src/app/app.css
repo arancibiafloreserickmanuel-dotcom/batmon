@@ -1555,3 +1555,4 @@ body.appbody .ses-bar .ses-bar__go,body.appbody .ses-bar .ses-bar__ok{background
 .ses-pad__step{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 body.appbody .ses-pad button,body.appbody .ses-pad__step button{min-height:0;height:52px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 20px Inter,sans-serif;box-shadow:none;cursor:pointer}
 body.appbody .ses-pad__step button{height:44px;font-size:14px}
+.plyo-hero__rest{margin:4px 0 0;font:600 15px Inter,sans-serif;opacity:.8}
