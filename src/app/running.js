@@ -329,6 +329,7 @@ async function renderRun(view, ctx) {
     const inputs = [...radial.querySelectorAll('.goal-option-input')];
     const mark = (value) => texts.forEach((t) => t.classList.toggle('is-active', t.dataset.value === value));
     const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : 'none'; };
+    let keepOpenUntil = 0;
     const close = () => { toggle.checked = false; place(); };
 
     // Panel de valor: se queda encima del menú y su contenido cambia con cada opción que toques.
@@ -369,10 +370,12 @@ async function renderRun(view, ctx) {
       input.onclick = () => {
         // El color se mueve a la opción tocada y el panel cambia de contenido; el menú sigue abierto para poder elegir otra.
         radial.style.setProperty('--selected', inputs.indexOf(input) + 1);
+        toggle.checked = true; panel.hidden = false;   // elegir una opción nunca cierra el menú
+        keepOpenUntil = Date.now() + 500;
         mark(input.value); drawPanel(input.value);
       };
     });
-    document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target) && !panel.contains(e.target)) close(); });
+    document.addEventListener('pointerdown', (e) => { const path = e.composedPath ? e.composedPath() : []; if (toggle.checked && Date.now() > keepOpenUntil && !path.includes(radial) && !path.includes(panel) && !radial.contains(e.target) && !panel.contains(e.target)) close(); });
   }
 
   function settingsToggleFields(prefix) {
