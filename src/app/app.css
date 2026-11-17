@@ -1238,7 +1238,7 @@ dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
 .goal-radial:has(.goal-menu-input:checked) .goal-arc{pointer-events:auto;cursor:pointer}
 
 /* Contenedor igual para ajustes y objetivo: círculo translúcido ajustado al icono. */
-.run-icon-btn,.goal-radial:not(:has(.goal-menu-input:checked)) .goal-btn{width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--ink) 8%,var(--surface));border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.run-icon-btn,.goal-radial:not(:has(.goal-menu-input:checked)) .goal-btn{width:38px;height:38px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 55%),color-mix(in srgb,var(--ink) 8%,var(--surface));border:0;box-shadow:0 1px 1px rgba(0,0,0,.10),0 3px 8px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.85),inset 0 -2px 3px rgba(0,0,0,.07);-webkit-backdrop-filter:none;backdrop-filter:none}
 .run-icon-btn svg,.goal-btn-icon svg{width:22px;height:22px}
 
 .run-icon-btn svg,.goal-btn-icon svg{filter:none}
