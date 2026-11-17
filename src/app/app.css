@@ -1209,3 +1209,9 @@ body.run-takeover .run-module__head{display:none}
 .goal-option:nth-child(1) .goal-option-inner svg{transform:translateY(-10px)}
 .goal-option:nth-child(2) .goal-option-inner svg{transform:translateY(-10px)}
 .goal-option:nth-child(3) .goal-option-inner svg{transform:translateY(-13px)}
+
+/* El modal de objetivo aparece con un fundido y un ligero deslizamiento hacia arriba. */
+@keyframes runDlgIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+dialog.run-detail-dialog[open]{animation:runDlgIn .32s cubic-bezier(.22,1,.36,1)}
+dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
+@keyframes runDlgFade{from{opacity:0}to{opacity:1}}

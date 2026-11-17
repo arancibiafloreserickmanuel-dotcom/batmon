@@ -340,7 +340,15 @@ async function renderRun(view, ctx) {
       const input = label.querySelector('input');
       label.addEventListener('pointerenter', () => mark(input.value));
       label.addEventListener('pointerleave', () => mark(chosenValue()));
-      input.onclick = () => { toggle.checked = false; place(); onPicked(input.value); };
+      input.onclick = () => {
+        if (radial.dataset.picking) return;
+        radial.dataset.picking = '1';
+        // 1) el color se mueve a la opción tocada, 2) un instante después se cierra el menú y se abre el modal con fundido suave.
+        const idx = [...radial.querySelectorAll('.goal-option-input')].indexOf(input) + 1;
+        radial.style.setProperty('--selected', idx);
+        mark(input.value);
+        setTimeout(() => { toggle.checked = false; place(); delete radial.dataset.picking; onPicked(input.value); }, 420);
+      };
     });
     document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target)) { toggle.checked = false; place(); } });
   }
