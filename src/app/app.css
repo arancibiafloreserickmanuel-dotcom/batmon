@@ -1252,10 +1252,10 @@ body.run-takeover .run-module>.training-back-button{display:none}
 
 /* Pantalla de preparación: mapa estático (sin zoom ni arrastre) y alto ajustado para que todo quepa sin scroll. */
 .run-map--static{pointer-events:none}
-.run-map-wrap--static{height:clamp(220px,calc(100dvh - 440px),480px);min-height:0}
+.run-map-wrap--static{height:clamp(240px,calc(100dvh - 385px),560px);min-height:0}
 .run-map-wrap--static .run-prep-overlay{bottom:6%}
 .run-map-wrap--static .goal-panel{bottom:calc(100% + 60px)}
-@media(max-width:560px){.run-map-wrap--boxed.run-map-wrap--static{height:clamp(220px,calc(100dvh - 440px),480px);min-height:0}}
+@media(max-width:560px){.run-map-wrap--boxed.run-map-wrap--static{height:clamp(240px,calc(100dvh - 385px),560px);min-height:0}}
 
 /* Menú Correr / Progreso / Historial: más bajo (menos alto vertical). */
 .running-pages.tabs-pill{padding:2px;margin:0 auto 8px;width:min(300px,100%)}
