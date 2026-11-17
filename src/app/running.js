@@ -401,6 +401,7 @@ async function renderRun(view, ctx) {
           <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
           <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
           <div class="run-prep-overlay">
+            <div class="goal-backdrop" aria-hidden="true"></div>
             <div class="goal-panel" hidden></div>
             <div class="run-prep-controls">
               <button type="button" class="run-icon-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
