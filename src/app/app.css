@@ -1098,8 +1098,8 @@ body.run-takeover .run-module__head{display:none}
 
 /* Mapa contenido (no a pantalla completa): tarjeta con alto limitado, sin borde, desvanecido suave y acotado. */
 .run-prep-card{display:grid;gap:12px}
-.run-map-wrap--boxed{position:relative;overflow:hidden;height:min(68vh,620px);min-height:380px;border:0;border-radius:var(--card-radius,18px);background:var(--run-surface)}
-.run-map--boxed{width:100%;height:100%}
+.run-map-wrap--boxed{position:relative;overflow:hidden;height:min(84vh,860px);min-height:520px;border:0;border-radius:0;background:transparent}
+.run-map--boxed{width:100%;height:100%;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 84%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 18%,#000 82%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 84%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 18%,#000 82%,transparent 100%);-webkit-mask-composite:source-in;mask-composite:intersect}
 .run-map__fade--soft{position:absolute;inset:0;z-index:400;pointer-events:none;background:linear-gradient(to bottom,var(--surface) 0%,color-mix(in srgb,var(--surface) 55%,transparent) 14%,transparent 34%,transparent 78%,color-mix(in srgb,var(--surface) 70%,transparent) 100%)}
 .run-prep-overlay{position:absolute;left:0;right:0;bottom:14px;z-index:500;display:grid;justify-items:center;gap:10px;padding:0 10px}
 .run-goal-label{margin:0;padding:6px 14px;border-radius:99px;background:var(--surface);color:var(--ink);font-size:11px;box-shadow:0 2px 10px #0002}
@@ -1180,5 +1180,5 @@ body.run-takeover .run-module__head{display:none}
 
 .run-countdown{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:var(--surface);color:var(--ink);font:400 min(40vw,220px) Anton,sans-serif}
 
-@media(max-width:560px){.run-map-wrap--boxed{height:min(46vh,360px)}.run-circle-btn--start{width:78px;height:78px}.run-counter b{font-size:clamp(52px,18vw,86px)}.run-paused-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.run-map-wrap--flex{height:min(50vh,420px)}}
+@media(max-width:560px){.run-map-wrap--boxed{height:min(70vh,600px);min-height:460px}.run-circle-btn--start{width:78px;height:78px}.run-counter b{font-size:clamp(52px,18vw,86px)}.run-paused-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.run-map-wrap--flex{height:min(50vh,420px)}}
 @media(prefers-reduced-motion:reduce){.tabs-pill__indicator,.goal-radial *{transition:none}}
