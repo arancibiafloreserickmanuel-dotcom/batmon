@@ -1202,3 +1202,6 @@ body.run-takeover .run-module__head{display:none}
 @media(prefers-reduced-motion:reduce){.tabs-pill__indicator,.goal-radial *{transition:none}}
 
 .run-circle-btn--start span{color:#fff;display:block;line-height:1}
+
+/* Iconos del menú de objetivo: 5px más arriba (el contenedor interno ya está derecho). */
+.goal-option-inner svg{transform:translateY(-5px)}
