@@ -1247,3 +1247,5 @@ dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
 .run-module>.training-back-button{justify-self:start;margin:0 0 4px}
 .run-module__head{padding-top:2px}
 body.run-takeover .run-module>.training-back-button{display:none}
+
+.module-back{margin:0 0 12px}

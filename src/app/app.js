@@ -95,9 +95,13 @@ function renderTrainingHub() {
   </section>`;
 }
 
+let moduleBack = null;
+new MutationObserver(() => { if (moduleBack && view.firstElementChild !== moduleBack) view.prepend(moduleBack); }).observe(view, { childList: true });
+
 function route() {
   if (!ctx) return;
   if (location.hash.slice(1) !== 'running') document.body.classList.remove('run-takeover');
+  moduleBack = null;
   const tab = (location.hash.slice(1) || 'inicio');
   const isTrainingRoute = tab === 'training' || TRAINING_MODULES.some((item) => item.route === tab);
   document.querySelectorAll('#tabs a').forEach((a) => {
@@ -123,10 +127,13 @@ function route() {
     if (moduleKey && !['running', 'cycling', 'swimming'].includes(tab)) {
       const back = document.createElement('button');
       back.type = 'button';
-      back.className = 'training-back-button';
+      back.className = 'training-back-button module-back';
+      back.id = 'module-back';
       back.textContent = '← Todas las disciplinas';
       decorateBackButton(back, 'Todas las disciplinas', true);
       back.addEventListener('click', () => { location.hash = '#training'; });
+      // El módulo vuelve a dibujar su contenido muchas veces y borraría el botón: se repone si desaparece.
+      moduleBack = back;
       view.prepend(back);
     }
     stopLoading();
