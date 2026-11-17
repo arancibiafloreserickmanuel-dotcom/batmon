@@ -1563,3 +1563,12 @@ body.appbody .run-pagearrow--l{left:0;border-radius:0 14px 14px 0}
 body.appbody .run-pagearrow--r{right:0;border-radius:14px 0 0 14px}
 .run-pagearrow svg{width:16px;height:16px}
 .run-pagearrow:active{opacity:.9}
+
+/* Modales (descartar, finalizar, selectores…) siguen el modo claro/oscuro */
+body.appbody .sheet,body.appbody .sheet-f{background:var(--surface);color:var(--ink)}
+body.appbody .sheet .sheet-h b,body.appbody .sheet p,body.appbody .sheet label{color:var(--ink)}
+body.appbody .sheet .muted{color:var(--muted)}
+body.appbody[data-theme="dark"] .sheet{background:#212121;color:#f4f4f2;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+body.appbody[data-theme="dark"] .sheet-f{background:#212121}
+body.appbody[data-theme="dark"] .ecard{background:#2a2a2a;border-color:#3a3a3a;color:#f4f4f2}
+body.appbody[data-theme="dark"] .ecard.sel{border-color:#000!important;background:#2a2a2a}
