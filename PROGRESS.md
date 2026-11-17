@@ -335,3 +335,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Menú Entrenar / Mi plan / Progreso con la misma píldora deslizante de Running.
 - Entrenar: tarjeta "Inicio rápido" del mismo tamaño que la de "Descansa" (304 px, medido), con la foto del primer ejercicio de la rutina de hoy; debajo, lista corta "Ejercicio / Ser-Reps" de la rutina. El aviso "Sin rutina programada hoy" solo sale si no hay rutina; se quitó "Ver biblioteca de ejercicios" de esta pantalla (la biblioteca sigue en Mi plan).
 - Probado en página de prueba con datos de ejemplo; no con sesión real.
+
+## Pliometría — Mi plan
+- Arriba: tarjeta grande "Activo" con el nombre y la foto del primer ejercicio (de la rutina elegida con "Seleccionar", o la del primer día planificado); al tocarla se despliega con los días y sus fechas (de la semana actual), el detalle del día y "Editar rutina activa".
+- Abajo: "Mis rutinas guardadas" ahora es una tarjeta desplegable; cada rutina tiene icono de editar y botón Seleccionar (la marca como activa); Duplicar/Eliminar quedan como enlaces pequeños. La rutina activa se guarda en `plyo_plans.plan._active` (sin migración nueva).
+- No probado con sesión real.
