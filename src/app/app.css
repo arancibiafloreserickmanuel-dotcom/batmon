@@ -1261,3 +1261,16 @@ body.run-takeover .run-module>.training-back-button{display:none}
 .running-pages.tabs-pill{padding:2px;margin:0 auto 8px;width:min(300px,100%)}
 .running-pages.tabs-pill .tabs-pill__label{min-height:26px;height:26px;padding:0;margin:0;line-height:1;font-size:12px}
 .running-pages.tabs-pill .tabs-pill__indicator{top:2px;bottom:2px;left:2px;width:calc(33.333% - 1.4px)}
+
+/* Progreso: todo compacto para que entre en una pantalla sin barra de scroll. */
+.run-progress{gap:8px}
+.run-progress .run-period button{padding:6px 12px;font-size:12px}
+.run-progress .run-progress__stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.run-progress .run-progress__stats .card{padding:8px 6px;gap:3px;text-align:center}
+.run-progress .run-progress__stats b{font-size:clamp(15px,4.6vw,20px)}
+.run-progress .run-progress__stats span{font-size:8px;letter-spacing:.02em}
+.run-progress>.card{padding:10px 12px;margin:0}
+.run-progress .run-records h2,.run-progress .run-weekly h2{margin:0 0 4px;font-size:14px}
+.run-progress .run-records>div{padding:5px 0;gap:8px;font-size:11px}
+.run-progress .run-weekly__chart{height:clamp(90px,calc(100dvh - 665px),170px)}
+.run-progress .run-weekly__bar{padding:2px 1px;gap:3px}
