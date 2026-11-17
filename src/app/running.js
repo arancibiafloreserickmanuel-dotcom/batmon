@@ -322,35 +322,57 @@ async function renderRun(view, ctx) {
     </div>`;
   }
 
-  function bindGoalRadial(box, onPicked) {
-    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null;
-    if (!radial || !toggle) return;
+  function bindGoalRadial(box, onSaved) {
+    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), panel = $('.goal-panel', box), row = radial ? radial.parentElement : null;
+    if (!radial || !toggle || !panel) return;
     const texts = [...radial.querySelectorAll('.goal-arc')];
+    const inputs = [...radial.querySelectorAll('.goal-option-input')];
     const mark = (value) => texts.forEach((t) => t.classList.toggle('is-active', t.dataset.value === value));
-    const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : ''; };
-    // Al abrir: el menú se centra en la fila y los demás controles se atenúan, para que no se tapen entre sí.
-    const place = () => {
+    const chosenValue = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.value : 'none'; };
+    const close = () => { toggle.checked = false; place(); };
+
+    // Panel de valor: se queda encima del menú y su contenido cambia con cada opción que toques.
+    function drawPanel(type) {
+      const opt = GOAL_OPTIONS.find((o) => o.value === type) || GOAL_OPTIONS[0];
+      const current = prefs.goal && prefs.goal.type === type ? prefs.goal.value : '';
+      const field = type === 'none'
+        ? '<p class="goal-panel__hint">Correrás sin objetivo.</p>'
+        : `<label>${type === 'distance' ? 'Distancia objetivo (km)' : 'Duración objetivo (minutos)'}<input id="goal-panel-input" type="number" min="0.1" step="0.1" inputmode="decimal" value="${esc(String(current))}" placeholder="${type === 'distance' ? '5' : '30'}"></label>`;
+      panel.innerHTML = `<b class="goal-panel__title">${esc(opt.label)}</b>${field}<button class="btn" type="button" id="goal-panel-save">${type === 'none' ? 'Listo' : 'Guardar objetivo'}</button>`;
+      panel.classList.remove('is-swap'); void panel.offsetWidth; panel.classList.add('is-swap');
+      $('#goal-panel-save', panel).onclick = () => {
+        if (type === 'none') { prefs.goal = null; }
+        else {
+          const value = Number($('#goal-panel-input', panel).value);
+          if (!(value > 0)) { notify('Indica un objetivo válido.'); return; }
+          prefs.goal = { type, value };
+        }
+        savePreferences(userId, prefs); close(); onSaved();
+      };
+    }
+
+    // Al abrir: el menú se centra en la fila, los demás controles se atenúan y aparece el panel.
+    function place() {
       let shift = 0;
       if (toggle.checked && row) { const r = radial.getBoundingClientRect(), w = row.getBoundingClientRect(); shift = (w.left + w.width / 2) - (r.left + r.width / 2); }
       radial.style.setProperty('--shift', `${Math.round(shift)}px`);
       mark(chosenValue());
-    };
+      panel.hidden = !toggle.checked;
+      if (toggle.checked) drawPanel(chosenValue());
+    }
     toggle.addEventListener('change', place);
+
     radial.querySelectorAll('.goal-option').forEach((label) => {
       const input = label.querySelector('input');
       label.addEventListener('pointerenter', () => mark(input.value));
       label.addEventListener('pointerleave', () => mark(chosenValue()));
       input.onclick = () => {
-        if (radial.dataset.picking) return;
-        radial.dataset.picking = '1';
-        // 1) el color se mueve a la opción tocada, 2) un instante después se cierra el menú y se abre el modal con fundido suave.
-        const idx = [...radial.querySelectorAll('.goal-option-input')].indexOf(input) + 1;
-        radial.style.setProperty('--selected', idx);
-        mark(input.value);
-        setTimeout(() => { toggle.checked = false; place(); delete radial.dataset.picking; onPicked(input.value); }, 420);
+        // El color se mueve a la opción tocada y el panel cambia de contenido; el menú sigue abierto para poder elegir otra.
+        radial.style.setProperty('--selected', inputs.indexOf(input) + 1);
+        mark(input.value); drawPanel(input.value);
       };
     });
-    document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target)) { toggle.checked = false; place(); } });
+    document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target) && !panel.contains(e.target)) close(); });
   }
 
   function settingsToggleFields(prefix) {
@@ -379,6 +401,7 @@ async function renderRun(view, ctx) {
           <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
           <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
           <div class="run-prep-overlay">
+            <div class="goal-panel" hidden></div>
             <div class="run-prep-controls">
               <button type="button" class="run-icon-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
               <button type="button" class="run-circle-btn run-circle-btn--start" id="run-start"><span>COMENZAR</span></button>
@@ -396,10 +419,7 @@ async function renderRun(view, ctx) {
 
       $('#run-settings-open', box).onclick = openSettingsDialog;
 
-      bindGoalRadial(box, (type) => {
-        if (type === 'none') { prefs.goal = null; savePreferences(userId, prefs); renderRunScreen(box); return; }
-        openGoalValueDialog(type, () => renderRunScreen(box));
-      });
+      bindGoalRadial(box, () => renderRunScreen(box));
 
       bindManual($('#run-manual-form', box), null);
 
