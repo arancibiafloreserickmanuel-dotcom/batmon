@@ -1242,3 +1242,8 @@ dialog.run-detail-dialog[open]::backdrop{animation:runDlgFade .32s ease}
 .run-icon-btn svg,.goal-btn-icon svg{width:22px;height:22px}
 
 .run-icon-btn svg,.goal-btn-icon svg{filter:none}
+
+/* Botón de volver dentro de Running: fila propia, sin pegarse al título; oculto mientras corres a pantalla completa. */
+.run-module>.training-back-button{justify-self:start;margin:0 0 4px}
+.run-module__head{padding-top:2px}
+body.run-takeover .run-module>.training-back-button{display:none}

@@ -120,7 +120,7 @@ function route() {
   const fn = { inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, gym: renderTraining, perfil: renderProfile }[tab] || renderHome;
   const stopLoading=showDelayedLoading(view);
   Promise.resolve().then(()=>fn(view, ctx)).then(() => {
-    if (moduleKey) {
+    if (moduleKey && !['running', 'cycling', 'swimming'].includes(tab)) {
       const back = document.createElement('button');
       back.type = 'button';
       back.className = 'training-back-button';

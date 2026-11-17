@@ -4,6 +4,10 @@ import { fmt, today, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from 
 
 import { createRunningTracker, distanceBetween } from './running-tracker.js';
 
+// Botón "volver a las disciplinas": vive dentro de la propia pantalla (antes lo añadía app.js al principio y cada render lo borraba).
+const BACK_HTML = '<button type="button" class="training-back-button animated-back animated-back-compact" id="run-back-training"><span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">Todas las disciplinas</span></button>';
+const bindBack = (root) => { const b = root.querySelector('#run-back-training'); if (b) b.onclick = () => { location.hash = '#training'; }; };
+
 
 
 const RUN_TYPES = Object.entries(RUN_TYPE);
@@ -241,7 +245,7 @@ async function renderRun(view, ctx) {
 
     const showSubnav = page !== 'review' && !running && !paused;
 
-    view.innerHTML = `<section class="run-module"><header class="run-module__head"><div><p class="run-kicker">RUNNING · BATMON CROWD</p><h1>${title}</h1></div>${active ? `<span class="run-state run-state--${tracker.state.status}">${tracker.state.status === 'paused' ? 'Pausada' : tracker.state.status === 'finished' ? 'Por guardar' : 'En curso'}</span>` : ''}</header>
+    view.innerHTML = `<section class="run-module">${BACK_HTML}<header class="run-module__head"><div><p class="run-kicker">RUNNING · BATMON CROWD</p><h1>${title}</h1></div>${active ? `<span class="run-state run-state--${tracker.state.status}">${tracker.state.status === 'paused' ? 'Pausada' : tracker.state.status === 'finished' ? 'Por guardar' : 'En curso'}</span>` : ''}</header>
 
       ${showSubnav ? `<nav class="running-pages tabs-pill" aria-label="Secciones de Running">
         <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-run" value="run">
@@ -255,6 +259,7 @@ async function renderRun(view, ctx) {
 
       ${error?`<p class="msg" role="status">No se pudo cargar el historial: ${esc(error.message)}</p>`:''}<div id="run-page-content"></div></section>`;
 
+    bindBack(view);
     const content = $('#run-page-content',view);
 
     addPageNav(view,page,(next)=>setPage(next));
@@ -735,7 +740,8 @@ async function renderOtherDiscipline(view, ctx, discipline) {
   }
   const maxWeek = Math.max(1, ...weeks.map(w => w.km));
 
-  view.innerHTML = `<section class="run-module"><header class="run-module__head"><h1>${esc(DISC[discipline])}</h1></header><nav class="tabs sub running-pages"><button class="on">Progreso</button><button id="other-manual-tab">Historial y registro</button></nav><div id="other-content"><div class="run-progress__stats"><article class="card"><b>${fmt(sumDistance(weekRows))} km</b><span>Esta semana</span></article><article class="card"><b>${fmt(sumDistance(monthRows))} km</b><span>Este mes</span></article><article class="card"><b>${records.length}</b><span>Sesiones</span></article><article class="card"><b>${durationLabel(totalSec)}</b><span>Tiempo total</span></article></div><section class="card run-records"><h2>Resumen de ${esc(DISC[discipline])}</h2><p>${metricLabel}: <b>${metricValue}</b></p><p>${fmt(totalKm)} km en ${records.length} registros</p></section><section class="card run-weekly"><h2>Distancia · últimas 8 semanas</h2><div class="run-weekly__chart">${weeks.map(w => `<div class="run-weekly__bar"><i style="height:${Math.max(w.km ? 4 : 0, w.km / maxWeek * 100)}%"></i><b>${fmt(w.km, 0)}</b><small>${w.key.slice(5)}</small></div>`).join('')}</div></section><button class="btn" id="other-open-history">Registrar actividad</button></div></section>`;
+  view.innerHTML = `<section class="run-module">${BACK_HTML}<header class="run-module__head"><h1>${esc(DISC[discipline])}</h1></header><nav class="tabs sub running-pages"><button class="on">Progreso</button><button id="other-manual-tab">Historial y registro</button></nav><div id="other-content"><div class="run-progress__stats"><article class="card"><b>${fmt(sumDistance(weekRows))} km</b><span>Esta semana</span></article><article class="card"><b>${fmt(sumDistance(monthRows))} km</b><span>Este mes</span></article><article class="card"><b>${records.length}</b><span>Sesiones</span></article><article class="card"><b>${durationLabel(totalSec)}</b><span>Tiempo total</span></article></div><section class="card run-records"><h2>Resumen de ${esc(DISC[discipline])}</h2><p>${metricLabel}: <b>${metricValue}</b></p><p>${fmt(totalKm)} km en ${records.length} registros</p></section><section class="card run-weekly"><h2>Distancia · últimas 8 semanas</h2><div class="run-weekly__chart">${weeks.map(w => `<div class="run-weekly__bar"><i style="height:${Math.max(w.km ? 4 : 0, w.km / maxWeek * 100)}%"></i><b>${fmt(w.km, 0)}</b><small>${w.key.slice(5)}</small></div>`).join('')}</div></section><button class="btn" id="other-open-history">Registrar actividad</button></div></section>`;
+  bindBack(view);
   if (error) view.querySelector('#other-content').insertAdjacentHTML('afterbegin', `<p class="msg">No se pudieron cargar tus actividades: ${esc(error.message)}</p>`);
 
   const historyTab = $('#other-manual-tab', view);
