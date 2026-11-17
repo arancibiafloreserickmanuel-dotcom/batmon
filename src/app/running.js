@@ -660,7 +660,7 @@ async function renderRun(view, ctx) {
 
     const rows=summary(period), totalKm=rows.reduce((n,a)=>n+Number(a.distance_km||0),0), totalSec=rows.reduce((n,a)=>n+durationOf(a),0), totalMin=totalSec/60, bestDistance=[...activities].sort((a,b)=>b.distance_km-a.distance_km)[0];
 
-    const eight=[];const now=new Date();for(let i=7;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-((d.getDay()+6)%7)-i*7);d.setHours(12,0,0,0);const start=d.toISOString().slice(0,10),end=new Date(d);end.setDate(end.getDate()+7);const endIso=end.toISOString().slice(0,10);const items=activities.filter(a=>a.performed_on>=start&&a.performed_on<endIso);eight.push({start,end:startIso.slice(5),km:items.reduce((n,a)=>n+Number(a.distance_km||0),0),items});}
+    const eight=[];const now=new Date();for(let i=7;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-((d.getDay()+6)%7)-i*7);d.setHours(12,0,0,0);const start=d.toISOString().slice(0,10),end=new Date(d);end.setDate(end.getDate()+7);const endIso=end.toISOString().slice(0,10);const items=activities.filter(a=>a.performed_on>=start&&a.performed_on<endIso);eight.push({start,end:endIso.slice(5),km:items.reduce((n,a)=>n+Number(a.distance_km||0),0),items});}
 
     const max=Math.max(1,...eight.map(x=>x.km)),selectedWeekIndex=eight.findIndex(w=>w.start===selectedWeek),weekDelta=selectedWeekIndex>0?eight[selectedWeekIndex].km-eight[selectedWeekIndex-1].km:0;
 
