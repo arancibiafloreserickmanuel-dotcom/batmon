@@ -66,9 +66,14 @@ export async function renderPlyo(view, ctx) {
   W = W || draft.get(userDraftKey());
 
   view.innerHTML = `<h1>Pliometría</h1>
-    <div class="tabs sub"><button data-sec="train">Entrenar</button><button data-sec="plan">Mi plan</button><button data-sec="progress">Progreso</button></div>
+    <nav class="running-pages tabs-pill" aria-label="Secciones de Pliometría">
+      <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-train" value="train"><label class="tabs-pill__label" for="plyo-sec-train">Entrenar</label>
+      <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-plan" value="plan"><label class="tabs-pill__label" for="plyo-sec-plan">Mi plan</label>
+      <input class="tabs-pill__input" type="radio" name="plyo-sec" id="plyo-sec-progress" value="progress"><label class="tabs-pill__label" for="plyo-sec-progress">Progreso</label>
+      <div class="tabs-pill__indicator" aria-hidden="true"></div>
+    </nav>
     <div id="sub"></div>`;
-  view.querySelectorAll('[data-sec]').forEach((b) => { b.classList.toggle('on', b.dataset.sec === section); b.onclick = () => { section = b.dataset.sec; renderPlyo(view, ctx); }; });
+  view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; renderPlyo(view, ctx); }; });
   const box = $('#sub', view);
   if (!catalog.length) {
     box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y pulsa “Importar catálogo base”.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
@@ -86,19 +91,30 @@ function renderTrain(box, view, ctx) {
   const entry = weekPlan[todayDay];
   const routine = entry?.routineId ? routines.find((r) => r.id === entry.routineId) : null;
   const hasPending = W && W.status !== 'done';
+  const firstEx = routine ? catalog.find((e) => e.id === routine.items[0]?.exercise_id) : null;
+  const photo = firstEx?.images?.[0] ? `/exercises/${encodeURI(firstEx.images[0])}` : '';
+  const repsOf = (it) => { const t = it.targets || {}; if (t.reps) return `${t.reps}`; if (t.contacts) return `${t.contacts} cont.`; if (t.seconds) return `${t.seconds} s`; if (t.time_sec) return `${t.time_sec} s`; return '—'; };
+  const rows = routine ? routine.items.map((it) => {
+    const ex = catalog.find((e) => e.id === it.exercise_id);
+    return `<div class="plyo-sum__row"><span>${name(ex)}</span><b>${it.target_sets || 1} × ${esc(repsOf(it))}</b></div>`;
+  }).join('') : '';
   box.innerHTML = `
-    ${entry?.rest ? '<div class="card"><b>Hoy es tu día de descanso.</b><p class="muted">Consulta tu planificación en Mi plan.</p></div>'
-      : routine ? `<article class="card plyo-today"><span class="muted">Sesión de hoy</span><h2>${name(routine)}</h2>${routine.focus ? `<p class="muted">${esc(routine.focus)}</p>` : ''}<p>${routine.items.length} ejercicios · ${routine.items.reduce((s, it) => s + (it.target_sets || 0), 0)} series programadas</p><button class="btn" id="start-today" type="button">Iniciar sesión</button></article>`
-      : '<div class="card"><b>Sin rutina programada hoy.</b><p class="muted">Arma tu semana en Mi plan o inicia una sesión libre abajo.</p></div>'}
-    <article class="card plyo-quickstart"><h2>Inicio rápido</h2><p class="muted">Empieza una sesión libre y agrega ejercicios sobre la marcha.</p>
-      <button class="btn ghost" id="start-quick" type="button">Iniciar sesión rápida</button>
-      ${routines.length ? `<div class="row"><select id="quick-routine"><option value="">Elegir una rutina guardada…</option>${routines.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn sm ghost" id="start-saved" type="button">Iniciar</button></div>` : ''}
-      <p><button class="link" id="open-lib" type="button">Ver biblioteca de ejercicios</button></p></article>
-    ${hasPending ? `<article class="card plyo-pending"><span class="muted">Sesión en curso</span><h2>${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'} sin terminar</h2><div class="quick-actions"><button class="btn" id="continue-session" type="button">Continuar</button><button class="link" id="discard-session" type="button">Descartar</button></div></article>` : ''}`;
+    <article class="card rest-card plyo-hero${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
+      <div class="plyo-hero__body">
+        <p class="plyo-hero__kicker">Inicio rápido</p>
+        <h2 class="plyo-hero__title">${routine ? name(routine) : 'Sesión libre'}</h2>
+        ${routine ? `<button class="btn cal-btn-primary" id="start-today" type="button">Iniciar sesión</button><button class="link plyo-hero__free" id="start-quick" type="button">o empezar una sesión libre</button>`
+          : `<button class="btn cal-btn-primary" id="start-quick" type="button">Iniciar sesión rápida</button>
+             ${routines.length ? `<div class="plyo-hero__saved"><select id="quick-routine" aria-label="Rutina guardada"><option value="">Elegir una rutina guardada…</option>${routines.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn sm ghost" id="start-saved" type="button">Iniciar</button></div>` : ''}`}
+      </div>
+    </article>
+    ${routine ? `<section class="plyo-sum" aria-label="Ejercicios de hoy"><div class="plyo-sum__head"><span>Ejercicio</span><span>Ser/Reps</span></div><div class="plyo-sum__list">${rows}</div></section>`
+      : entry?.rest ? '<p class="plyo-notice"><b>Hoy es tu día de descanso.</b> Consulta tu planificación en Mi plan.</p>'
+      : '<p class="plyo-notice"><b>Sin rutina programada hoy.</b> Arma tu semana en Mi plan o inicia una sesión libre.</p>'}
+    ${hasPending ? `<article class="card plyo-pending"><span class="muted">Sesión en curso</span><h2>${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'} sin terminar</h2><div class="quick-actions"><button class="btn" id="continue-session" type="button">Continuar</button><button class="btn ghost" id="discard-session" type="button">Descartar</button></div></article>` : ''}`;
   $('#start-today', box)?.addEventListener('click', () => startRoutineSession(routine, todayDay, view, ctx));
   $('#start-quick', box)?.addEventListener('click', () => { W = blankW(); draft.set(userDraftKey(), W); activeView = 'session'; renderPlyo(view, ctx); });
   $('#start-saved', box)?.addEventListener('click', () => { const id = $('#quick-routine', box).value; if (!id) { notify('Elige una rutina.'); return; } startRoutineSession(routines.find((r) => r.id === id), null, view, ctx); });
-  $('#open-lib', box)?.addEventListener('click', () => openLibrary(ctx, view));
   $('#continue-session', box)?.addEventListener('click', () => { activeView = 'session'; renderPlyo(view, ctx); });
   $('#discard-session', box)?.addEventListener('click', () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { clearInterval(restTimer); W = null; draft.del(userDraftKey()); renderPlyo(view, ctx); } }));
 }

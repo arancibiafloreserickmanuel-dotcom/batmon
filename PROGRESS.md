@@ -330,3 +330,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - **Migración nueva `0020_club_routes.sql` (NO aplicada):** tabla `club_routes` con RLS (ven las compartidas, las propias y el admin; solo el admin marca oficiales). Sin ella el buscador muestra un aviso y no se pueden guardar rutas.
 - La brújula muestra hacia dónde apunta el teléfono (el mapa no rota). El desnivel de una ruta dibujada es opcional: se escribe a mano.
 - Probado solo en una página de prueba con datos de ejemplo (lista, detalle, seleccionar ruta, filtros); sin sesión real ni Supabase.
+
+## Pliometría — menú tipo Running y tarjeta de inicio con foto
+- Menú Entrenar / Mi plan / Progreso con la misma píldora deslizante de Running.
+- Entrenar: tarjeta "Inicio rápido" del mismo tamaño que la de "Descansa" (304 px, medido), con la foto del primer ejercicio de la rutina de hoy; debajo, lista corta "Ejercicio / Ser-Reps" de la rutina. El aviso "Sin rutina programada hoy" solo sale si no hay rutina; se quitó "Ver biblioteca de ejercicios" de esta pantalla (la biblioteca sigue en Mi plan).
+- Probado en página de prueba con datos de ejemplo; no con sesión real.
