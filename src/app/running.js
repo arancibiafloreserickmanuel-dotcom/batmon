@@ -279,29 +279,49 @@ async function renderRun(view, ctx) {
 
   const GOAL_OPTIONS = [ { value: 'none', label: 'Libre', icon: GOAL_ICONS.none }, { value: 'distance', label: 'Distancia', icon: GOAL_ICONS.distance }, { value: 'duration', label: 'Duración', icon: GOAL_ICONS.duration } ];
 
+  const X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="morph-line top" d="M4 7 L20 7"/><path class="morph-line middle" d="M4 12 L20 12"/><path class="morph-line bottom" d="M4 17 L20 17"/></svg>';
+
   function goalRadialMarkup() {
     const chosen = prefs.goal?.type || 'none';
     const selectedIndex = Math.max(1, GOAL_OPTIONS.findIndex((o) => o.value === chosen) + 1);
-    return `<div class="goal-radial" style="--selected:${selectedIndex}">
+    const chosenLabel = GOAL_OPTIONS.find((o) => o.value === chosen)?.label || '';
+    return `<div class="goal-radial" style="--options:${GOAL_OPTIONS.length};--selected:${selectedIndex}">
+      <span class="goal-label" aria-live="polite">${esc(chosenLabel)}</span>
       <div class="goal-options">
-        ${GOAL_OPTIONS.map((o, i) => `<label class="goal-option" style="--i:${i + 1}">
-          <input class="goal-option-input" type="radio" name="goal-option" value="${o.value}" ${chosen === o.value ? 'checked' : ''}>
-          <span class="goal-option-inner" data-tooltip="${esc(o.label)}">${o.icon}</span>
+        ${GOAL_OPTIONS.map((o, i) => `<label class="goal-option" style="--i:${i + 1}" title="${esc(o.label)}">
+          <input class="goal-option-input" type="radio" name="goal-option" value="${o.value}" aria-label="${esc(o.label)}" ${chosen === o.value ? 'checked' : ''}>
+          <span class="goal-option-inner">${o.icon}</span>
         </label>`).join('')}
       </div>
       <div class="goal-menu-ring" aria-hidden="true"></div>
       <div class="goal-selector-light" aria-hidden="true"></div>
-      <div class="goal-btn" aria-label="Elegir objetivo">
+      <div class="goal-btn">
         <span class="goal-btn-icon">${GOAL_ICONS[chosen]}</span>
-        <input class="goal-menu-input" type="checkbox" aria-label="Abrir selector de objetivo">
+        <span class="goal-btn-x">${X_ICON}</span>
+        <input class="goal-menu-input" type="checkbox" aria-label="Elegir objetivo">
       </div>
     </div>`;
   }
 
   function bindGoalRadial(box, onPicked) {
-    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box);
+    const radial = $('.goal-radial', box), toggle = $('.goal-menu-input', box), row = radial ? radial.parentElement : null, text = $('.goal-label', box);
     if (!radial || !toggle) return;
-    radial.querySelectorAll('.goal-option-input').forEach((input) => (input.onchange = () => { toggle.checked = false; onPicked(input.value); }));
+    const chosenLabel = () => { const c = radial.querySelector('.goal-option-input:checked'); return c ? c.getAttribute('aria-label') : ''; };
+    // Al abrir: el menú se centra en la fila y los demás controles se atenúan, para que no se tapen entre sí.
+    const place = () => {
+      let shift = 0;
+      if (toggle.checked && row) { const r = radial.getBoundingClientRect(), w = row.getBoundingClientRect(); shift = (w.left + w.width / 2) - (r.left + r.width / 2) + (Number.parseFloat(radial.style.getPropertyValue('--shift')) || 0); }
+      radial.style.setProperty('--shift', `${Math.round(shift)}px`);
+      if (text) text.textContent = chosenLabel();
+    };
+    toggle.addEventListener('change', place);
+    radial.querySelectorAll('.goal-option').forEach((label) => {
+      const set = () => { if (text) text.textContent = label.title; };
+      label.addEventListener('pointerenter', set); label.addEventListener('focusin', set);
+      label.addEventListener('pointerleave', () => { if (text) text.textContent = chosenLabel(); });
+    });
+    radial.querySelectorAll('.goal-option-input').forEach((input) => (input.onclick = () => { toggle.checked = false; place(); onPicked(input.value); }));
+    document.addEventListener('pointerdown', (e) => { if (toggle.checked && !radial.contains(e.target)) { toggle.checked = false; place(); } });
   }
 
   function settingsToggleFields(prefix) {
@@ -330,7 +350,6 @@ async function renderRun(view, ctx) {
           <div class="run-map__fade run-map__fade--soft" aria-hidden="true"></div>
           <p class="run-map__error" hidden>No se pudieron cargar los mosaicos del mapa. Intenta de nuevo con conexión.</p>
           <div class="run-prep-overlay">
-            <p class="run-goal-label">${esc(goalSummary())}</p>
             <div class="run-prep-controls">
               <button type="button" class="run-icon-btn" id="run-settings-open" aria-label="Ajustes">${SETTINGS_ICON}</button>
               <button type="button" class="run-circle-btn run-circle-btn--start" id="run-start"><span>COMENZAR</span></button>
