@@ -1635,3 +1635,7 @@ body.appbody[data-theme="dark"] .dd-list{box-shadow:8px 8px 20px rgba(0,0,0,.6),
 body.appbody[data-theme="dark"] .dd-list .dd-opt.sel{box-shadow:inset 0 0 0 1px #fff}
 .pd-f .dd{margin:0}
 @media (prefers-reduced-motion:reduce){.dd-list,.dd-opt,.dd-chev{transition:none!important}}
+
+/* Tarjetas de la billetera siempre opacas (aunque estén deshabilitadas) */
+body.appbody .payment-wallet .wallet-method,body.appbody .payment-wallet .wallet-method:disabled{opacity:1!important;filter:none!important;backdrop-filter:none!important}
+body.appbody .payment-wallet .wallet-method:disabled{cursor:default}
