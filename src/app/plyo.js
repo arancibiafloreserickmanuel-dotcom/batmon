@@ -951,7 +951,7 @@ function picker(ctx, onPick) {
     const list = searchExercises(base, $('#q', m).value);
     $('#cnt', m).textContent = `${list.length} ejercicio${list.length === 1 ? '' : 's'}`;
     grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard ${chosen.has(e.id) ? 'sel' : ''}" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados. Prueba con otro nombre, en español o inglés.</p>';
-    grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => { chosen.has(c.dataset.id) ? chosen.delete(c.dataset.id) : chosen.add(c.dataset.id); c.classList.toggle('sel'); $('#ok', m).textContent = chosen.size ? `Agregar ${chosen.size}` : 'Agregar'; }));
+    grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => { chosen.has(c.dataset.id) ? chosen.delete(c.dataset.id) : chosen.add(c.dataset.id); c.classList.toggle('sel'); $('#ok', m).textContent = chosen.size ? `Agregar ${chosen.size}` : 'Agregar'; $('#ok', m).classList.toggle('on', chosen.size > 0); }));
   };
   ['q', 'lv', 'eq', 'cat'].forEach((id) => ($('#' + id, m).oninput = draw));
   m.querySelector('[data-close]').onclick = () => m.remove();

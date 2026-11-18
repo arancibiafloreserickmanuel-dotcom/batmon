@@ -1605,3 +1605,7 @@ body.appbody .pd-newex{margin:4px 0 16px;padding:14px 16px}
 .pd-count{margin:0;font-size:12px}
 #grid.egrid{gap:12px;margin-bottom:12px}
 @media (max-width:420px){.pd-filters{grid-template-columns:1fr}.pd-f.wide{grid-column:auto}}
+
+/* Botón Agregar del selector: negro cuando hay ejercicios elegidos */
+body.appbody #ok.btn.on,body.appbody[data-theme="dark"] #ok.btn.on{background:#000!important;color:#fff!important;border:1.5px solid #000!important}
+body.appbody[data-theme="dark"] #ok.btn.on{border-color:#fff!important}
