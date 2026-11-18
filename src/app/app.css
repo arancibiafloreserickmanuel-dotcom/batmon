@@ -1639,3 +1639,10 @@ body.appbody[data-theme="dark"] .dd-list .dd-opt.sel{box-shadow:inset 0 0 0 1px 
 /* Tarjetas de la billetera siempre opacas (aunque estén deshabilitadas) */
 body.appbody .payment-wallet .wallet-method,body.appbody .payment-wallet .wallet-method:disabled{opacity:1!important;filter:none!important;backdrop-filter:none!important}
 body.appbody .payment-wallet .wallet-method:disabled{cursor:default}
+
+/* Efectivo: usa la imagen del billete de 200 Bs en vez del verde */
+body.appbody .payment-wallet .method-cash{background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,.65) 100%),url('/billete-200.webp') center/cover no-repeat!important;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.method-cash::before{display:none}
+.method-cash .method-chip{background:rgba(0,0,0,.35);border-color:#fff8}
+.cash-bill{height:auto;aspect-ratio:1500/745;padding:0;border:0;background:url('/billete-200.webp') center/cover no-repeat;box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.cash-bill::before,.cash-bill::after,.cash-bill>span,.cash-bill>strong,.cash-bill>i{display:none}
