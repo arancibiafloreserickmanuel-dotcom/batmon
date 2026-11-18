@@ -705,7 +705,7 @@ function drawDayEditor(box, view, ctx) {
         <div class="pd-row pd-row--head"><span>Serie</span><span>Antes</span><span>${it.solo_reps ? '' : 'Peso'}</span><span>Reps</span><span></span></div>
         ${it.sets.map((s, j) => `<div class="pd-row" data-j="${j}"><span class="pd-n">${j + 1}</span><span class="pd-prev">${esc(prevLabel(j))}</span>${it.solo_reps ? '<span></span>' : `<input data-f="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" aria-label="Peso serie ${j + 1}" value="${s.weight_kg ?? ''}">`}<input data-f="reps" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Reps serie ${j + 1}" value="${s.reps ?? ''}"><button type="button" class="pd-x" data-rmset="${j}" aria-label="Quitar serie">${ICON.trash}</button></div>`).join('')}
         <button type="button" class="pd-addset" id="pd-addset">+ Añadir serie</button>
-      </div></article>` : `<div class="card pd-empty"><p class="muted">Este día aún no tiene ejercicios.</p><button type="button" class="btn" id="pd-add2">+ Agregar ejercicios</button></div>`}`;
+      </div></article>` : ''}`;
 
   const redraw = () => drawDayEditor(box, view, ctx);
   $('#pd-back', box).onclick = async () => { await flushSave(ctx); planPage = planBase; dayDraft = null; renderPlyo(view, ctx); };
@@ -717,7 +717,8 @@ function drawDayEditor(box, view, ctx) {
     if (d.items.length > firstNew) dayActive = firstNew;
     dayNoteOpen = false; queueSave(ctx, 200); redraw();
   });
-  $('#pd-add', box).onclick = addPicker; $('#pd-add2', box)?.addEventListener('click', addPicker);
+  $('#pd-add', box).onclick = addPicker;
+  if (!d.items.length && !d._asked) { d._asked = true; addPicker(); }
   const strip = $('#pd-strip', box);
   strip.querySelectorAll('.pd-circle[data-id]').forEach((c) => (c.onclick = () => { if (strip._drag) return; dayActive = d.items.findIndex((x) => x.exercise_id === c.dataset.id); dayNoteOpen = false; redraw(); }));
   bindStripDrag(strip, (ids) => { const cur = d.items[dayActive]?.exercise_id; d.items = ids.map((id) => d.items.find((x) => x.exercise_id === id)); dayActive = Math.max(0, d.items.findIndex((x) => x.exercise_id === cur)); queueSave(ctx, 200); redraw(); });
