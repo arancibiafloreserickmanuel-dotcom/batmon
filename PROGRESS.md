@@ -352,3 +352,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Al tildar: barra de descanso (−15s/+15s/saltar, vibración y pitido al terminar) y al acabar un ejercicio pasa al siguiente con cronómetro de transición ("Aceptar"). Al terminar todo abre la pantalla de cierre (fecha, duración, RPE, notas).
 - Columna "Desc." guarda el descanso real tomado (verde si cumplió, ámbar si no) y se guarda en `rest_sec`.
 - Selector de ejercicios: el elegido lleva marco negro.
+
+## Running · Pantalla apagada (refuerzo web)
+- Tramos sin señal (≥45 s, ≤28 km/h creíble) se unen con una línea recta punteada marcada `est:true` (segmento de 2 puntos), suma su distancia y avisa en pantalla.
+- El tiempo siempre cuenta completo (se calcula con la hora de inicio).
+- Al volver a la app: reintenta el bloqueo de pantalla, reinicia el GPS (`tracker.refresh`) y muestra cuánto estuvo apagada.
+- Bloqueo de pantalla: se reintenta al volver y en el primer toque (iOS lo exige).
+- Límite real: una web no graba GPS con la pantalla bloqueada; para eso hace falta app nativa (Capacitor).

@@ -157,7 +157,7 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
 
     const routeLayer=L.featureGroup().addTo(map);
 
-    const drawSegments=(allSegments)=>{routeLayer.clearLayers();const valid=allSegments.filter((s)=>s.length).map((s)=>s.map((p)=>[+p.lat,+p.lon]).filter((p)=>p.every(Number.isFinite))).filter((s)=>s.length);valid.forEach((latlngs)=>{if(latlngs.length>1)L.polyline(latlngs,{color:getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#151515',weight:5,opacity:.9,lineCap:'round'}).addTo(routeLayer);});if(valid.length){L.circleMarker(valid[0][0],{radius:7,color:'#fff',weight:3,fillColor:'#24553a',fillOpacity:1}).bindTooltip('Inicio').addTo(routeLayer);const last=valid.at(-1);if(last.length>1)L.circleMarker(last.at(-1),{radius:7,color:'#fff',weight:3,fillColor:'#171717',fillOpacity:1}).bindTooltip('Última posición').addTo(routeLayer);}};
+    const drawSegments=(allSegments)=>{routeLayer.clearLayers();const ink=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#151515';const valid=allSegments.filter((s)=>s.length).map((s)=>({est:s.length===2&&!!s[0].est,pts:s.map((p)=>[+p.lat,+p.lon]).filter((p)=>p.every(Number.isFinite))})).filter((s)=>s.pts.length);valid.forEach(({pts,est})=>{if(pts.length>1)L.polyline(pts,est?{color:ink,weight:4,opacity:.6,dashArray:'2 10',lineCap:'round'}:{color:ink,weight:5,opacity:.9,lineCap:'round'}).addTo(routeLayer);});const real=valid.filter((s)=>!s.est);if(real.length){L.circleMarker(real[0].pts[0],{radius:7,color:'#fff',weight:3,fillColor:'#24553a',fillOpacity:1}).bindTooltip('Inicio').addTo(routeLayer);const last=real.at(-1).pts;if(last.length>1)L.circleMarker(last.at(-1),{radius:7,color:'#fff',weight:3,fillColor:'#171717',fillOpacity:1}).bindTooltip('Última posición').addTo(routeLayer);}};
 
     drawSegments(segments);
 
@@ -460,7 +460,7 @@ async function renderRun(view, ctx) {
           <button type="button" class="run-circle-btn run-circle-btn--ghost" id="run-discard" aria-label="Descartar carrera">✕</button>
           <button type="button" class="run-circle-btn run-circle-btn--start" id="run-resume" aria-label="Reanudar carrera">►</button>
         </div>
-        <p class="msg" id="run-live-msg" aria-live="polite"></p>
+        <p class="msg" id="run-live-msg" aria-live="polite">Consejo: deja la pantalla encendida. Si la bloqueas, el GPS se pausa y ese tramo se estima.</p>
       </section>`;
 
       if (prefs.showMap) mapController = mountMap($('#run-map-live', box), state.segments || []);
@@ -538,10 +538,13 @@ async function renderRun(view, ctx) {
   let wakeLock = null;
   async function applyWakeLock() {
     try {
-      if (prefs.wakeLock && tracker.state?.status === 'running' && 'wakeLock' in navigator) { if (!wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }
-      else if (wakeLock) { await wakeLock.release().catch(() => {}); wakeLock = null; }
-    } catch { /* pantalla encendida es una comodidad, no algo crítico */ }
+      if (prefs.wakeLock && tracker.state?.status === 'running' && 'wakeLock' in navigator && document.visibilityState === 'visible') {
+        if (!wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+      } else if (wakeLock) { await wakeLock.release().catch(() => {}); wakeLock = null; }
+    } catch { wakeLock = null; /* pantalla encendida es una comodidad, no algo crítico */ }
   }
+  // iOS solo concede el bloqueo tras un toque del usuario: se reintenta en el primer toque si se perdió.
+  document.addEventListener('pointerdown', () => { if (!wakeLock) applyWakeLock(); }, { passive: true });
   function speak(text) {
     if (!prefs.voice || !('speechSynthesis' in window)) return;
     try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'es-BO'; window.speechSynthesis.speak(u); } catch { /* ignorar */ }
@@ -603,7 +606,18 @@ async function renderRun(view, ctx) {
 
   }
 
-  function onVisibility(){if(document.visibilityState==='hidden'&&tracker.state?.status==='running'){const msg=$('#run-live-msg',view);if(msg)msg.textContent='La app quedó en segundo plano. Algunos navegadores pueden interrumpir la ubicación; vuelve a esta pestaña para revisar el GPS.';}if(document.visibilityState==='visible'&&tracker.state?.status==='running'){applyWakeLock();document.addEventListener('visibilitychange',onVisibility,{once:true});}}
+  let hiddenAt = 0;
+  function onVisibility(){
+    const running = tracker.state?.status === 'running', msg = $('#run-live-msg', view);
+    if (document.visibilityState === 'hidden' && running) { hiddenAt = Date.now(); }
+    if (document.visibilityState === 'visible' && running) {
+      applyWakeLock();
+      const away = hiddenAt ? Math.round((Date.now() - hiddenAt) / 1000) : 0; hiddenAt = 0;
+      tracker.refresh(paint, showGpsError);                       // reinicia el GPS: el anterior pudo quedar dormido
+      if (away >= 20 && msg) msg.textContent = `La pantalla estuvo apagada ${away >= 120 ? Math.round(away / 60) + ' min' : away + ' s'}. El tiempo se contó completo; el tramo sin GPS se estima con una línea punteada.`;
+    }
+    document.addEventListener('visibilitychange', onVisibility, { once: true });
+  }
 
   function showGpsError(message){const el=$('#run-live-msg',view);if(el)el.textContent=message;}
 

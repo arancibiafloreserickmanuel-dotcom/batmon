@@ -24,6 +24,20 @@ export function createRunningTracker(userId) {
   const startClock = (onUpdate) => { stopClock(); activeClockId = setInterval(() => onUpdate?.(state), 1000); };
   const points = () => (state?.segments || []).flat();
 
+  // Si hubo un corte largo de señal (pantalla bloqueada, túnel…), une el último punto real con el
+  // primero nuevo con un tramo ESTIMADO (línea recta, marcada est:true) y suma esa distancia.
+  function bridgeGap(point) {
+    if (state.no_bridge) { state.no_bridge = false; return; }
+    const real = points().filter((p) => !p.est), last = real.at(-1);
+    if (!last) return;
+    const seconds = (point.at - last.at) / 1000, meters = distanceBetween(last, point);
+    if (seconds < 45 || seconds > 4 * 3600 || meters < 8 || meters / seconds > 8) return;   // ≤ 28 km/h: solo si es creíble
+    const link = [{ lat: last.lat, lon: last.lon, at: last.at, est: true }, { lat: point.lat, lon: point.lon, at: point.at, est: true }];
+    state.segments.splice(state.segments.length - 1, 0, link);
+    state.distance_m += meters; state.est_m = (state.est_m || 0) + meters; state.est_sec = (state.est_sec || 0) + seconds;
+    state.gps_status = `Tramo sin señal estimado: ${Math.round(meters)} m (línea punteada)`;
+  }
+
   function startWatch(onUpdate, onError) {
     if (!navigator.geolocation) { onError('Este navegador no ofrece geolocalización.'); return; }
     if (!window.isSecureContext) { onError('El GPS requiere una conexión segura HTTPS.'); return; }
@@ -37,6 +51,7 @@ export function createRunningTracker(userId) {
       if (!segment) segment = state.segments[state.segments.push([]) - 1];
       let prev = segment.at(-1);
       if (prev && point.at - prev.at > 60000) { state.segments.push([]); segment = state.segments.at(-1); prev = null; state.gap_count = (state.gap_count || 0) + 1; state.gps_status = 'Señal interrumpida · nuevo tramo iniciado'; }
+      if (!prev) bridgeGap(point);
       if (prev) {
         const step = distanceBetween(prev, point), seconds = Math.max(.2, (point.at - prev.at) / 1000);
         const speed = step / seconds;
@@ -76,13 +91,14 @@ export function createRunningTracker(userId) {
       state.gps_status = 'Actividad recuperada · buscando GPS'; save(); startWatch(onUpdate, onError); startClock(onUpdate);
     }
   }
+  function refresh(onUpdate, onError) { if (state?.status === 'running') { if (state.segments.at(-1)?.length) state.segments.push([]); startWatch(onUpdate, onError); } }
   function pause() {
     if (!state || state.status !== 'running') return;
     state.elapsed_before_pause = elapsedSeconds(); state.status = 'paused'; state.gps_status = 'Carrera pausada'; save(); stopWatch(); stopClock();
   }
   function resume(onUpdate, onError) {
     if (!state || state.status !== 'paused') return;
-    state.status = 'running'; state.segment_started_at = Date.now(); state.segments ||= []; if(state.segments.at(-1)?.length)state.segments.push([]); state.gps_status = 'Buscando GPS · el siguiente punto iniciará un nuevo tramo'; save(); startWatch(onUpdate, onError); startClock(onUpdate);
+    state.status = 'running'; state.no_bridge = true; state.segment_started_at = Date.now(); state.segments ||= []; if(state.segments.at(-1)?.length)state.segments.push([]); state.gps_status = 'Buscando GPS · el siguiente punto iniciará un nuevo tramo'; save(); startWatch(onUpdate, onError); startClock(onUpdate);
   }
   function discard() { stopWatch(); stopClock(); localStorage.removeItem(key); state = null; }
   function finish() {
@@ -90,8 +106,8 @@ export function createRunningTracker(userId) {
     if (state.status === 'running') state.elapsed_before_pause = elapsedSeconds();
     state.status = 'finished'; stopWatch(); stopClock(); save();
     const routeSegments = (state.segments || []).filter((segment) => segment.length);
-    return { duration_sec: Math.max(1, elapsedSeconds()), moving_time_sec:Math.round(state.moving_time_sec||0), distance_km: distanceKm(), route_points: routeSegments.flat(), route_segments: routeSegments, started_at: state.started_at, gap_count: state.gap_count || 0 };
+    return { duration_sec: Math.max(1, elapsedSeconds()), moving_time_sec:Math.round(state.moving_time_sec||0), distance_km: distanceKm(), route_points: routeSegments.flat(), route_segments: routeSegments, started_at: state.started_at, gap_count: state.gap_count || 0, estimated_m: Math.round(state.est_m || 0) };
   }
   function returnToPause() { if (state?.status === 'finished') { state.status = 'paused'; state.gps_status = 'Carrera pausada; revisa y reanuda para continuar.'; save(); } }
-  return { get state() { return state; }, elapsedSeconds, distanceKm, points, start, restore, pause, resume, finish, returnToPause, discard };
+  return { get state() { return state; }, elapsedSeconds, distanceKm, points, start, refresh, restore, pause, resume, finish, returnToPause, discard };
 }
