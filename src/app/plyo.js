@@ -932,10 +932,15 @@ function picker(ctx, onPick) {
   const equips = [...new Set(catalog.map((e) => e.equipment || 'none'))].sort((x, y) => equipEs(x).localeCompare(equipEs(y), 'es'));
   const m = modal(`<div class="sheet-h"><b>Agregar ejercicios</b><button class="link" data-close>Cerrar</button></div>
     <button type="button" class="pd-newex" id="newex"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Crear ejercicio propio</span></button>
-    <input id="q" type="search" placeholder="Buscar: salto, jump, cajón, balón, sentadilla…" autocomplete="off">
-    <div class="row"><select id="cat"><option value="">Todos los grupos</option>${PLYO_GROUPS.map((g) => `<option value="${g[0]}">${g[1]}</option>`).join('')}</select>
-    <select id="lv"><option value="">Todos los niveles</option>${levels.map((l) => `<option value="${l}">${LEVEL[l] || l}</option>`).join('')}</select></div>
-    <div class="row"><select id="eq"><option value="">Todo el equipo</option>${equips.map((l) => `<option value="${esc(l)}">${esc(equipEs(l))}</option>`).join('')}</select></div>
+    <div class="pd-pick">
+      <input id="q" type="search" placeholder="Buscar: salto, jump, cajón, balón…" autocomplete="off">
+      <div class="pd-filters">
+        <label class="pd-f"><span>Grupo</span><select id="cat"><option value="">Todos los grupos</option>${PLYO_GROUPS.map((g) => `<option value="${g[0]}">${g[1]}</option>`).join('')}</select></label>
+        <label class="pd-f"><span>Nivel</span><select id="lv"><option value="">Todos los niveles</option>${levels.map((l) => `<option value="${l}">${LEVEL[l] || l}</option>`).join('')}</select></label>
+        <label class="pd-f wide"><span>Equipo</span><select id="eq"><option value="">Todo el equipo</option>${equips.map((l) => `<option value="${esc(l)}">${esc(equipEs(l))}</option>`).join('')}</select></label>
+      </div>
+      <p class="pd-count muted" id="cnt"></p>
+    </div>
     <div id="grid" class="egrid"></div>
     <div class="sheet-f"><button class="btn" id="ok">Agregar</button></div>`);
   const grid = $('#grid', m);
@@ -943,6 +948,7 @@ function picker(ctx, onPick) {
     const lv = $('#lv', m).value, eq = $('#eq', m).value, cat = $('#cat', m).value;
     const base = catalog.filter((e) => (!lv || e.level === lv) && (!eq || (e.equipment || 'none') === eq) && (!cat || plyoGroup(e) === cat));
     const list = searchExercises(base, $('#q', m).value);
+    $('#cnt', m).textContent = `${list.length} ejercicio${list.length === 1 ? '' : 's'}`;
     grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard ${chosen.has(e.id) ? 'sel' : ''}" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados. Prueba con otro nombre, en español o inglés.</p>';
     grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => { chosen.has(c.dataset.id) ? chosen.delete(c.dataset.id) : chosen.add(c.dataset.id); c.classList.toggle('sel'); $('#ok', m).textContent = chosen.size ? `Agregar ${chosen.size}` : 'Agregar'; }));
   };
