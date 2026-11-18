@@ -1,4 +1,5 @@
 import './app.css';
+import { initDropdowns } from './dropdown.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, iso, today, monthStart, weekStart, DISC, RUN_TYPE, showDelayedLoading, notify, confirmDialog } from './common.js';
 import { renderRunning } from './running.js';
@@ -768,6 +769,7 @@ function renderProfileSettings(v) {
 $('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
 window.addEventListener('hashchange', route);
 enablePasswordToggles(view);
+initDropdowns();
 let booted = null;
 supabase.auth.onAuthStateChange((_ev, session) => {
   if (!session) { booted = null; ctx = null; showLogin(view); return; }

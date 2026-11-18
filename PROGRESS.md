@@ -371,3 +371,6 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - 30 ejercicios nuevos (`src/data/plyometrics_extra.json`, imágenes en `public/exercises`), migración `0021_plyo_extra_exercises.sql` (aplicar en Supabase).
 - `src/app/exercise-i18n.js`: nombres/pasos/alias en español (`src/data/exercise_es.json`), equipo y músculos traducidos, búsqueda con sinónimos ES/EN, sin tildes y con tolerancia a errores.
 - Selector de ejercicios: grupo/nivel/equipo como desplegables, "Crear ejercicio propio" arriba con icono, selección en negro (claro y oscuro). Chips de grupos de la rutina también en negro.
+
+## Desplegables propios
+- `src/app/dropdown.js` reemplaza visualmente todos los `<select>` de la app (se conserva el select oculto sincronizado): botón hundido neumórfico, lista flotante animada (escala + opciones escalonadas), opción elegida en negro con check, abre hacia arriba si no hay espacio, teclado (flechas/Enter/Esc). Excluir uno con clase `no-dd`.

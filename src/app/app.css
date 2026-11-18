@@ -1600,7 +1600,7 @@ body.appbody .pd-newex{margin:4px 0 16px;padding:14px 16px}
 .pd-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pd-f{display:flex;flex-direction:column;gap:6px;margin:0;min-width:0}
 .pd-f.wide{grid-column:1/-1}
-.pd-f span{font:700 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pd-f>span{font:700 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .pd-f select{width:100%;margin:0;min-height:46px;font-size:15px}
 .pd-count{margin:0;font-size:12px}
 #grid.egrid{gap:12px;margin-bottom:12px}
@@ -1609,3 +1609,30 @@ body.appbody .pd-newex{margin:4px 0 16px;padding:14px 16px}
 /* Botón Agregar del selector: negro cuando hay ejercicios elegidos */
 body.appbody #ok.btn.on,body.appbody[data-theme="dark"] #ok.btn.on{background:#000!important;color:#fff!important;border:1.5px solid #000!important}
 body.appbody[data-theme="dark"] #ok.btn.on{border-color:#fff!important}
+
+/* ===== Desplegable propio (neumórfico + animado) ===== */
+.dd{position:relative;display:block;width:100%;min-width:0}
+.dd-native{position:absolute!important;inset:auto 0 0 0;width:1px!important;height:1px!important;min-height:0!important;opacity:0!important;pointer-events:none!important;margin:0!important;padding:0!important;border:0!important}
+body.appbody .dd button.dd-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:46px;margin:0;padding:0 14px;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);border-radius:12px;background:var(--button-face);color:var(--button-ink);font:600 15px Inter,sans-serif;text-align:left;cursor:pointer;box-shadow:var(--button-shadow-active);transition:box-shadow .25s ease,background-color .25s ease,color .25s ease,transform .15s ease}
+body.appbody .dd .dd-btn:active{transform:scale(.985)}
+body.appbody .dd .dd-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+body.appbody .dd.is-open .dd-btn,body.appbody .dd.has-val .dd-btn{background-color:#000!important;color:#fff!important;border-color:#000!important;box-shadow:var(--button-shadow)!important}
+body.appbody[data-theme="dark"] .dd.is-open .dd-btn,body.appbody[data-theme="dark"] .dd.has-val .dd-btn{border-color:#fff!important}
+.dd-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd-chev{flex:0 0 auto;transition:transform .35s cubic-bezier(.22,1,.36,1.15)}
+.dd.is-open .dd-chev{transform:rotate(180deg)}
+.dd-list{position:fixed;z-index:400;margin:0;padding:6px;list-style:none;overflow-y:auto;overscroll-behavior:contain;border-radius:14px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);background:var(--card-surface,#e0e0e0);color:var(--ink,#10100e);box-shadow:10px 10px 24px rgba(0,0,0,.22),-6px -6px 16px rgba(255,255,255,.35);opacity:0;transform:translateY(-8px) scale(.96);transform-origin:top center;pointer-events:none;transition:opacity .18s ease,transform .28s cubic-bezier(.22,1,.36,1.15)}
+.dd-list.up{transform-origin:bottom center;transform:translateY(8px) scale(.96)}
+.dd-list.open{opacity:1;transform:none;pointer-events:auto}
+body.appbody[data-theme="dark"] .dd-list{box-shadow:8px 8px 20px rgba(0,0,0,.6),-5px -5px 14px rgba(255,255,255,.05)}
+.dd-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:0 12px;border-radius:9px;font:600 15px Inter,sans-serif;cursor:pointer;opacity:0;transform:translateY(-4px);transition:background-color .15s ease,color .15s ease}
+.dd-list.open .dd-opt{opacity:1;transform:none;transition:background-color .15s ease,color .15s ease,opacity .25s ease calc(var(--i)*22ms),transform .3s cubic-bezier(.22,1,.36,1.15) calc(var(--i)*22ms)}
+.dd-opt svg{opacity:0;flex:0 0 auto}
+.dd-opt.cur,.dd-opt:hover{background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dd-opt.sel{background:#000;color:#fff}
+.dd-opt.sel svg{opacity:1}
+.dd-opt.dis{opacity:.4;pointer-events:none}
+.dd-opt.sel.cur{background:#000}
+body.appbody[data-theme="dark"] .dd-list .dd-opt.sel{box-shadow:inset 0 0 0 1px #fff}
+.pd-f .dd{margin:0}
+@media (prefers-reduced-motion:reduce){.dd-list,.dd-opt,.dd-chev{transition:none!important}}
