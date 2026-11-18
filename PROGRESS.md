@@ -359,3 +359,4 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Al volver a la app: reintenta el bloqueo de pantalla, reinicia el GPS (`tracker.refresh`) y muestra cuánto estuvo apagada.
 - Bloqueo de pantalla: se reintenta al volver y en el primer toque (iOS lo exige).
 - Límite real: una web no graba GPS con la pantalla bloqueada; para eso hace falta app nativa (Capacitor).
+- Estimación inteligente del tramo sin señal: ritmo reciente (m/s de los últimos 2 min) + rumbo previo → curva natural; si hay internet pide ruta peatonal a routing.openstreetmap.de y la usa si es creíble (1–1.8× la recta, ≤ 8 m/s). Distancia = entre la ruta y +50 % según el ritmo.

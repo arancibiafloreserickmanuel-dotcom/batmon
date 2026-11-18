@@ -24,18 +24,75 @@ export function createRunningTracker(userId) {
   const startClock = (onUpdate) => { stopClock(); activeClockId = setInterval(() => onUpdate?.(state), 1000); };
   const points = () => (state?.segments || []).flat();
 
-  // Si hubo un corte largo de señal (pantalla bloqueada, túnel…), une el último punto real con el
-  // primero nuevo con un tramo ESTIMADO (línea recta, marcada est:true) y suma esa distancia.
-  function bridgeGap(point) {
+  /* ---- Estimación inteligente de tramos sin señal ----
+     1) Ritmo reciente → cuántos metros "debió" correr durante el corte.
+     2) Rumbo antes del corte → curva natural en vez de una recta.
+     3) Si hay internet, se pide una ruta peatonal real (OpenStreetMap) y se usa si es creíble.
+     Todo queda marcado est:true (línea punteada) y se avisa que es estimado. */
+  const toXY = (o, p) => ({ x: (p.lon - o.lon) * 111320 * Math.cos(radians(o.lat)), y: (p.lat - o.lat) * 110540 });
+  const fromXY = (o, x, y) => ({ lat: o.lat + y / 110540, lon: o.lon + x / (111320 * Math.cos(radians(o.lat))) });
+  function recentPace(real) {
+    const end = real.at(-1); let i = real.length - 1, dist = 0;
+    while (i > 0 && end.at - real[i - 1].at <= 120000) { dist += distanceBetween(real[i - 1], real[i]); i--; }
+    const sec = (end.at - real[i].at) / 1000;
+    const v = sec >= 20 ? dist / sec : 0;
+    return v >= 1 && v <= 6 ? v : null;                      // 3.6–21.6 km/h: ritmo de carrera creíble
+  }
+  function headingOf(real) {
+    const end = real.at(-1);
+    for (let i = real.length - 2; i >= 0; i--) {
+      if (distanceBetween(real[i], end) >= 15) { const v = toXY(real[i], end), n = Math.hypot(v.x, v.y) || 1; return { x: v.x / n, y: v.y / n }; }
+    }
+    return null;
+  }
+  function curvePath(a, b, dir) {
+    const v = toXY(a, b), d = Math.hypot(v.x, v.y);
+    if (!dir || d < 20) return [a, b];
+    const along = v.x * dir.x + v.y * dir.y;                  // si ya iba hacia el destino, casi recta
+    const k = along > 0 ? 0.35 : 0.7, c = { x: dir.x * d * k, y: dir.y * d * k };
+    return Array.from({ length: 14 }, (_, i) => { const t = i / 13, u = 1 - t; const x = 2 * u * t * c.x + t * t * v.x, y = 2 * u * t * c.y + t * t * v.y; return i === 0 ? a : i === 13 ? b : fromXY(a, x, y); });
+  }
+  const pathLength = (pts) => pts.reduce((n, p, i) => n + (i ? distanceBetween(pts[i - 1], p) : 0), 0);
+  function estimateMeters(pathLen, seconds, pace) {
+    let m = pathLen;
+    if (pace) m = Math.min(Math.max(pathLen, pace * seconds), pathLen * 1.5);   // el ritmo puede alargarlo hasta +50 %
+    return Math.min(m, seconds * 8);
+  }
+  const stamp = (pts, t0, t1) => { const total = pathLength(pts) || 1; let acc = 0; return pts.map((p, i) => { if (i) acc += distanceBetween(pts[i - 1], p); return { lat: p.lat, lon: p.lon, at: Math.round(t0 + (t1 - t0) * (acc / total)), est: true }; }); };
+  async function fetchFootRoute(a, b) {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 7000);
+    try {
+      const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`, { signal: ctl.signal });
+      const j = await r.json(); const c = j?.routes?.[0]?.geometry?.coordinates;
+      return Array.isArray(c) && c.length > 1 ? c.map(([lon, lat]) => ({ lat, lon })) : null;
+    } catch { return null; } finally { clearTimeout(timer); }
+  }
+
+  function bridgeGap(point, onUpdate) {
     if (state.no_bridge) { state.no_bridge = false; return; }
     const real = points().filter((p) => !p.est), last = real.at(-1);
     if (!last) return;
-    const seconds = (point.at - last.at) / 1000, meters = distanceBetween(last, point);
-    if (seconds < 45 || seconds > 4 * 3600 || meters < 8 || meters / seconds > 8) return;   // ≤ 28 km/h: solo si es creíble
-    const link = [{ lat: last.lat, lon: last.lon, at: last.at, est: true }, { lat: point.lat, lon: point.lon, at: point.at, est: true }];
+    const seconds = (point.at - last.at) / 1000, straight = distanceBetween(last, point);
+    if (seconds < 45 || seconds > 4 * 3600 || straight < 8 || straight / seconds > 8) return;
+    const pace = recentPace(real), dir = headingOf(real);
+    let pts = curvePath(last, point, dir);
+    let meters = estimateMeters(pathLength(pts), seconds, pace);
+    const link = stamp(pts, last.at, point.at);
     state.segments.splice(state.segments.length - 1, 0, link);
     state.distance_m += meters; state.est_m = (state.est_m || 0) + meters; state.est_sec = (state.est_sec || 0) + seconds;
-    state.gps_status = `Tramo sin señal estimado: ${Math.round(meters)} m (línea punteada)`;
+    state.gps_status = `Tramo sin señal estimado: ~${Math.round(meters)} m (línea punteada)`;
+    // Mejora asíncrona: ruta peatonal real, solo si cabe en lo que el ritmo permite.
+    fetchFootRoute(last, point).then((route) => {
+      if (!route || !state || state.status === 'finished') return;
+      const len = pathLength(route);
+      if (len < straight * 0.95 || len > straight * 1.8 || len / seconds > 8) return;
+      const i = state.segments.indexOf(link); if (i < 0) return;
+      const better = estimateMeters(len, seconds, pace);
+      state.segments[i] = stamp([last, ...route.slice(1, -1), point], last.at, point.at);
+      state.distance_m += better - meters; state.est_m += better - meters; meters = better;
+      state.gps_status = `Tramo sin señal estimado por calles: ~${Math.round(meters)} m (línea punteada)`;
+      save(); onUpdate?.(state);
+    });
   }
 
   function startWatch(onUpdate, onError) {
@@ -51,7 +108,7 @@ export function createRunningTracker(userId) {
       if (!segment) segment = state.segments[state.segments.push([]) - 1];
       let prev = segment.at(-1);
       if (prev && point.at - prev.at > 60000) { state.segments.push([]); segment = state.segments.at(-1); prev = null; state.gap_count = (state.gap_count || 0) + 1; state.gps_status = 'Señal interrumpida · nuevo tramo iniciado'; }
-      if (!prev) bridgeGap(point);
+      if (!prev) bridgeGap(point, onUpdate);
       if (prev) {
         const step = distanceBetween(prev, point), seconds = Math.max(.2, (point.at - prev.at) / 1000);
         const speed = step / seconds;
