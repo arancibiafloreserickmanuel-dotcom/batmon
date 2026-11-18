@@ -1655,3 +1655,10 @@ body.appbody .payment-wallet .method-cash{background:linear-gradient(180deg,rgba
 .credit-date{bottom:48px;left:20px;font-size:11px}
 .credit-holder{bottom:16px;left:20px;right:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 @media(max-width:380px){.credit-number{font-size:13px;letter-spacing:.04em}}
+
+/* QR: la tarjeta de la billetera usa la imagen del código */
+body.appbody .payment-wallet .method-qr{background:url('/qr-tarjeta.webp') center/cover no-repeat #fff!important;color:#000;text-shadow:none;border:2px solid #000}
+.method-qr .method-top>b{padding:3px 10px;border-radius:8px;background:#fff;color:#000;letter-spacing:.08em}
+.method-qr .method-chip{background:#fff;color:#000;border-color:#000}
+.method-qr .method-bottom>span{align-items:flex-start;padding:5px 10px;border-radius:8px;background:#fff;color:#000;opacity:1}
+.method-qr .method-label{opacity:.7}
