@@ -1572,3 +1572,14 @@ body.appbody[data-theme="dark"] .sheet{background:#212121;color:#f4f4f2;box-shad
 body.appbody[data-theme="dark"] .sheet-f{background:#212121}
 body.appbody[data-theme="dark"] .ecard{background:#2a2a2a;border-color:#3a3a3a;color:#f4f4f2}
 body.appbody[data-theme="dark"] .ecard.sel{border-color:#000!important;background:#2a2a2a}
+
+/* Rutinas semanales */
+body.appbody .plyo-new-plan{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0}
+.plyo-new-plan svg{width:18px;height:18px}
+.pd-hint{margin:0 0 10px;font-size:13px}
+.pd-switch{display:flex;align-items:center;gap:10px;margin-top:4px;font-weight:600;cursor:pointer}
+.pd-switch input{width:20px;height:20px;flex:0 0 20px;margin:0}
+.pd-planbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.pd-active{padding:6px 12px;border-radius:99px;background:#111;color:#fff;font:700 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+body.appbody .pd-create{width:100%;margin:16px 0 8px}
+body.appbody .pd-create[disabled]{opacity:.45;cursor:not-allowed}

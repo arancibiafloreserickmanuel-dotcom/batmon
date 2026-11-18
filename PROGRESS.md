@@ -360,3 +360,9 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Bloqueo de pantalla: se reintenta al volver y en el primer toque (iOS lo exige).
 - Límite real: una web no graba GPS con la pantalla bloqueada; para eso hace falta app nativa (Capacitor).
 - Estimación inteligente del tramo sin señal: ritmo reciente (m/s de los últimos 2 min) + rumbo previo → curva natural; si hay internet pide ruta peatonal a routing.openstreetmap.de y la usa si es creíble (1–1.8× la recta, ≤ 8 m/s). Distancia = entre la ruta y +50 % según el ritmo.
+
+## Pliometría · Rutinas semanales (planificaciones)
+- "Mi plan" ahora guarda varias **rutinas semanales** (cada una con sus 7 días) en `plyo_plans.plan._plans` (sin migración nueva). La activa se refleja en los días de arriba (`_activePlan`) y es la que usa Entrenar.
+- Botón **Crear nueva rutina** fuera de "Mis rutinas guardadas": nombre, notas, "usar como activa" y los 7 días (copiar/pegar/luna, editor de día). Se crea al tocar "Crear rutina" (necesita ≥1 día con ejercicios).
+- "Mis rutinas guardadas" lista las rutinas semanales (Seleccionar, Duplicar, Eliminar); al tocar una se abren sus días. Dentro: Cambiar nombre y "Usar como activa".
+- El plan antiguo de días sueltos se migra solo a una rutina llamada "Mi plan".

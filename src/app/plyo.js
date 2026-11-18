@@ -53,14 +53,14 @@ export async function renderPlyo(view, ctx) {
     view.innerHTML = '<h1>Pliometría</h1><div class="card warn">Tu membresía del mes aún no está aprobada. Cuando se apruebe podrás registrar sesiones. <a href="#pago">Ir a Membresía</a></div>';
     return;
   }
-  if (ownerKey !== ctx.user.id) { ownerKey = ctx.user.id; W = null; section = 'train'; activeView = 'home'; planPage = null; dayDraft = null; }
+  if (ownerKey !== ctx.user.id) { ownerKey = ctx.user.id; W = null; section = 'train'; activeView = 'home'; planPage = null; dayDraft = null; editId = null; draftPlan = null; }
   const [{ data: exData = [], error: exError }, { data: planRow }, { data: routineRows = [], error: routineError }] = await Promise.all([
     supabase.from('exercises').select('*').eq('category', 'plyometrics').eq('is_active', true).order('name'),
     supabase.from('plyo_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
     supabase.from('plyo_routines').select('*').eq('user_id', ctx.user.id).order('created_at'),
   ]);
   if (exError) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(exError.message)}</p>`; return; }
-  catalog = exData; weekPlan = planRow?.plan || {}; routines = routineRows;
+  catalog = exData; weekPlan = planRow?.plan || {}; routines = routineRows; ensurePlans();
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
   W = W || draft.get(userDraftKey());
 
@@ -73,7 +73,7 @@ export async function renderPlyo(view, ctx) {
       <div class="tabs-pill__indicator" aria-hidden="true"></div>
     </nav>
     <div id="sub"></div>`;
-  view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; planPage = null; renderPlyo(view, ctx); }; });
+  view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; planPage = null; editId = null; draftPlan = null; renderPlyo(view, ctx); }; });
   const box = $('#sub', view);
   if (!catalog.length) {
     box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y pulsa “Importar catálogo base”.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
@@ -359,54 +359,110 @@ function weekDates() {
   return DAYS.map((_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
 }
 
+/* ---- Rutinas semanales (planificaciones): cada una guarda sus 7 días ---- */
+let editId = null;          // plan que se está viendo/editando
+let draftPlan = null;       // plan nuevo que aún no se creó
+let planBase = 'days';      // a dónde vuelve el editor de un día: 'days' | 'create'
+const plansList = () => weekPlan._plans || [];
+const planOf = (id) => (draftPlan && draftPlan.id === id ? draftPlan : plansList().find((p) => p.id === id));
+const dayEntry = (d) => planOf(editId)?.days?.[d];
+const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+
+// Migra el plan antiguo (días sueltos) a una rutina semanal llamada "Mi plan" (en memoria; se guarda al primer cambio).
+function ensurePlans() {
+  if (Array.isArray(weekPlan._plans)) return;
+  const days = {}; DAYS.forEach((d) => { if (weekPlan[d]) days[d] = weekPlan[d]; });
+  if (Object.keys(days).length) { const p = { id: newId(), name: 'Mi plan', notes: '', days }; weekPlan = { ...weekPlan, _plans: [p], _activePlan: p.id }; }
+  else weekPlan = { ...weekPlan, _plans: [] };
+}
+function mirrorActive(plan) { const base = { ...weekPlan }; DAYS.forEach((d) => delete base[d]); Object.assign(base, plan?.days || {}); weekPlan = base; }
+async function savePlans(ctx) {
+  const { error } = await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) { notify('No se pudo guardar el plan: ' + error.message); return false; }
+  return true;
+}
+const planStats = (plan) => { const ds = DAYS.filter((d) => plan.days?.[d]?.routineId); return { days: ds.length, ex: ds.reduce((n, d) => n + (routines.find((r) => r.id === plan.days[d].routineId)?.items?.length || 0), 0) }; };
+function planCover(plan) {
+  for (const d of DAYS) { const r = plan?.days?.[d]?.routineId && routines.find((x) => x.id === plan.days[d].routineId); const p = r && exPhoto(exById(r.items?.[0]?.exercise_id)); if (p) return p; }
+  return '';
+}
+async function selectPlan(ctx, id) {
+  const plan = plansList().find((p) => p.id === id); if (!plan) return;
+  weekPlan = { ...weekPlan, _activePlan: id }; mirrorActive(plan);
+  await savePlans(ctx);
+}
+async function clonePlan(ctx, plan, nameOverride) {
+  const days = {};
+  for (const d of DAYS) {
+    const e = plan.days?.[d]; if (!e) continue;
+    const src = e.routineId && routines.find((r) => r.id === e.routineId);
+    if (src) {
+      const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, name: src.name, focus: src.focus, items: JSON.parse(JSON.stringify(src.items)) }).select('*').single();
+      if (error) throw error;
+      routines = [...routines, data]; days[d] = { ...e, routineId: data.id };
+    } else days[d] = { ...e };
+  }
+  return { id: newId(), name: nameOverride || plan.name, notes: plan.notes || '', days };
+}
+async function dropRoutines(ids) {
+  const ids2 = ids.filter(Boolean); if (!ids2.length) return;
+  await supabase.from('plyo_routines').delete().in('id', ids2);
+  routines = routines.filter((r) => !ids2.includes(r.id));
+}
+function openPlan(id, view, ctx) { editId = id; planBase = 'days'; planPage = 'days'; renderPlyo(view, ctx); }
+function newPlan(view, ctx) { draftPlan = { id: newId(), name: '', notes: '', days: {} }; editId = draftPlan.id; planBase = 'create'; planPage = 'create'; renderPlyo(view, ctx); }
+async function discardDraft() {
+  const ids = Object.values(draftPlan?.days || {}).map((e) => e.routineId); draftPlan = null; editId = null;
+  await dropRoutines(ids).catch(() => {});
+}
+
 function renderPlan(box, view, ctx) {
   if (planPage) {
     box.innerHTML = '<i class="plyo-subpage-marker" hidden></i>';
     const host = document.createElement('div'); box.appendChild(host);
-    if (planPage === 'days') drawDays(host, view, ctx);
+    if (planPage === 'days' || planPage === 'create') drawDays(host, view, ctx);
     else if (dayDraft) drawDayEditor(host, view, ctx);
     else openDayEditor(planPage.day, host, view, ctx);
     return;
   }
-  const firstDay = DAYS.find((d) => weekPlan[d]?.routineId && routines.some((r) => r.id === weekPlan[d].routineId));
-  const firstRoutine = firstDay ? routines.find((r) => r.id === weekPlan[firstDay].routineId) : null;
-  const chosen = routines.find((r) => r.id === weekPlan._active) || null;
-  const activeR = chosen || firstRoutine;                 // nombre del plan activo
-  const coverR = chosen || firstRoutine;                  // foto: primer ejercicio (de la elegida, o del primer día planificado)
-  const coverEx = coverR ? catalog.find((e) => e.id === coverR.items[0]?.exercise_id) : null;
-  const photo = coverEx?.images?.[0] ? `/exercises/${encodeURI(coverEx.images[0])}` : '';
-  const plannedDays = DAYS.filter((d) => weekPlan[d]?.routineId).length;
+  const list = plansList(), active = list.find((p) => p.id === weekPlan._activePlan) || null;
+  const photo = active ? planCover(active) : '', st = active ? planStats(active) : null;
   box.innerHTML = `<i class="plyo-subpage-marker" hidden></i>
-    <button type="button" class="plyo-plan-card" id="plyo-plan-open" aria-label="Abrir mi plan: ver y editar los días">
+    <button type="button" class="plyo-plan-card" id="plyo-plan-open" aria-label="Abrir mi rutina activa: ver y editar los días">
       <span class="plyo-plan-card__cover${photo ? ' has-photo' : ''}"${photo ? ` style="--plyo-photo:url('${photo}')"` : ''}>
-        <span class="plyo-plan-card__badge">${activeR ? 'Activo' : 'Sin plan'}</span>
-        <b class="plyo-plan-card__title">${activeR ? name(activeR) : 'Arma tu semana'}</b>
-        <small>${plannedDays ? `${plannedDays} día${plannedDays === 1 ? '' : 's'} con rutina · toca para ver y editar` : 'Asigna una rutina a tus días · toca para empezar'}</small>
+        <span class="plyo-plan-card__badge">${active ? 'Activa' : 'Sin rutina'}</span>
+        <b class="plyo-plan-card__title">${active ? esc(active.name) : 'Arma tu semana'}</b>
+        <small>${active ? (st.days ? `${st.days} día${st.days === 1 ? '' : 's'} con ejercicios · toca para ver y editar` : 'Toca para agregar ejercicios a tus días') : 'Crea tu primera rutina semanal'}</small>
         <svg class="plyo-plan-card__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
       </span>
     </button>
-    <details class="card plyo-routines" id="plyo-routines">
-      <summary><span>Mis rutinas guardadas</span><small>${routines.length}</small></summary>
-      <div class="plyo-routines__list">${routines.length ? routines.map((r) => `<div class="plyo-routine-row${weekPlan._active === r.id ? ' is-active' : ''}">
-        <div class="plyo-routine-row__info"><b>${esc(r.name)}</b><small>${r.items.length} ejercicio${r.items.length === 1 ? '' : 's'}${r.focus ? ` · ${esc(r.focus)}` : ''}</small>
-          <span class="plyo-routine-row__links"><button class="link" data-routine-dup="${r.id}" type="button">Duplicar</button><button class="link" data-routine-del="${r.id}" type="button">Eliminar</button></span></div>
-        <button class="plyo-icon-btn" data-routine-edit="${r.id}" type="button" aria-label="Editar ${esc(r.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17l-1 3Z"/><path d="m14 7 3 3"/></svg></button>
-        <button class="btn sm ${weekPlan._active === r.id ? '' : 'ghost'}" data-routine-select="${r.id}" type="button">${weekPlan._active === r.id ? 'Activa' : 'Seleccionar'}</button>
-      </div>`).join('') : '<p class="muted">Aún no tienes rutinas. Crea una desde cualquier día.</p>'}
-      <button class="btn ghost" id="plyo-new-routine" type="button">+ Crear rutina nueva</button>
+    <button class="btn plyo-new-plan" id="plyo-new-plan" type="button">${ICON.plus}<span>Crear nueva rutina</span></button>
+    <details class="card plyo-routines" id="plyo-routines"${list.length ? ' open' : ''}>
+      <summary><span>Mis rutinas guardadas</span><small>${list.length}</small></summary>
+      <div class="plyo-routines__list">${list.length ? list.map((p) => { const s2 = planStats(p), on = weekPlan._activePlan === p.id; return `<div class="plyo-routine-row${on ? ' is-active' : ''}" data-plan="${p.id}">
+        <div class="plyo-routine-row__info" data-plan-open="${p.id}"><b>${esc(p.name)}</b><small>${s2.days} día${s2.days === 1 ? '' : 's'} · ${s2.ex} ejercicio${s2.ex === 1 ? '' : 's'}</small>
+          <span class="plyo-routine-row__links"><button class="link" data-plan-dup="${p.id}" type="button">Duplicar</button><button class="link" data-plan-del="${p.id}" type="button">Eliminar</button></span></div>
+        <button class="btn sm ${on ? '' : 'ghost'}" data-plan-select="${p.id}" type="button">${on ? 'Activa' : 'Seleccionar'}</button>
+      </div>`; }).join('') : '<p class="muted">Aún no tienes rutinas. Crea una con el botón de arriba.</p>'}
       <button class="link" id="open-lib-plan" type="button">Ver biblioteca de ejercicios</button></div>
     </details>`;
-  $('#plyo-plan-open', box).onclick = () => { planPage = 'days'; renderPlyo(view, ctx); };
-  box.querySelectorAll('[data-routine-edit]').forEach((b) => (b.onclick = () => routineForm(ctx, routines.find((r) => r.id === b.dataset.routineEdit), () => renderPlyo(view, ctx))));
-  box.querySelectorAll('[data-routine-dup]').forEach((b) => (b.onclick = () => duplicateRoutine(ctx, b.dataset.routineDup, view)));
-  box.querySelectorAll('[data-routine-del]').forEach((b) => (b.onclick = () => deleteRoutine(ctx, b.dataset.routineDel, view)));
-  box.querySelectorAll('[data-routine-select]').forEach((b) => (b.onclick = async () => {
-    weekPlan = { ...weekPlan, _active: b.dataset.routineSelect };
-    const { error } = await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-    if (error) { notify('No se pudo guardar el plan: ' + error.message); return; }
-    renderPlan(box, view, ctx);
+  $('#plyo-plan-open', box).onclick = () => (active ? openPlan(active.id, view, ctx) : newPlan(view, ctx));
+  $('#plyo-new-plan', box).onclick = () => newPlan(view, ctx);
+  box.querySelectorAll('[data-plan-open]').forEach((el) => (el.onclick = (e) => { if (e.target.closest('.link')) return; openPlan(el.dataset.planOpen, view, ctx); }));
+  box.querySelectorAll('[data-plan-dup]').forEach((b) => (b.onclick = async () => {
+    const p = plansList().find((x) => x.id === b.dataset.planDup); if (!p) return;
+    try { const copy = await clonePlan(ctx, p, `${p.name} (copia)`.slice(0, 80)); weekPlan = { ...weekPlan, _plans: [...plansList(), copy] }; await savePlans(ctx); notify('Rutina duplicada.', 'success'); renderPlyo(view, ctx); } catch (err) { notify(err.message || 'No se pudo duplicar.'); }
   }));
-  $('#plyo-new-routine', box).onclick = () => routineForm(ctx, null, () => renderPlyo(view, ctx));
+  box.querySelectorAll('[data-plan-del]').forEach((b) => (b.onclick = async () => {
+    const p = plansList().find((x) => x.id === b.dataset.planDel); if (!p) return;
+    if (!(await confirmDialog(`¿Eliminar la rutina “${p.name}” con todos sus días?`, 'Eliminar rutina'))) return;
+    const rest = plansList().filter((x) => x.id !== p.id), used = new Set(rest.flatMap((x) => Object.values(x.days || {}).map((e) => e.routineId)));
+    weekPlan = { ...weekPlan, _plans: rest };
+    if (weekPlan._activePlan === p.id) { weekPlan._activePlan = null; mirrorActive(null); }
+    await savePlans(ctx); await dropRoutines(Object.values(p.days || {}).map((e) => e.routineId).filter((id) => !used.has(id))).catch(() => {});
+    notify('Rutina eliminada.', 'success'); renderPlyo(view, ctx);
+  }));
+  box.querySelectorAll('[data-plan-select]').forEach((b) => (b.onclick = async () => { await selectPlan(ctx, b.dataset.planSelect); renderPlyo(view, ctx); }));
   $('#open-lib-plan', box).onclick = () => openLibrary(ctx, view);
 }
 
@@ -493,12 +549,19 @@ function daySubtitle(entry) {
   return names.length ? names.join(' · ') + (r.items.length > 2 ? '…' : '') : 'Sin configurar';
 }
 
-/* ---- página: los 7 días en fila vertical ---- */
+/* ---- página: los 7 días en fila vertical (de una rutina semanal) ---- */
 function drawDays(box, view, ctx) {
-  const dates = weekDates();
-  box.innerHTML = `<div class="pd-head">${backBtn('pd-back')}<h2>Mi plan</h2></div>
+  const creating = planPage === 'create', plan = planOf(editId);
+  if (!plan) { planPage = null; renderPlyo(view, ctx); return; }
+  const dates = weekDates(), isActive = weekPlan._activePlan === plan.id, filled = DAYS.filter((d) => plan.days?.[d]?.routineId).length;
+  box.innerHTML = `<div class="pd-head">${backBtn('pd-back')}<h2>${creating ? 'Nueva rutina' : esc(plan.name)}</h2></div>
+    ${creating ? `<section class="card pd-card"><label for="np-name">Nombre de la rutina</label><input id="np-name" maxlength="80" placeholder="Ej. Potencia semanal" value="${esc(plan.name)}">
+      <label for="np-notes">Notas (opcional)</label><textarea id="np-notes" rows="2" maxlength="300" placeholder="Alguna observación sobre esta rutina…">${esc(plan.notes || '')}</textarea>
+      <label class="pd-switch"><input id="np-active" type="checkbox" ${!weekPlan._activePlan || plan.useActive !== false ? 'checked' : ''} ${!weekPlan._activePlan ? 'disabled' : ''}><span>Usar como mi rutina activa</span></label></section>
+      <p class="muted pd-hint">Toca un día para agregarle ejercicios. Los días sin ejercicios quedan libres.</p>`
+      : `<div class="pd-planbar"><button class="btn sm ghost" id="np-rename" type="button">Cambiar nombre</button>${isActive ? '<b class="pd-active">Activa</b>' : '<button class="btn sm" id="np-use" type="button">Usar como activa</button>'}</div>`}
     <div class="pd-days">${DAYS.map((d, i) => {
-      const entry = weekPlan[d]; const photo = dayPhoto(entry);
+      const entry = plan.days?.[d]; const photo = dayPhoto(entry);
       return `<article class="pd-day${entry?.rest ? ' is-rest' : ''}">
         <button type="button" class="pd-day__main" data-open="${d}">
           <span class="pd-day__photo${photo ? ' has-photo' : ''}"${photo ? ` style="--p:url('${photo}')"` : ''}>${entry?.rest ? ICON.moon : photo ? '' : ICON.plus}</span>
@@ -509,22 +572,48 @@ function drawDays(box, view, ctx) {
           <button type="button" class="plyo-icon-btn" data-paste="${d}" aria-label="Pegar en ${d}" ${copiedDay ? '' : 'disabled'}>${ICON.paste}</button>
           <button type="button" class="plyo-icon-btn${entry?.rest ? ' is-on' : ''}" data-rest="${d}" aria-label="Descanso ${d}">${ICON.moon}</button>
         </div></article>`;
-    }).join('')}</div>`;
-  $('#pd-back', box).onclick = () => { planPage = null; renderPlyo(view, ctx); };
-  box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => { if (weekPlan[b.dataset.open]?.rest) { notify('Es día de descanso: quita la luna para configurarlo.'); return; } openDayEditor(b.dataset.open, box, view, ctx); }));
-  box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = weekPlan[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} copiado.`, 'success'); drawDays(box, view, ctx); }));
+    }).join('')}</div>
+    ${creating ? `<button class="btn pd-create" id="np-create" type="button" ${filled ? '' : 'disabled'}>Crear rutina</button>` : ''}`;
+  $('#pd-back', box).onclick = async () => {
+    if (creating) {
+      if ((Object.keys(plan.days).length || plan.name.trim()) && !(await confirmDialog('Aún no creaste esta rutina. ¿Salir y descartarla?', 'Descartar'))) return;
+      await discardDraft();
+    } else editId = null;
+    planPage = null; renderPlyo(view, ctx);
+  };
+  if (creating) {
+    $('#np-name', box).oninput = (e) => { plan.name = e.target.value; };
+    $('#np-notes', box).oninput = (e) => { plan.notes = e.target.value; };
+    $('#np-active', box).onchange = (e) => { plan.useActive = e.target.checked; };
+    $('#np-create', box)?.addEventListener('click', async () => {
+      plan.name = (plan.name.trim() || 'Mi rutina').slice(0, 80);
+      const makeActive = !weekPlan._activePlan || plan.useActive !== false; delete plan.useActive;
+      weekPlan = { ...weekPlan, _plans: [...plansList(), plan] }; draftPlan = null;
+      if (makeActive) { weekPlan._activePlan = plan.id; mirrorActive(plan); }
+      await savePlans(ctx); editId = null; planPage = null; notify(`Rutina “${plan.name}” creada.`, 'success'); renderPlyo(view, ctx);
+    });
+  } else {
+    $('#np-rename', box).onclick = () => {
+      const m = modal(`<div class="sheet-h"><b>Nombre de la rutina</b><button class="link" data-close>Cerrar</button></div><input id="rn2" maxlength="80" value="${esc(plan.name)}"><div class="sheet-f"><button class="btn" id="rn2ok" type="button">Guardar</button></div>`);
+      m.querySelector('[data-close]').onclick = () => m.remove();
+      $('#rn2ok', m).onclick = async () => { const v = $('#rn2', m).value.trim(); if (!v) return; plan.name = v.slice(0, 80); weekPlan = { ...weekPlan, _plans: plansList().map((p) => (p.id === plan.id ? plan : p)) }; m.remove(); await savePlans(ctx); drawDays(box, view, ctx); };
+    };
+    $('#np-use', box)?.addEventListener('click', async () => { await selectPlan(ctx, plan.id); notify('Rutina activa.', 'success'); drawDays(box, view, ctx); });
+  }
+  box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => { if (plan.days?.[b.dataset.open]?.rest) { notify('Es día de descanso: quita la luna para configurarlo.'); return; } openDayEditor(b.dataset.open, box, view, ctx); }));
+  box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = plan.days?.[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} copiado.`, 'success'); drawDays(box, view, ctx); }));
   box.querySelectorAll('[data-paste]').forEach((b) => (b.onclick = () => pasteDay(b.dataset.paste, box, view, ctx)));
   box.querySelectorAll('[data-rest]').forEach((b) => (b.onclick = async () => {
-    const d = b.dataset.rest, e = weekPlan[d];
+    const d = b.dataset.rest, e = plan.days?.[d];
     if (e?.rest) await setDayPlan(ctx, d, null);
-    else { if (e?.routineId && !(await confirmDialog(`${d} tiene una rutina. ¿Marcarlo como descanso? La rutina se conserva en “Mis rutinas”.`, 'Marcar descanso'))) return; await setDayPlan(ctx, d, { rest: true }); }
+    else { if (e?.routineId && !(await confirmDialog(`${d} tiene ejercicios. ¿Marcarlo como descanso? Se conservan hasta que lo quites.`, 'Marcar descanso'))) return; await setDayPlan(ctx, d, { rest: true }); }
     drawDays(box, view, ctx);
   }));
 }
 
 async function pasteDay(day, box, view, ctx) {
   if (!copiedDay) return;
-  if (weekPlan[day] && !(await confirmDialog(`${day} ya tiene una planificación. ¿Reemplazarla con la copiada?`, 'Reemplazar'))) return;
+  if (dayEntry(day) && !(await confirmDialog(`${day} ya tiene una planificación. ¿Reemplazarla con la copiada?`, 'Reemplazar'))) return;
   if (copiedDay.empty) await setDayPlan(ctx, day, null);
   else if (copiedDay.rest) await setDayPlan(ctx, day, { rest: true });
   else {
@@ -542,9 +631,9 @@ async function pasteDay(day, box, view, ctx) {
 
 /* ---- editor de un día ---- */
 async function openDayEditor(day, box, view, ctx) {
-  const entry = weekPlan[day] || {};
+  const entry = dayEntry(day) || {};
   const r = entry.routineId ? routines.find((x) => x.id === entry.routineId) : null;
-  dayDraft = { day, name: entry.name || '', groups: [...(entry.groups || [])], items: (r?.items || []).map(normItem), routineId: r?.id || null };
+  dayDraft = { day, planId: editId, name: entry.name || '', groups: [...(entry.groups || [])], items: (r?.items || []).map(normItem), routineId: r?.id || null };
   dayActive = 0; dayNoteOpen = false; planPage = { day };
   await loadPrevSets().catch(() => { prevSets = {}; });
   drawDayEditor(box, view, ctx);
@@ -565,7 +654,7 @@ async function persistDay(ctx) {
   const groups = d.groups.length ? d.groups : [];
   let routineId = d.routineId;
   if (items.length || routineId) {
-    const auto = d.name || `Rutina de ${d.day}`;
+    const auto = d.name || `${planOf(d.planId)?.name || 'Rutina'} · ${d.day}`;
     const row = { name: auto.slice(0, 80), focus: groups.map(groupLabel).join(', ').slice(0, 200) || null, items, updated_at: new Date().toISOString() };
     if (routineId) {
       const { data, error } = await supabase.from('plyo_routines').update(row).eq('id', routineId).select('*').single();
@@ -578,7 +667,7 @@ async function persistDay(ctx) {
     }
   }
   const entry = { ...(routineId ? { routineId } : {}), ...(d.name ? { name: d.name } : {}), ...(groups.length ? { groups } : {}) };
-  await setDayPlan(ctx, d.day, Object.keys(entry).length ? entry : null);
+  await setDayPlan(ctx, d.day, Object.keys(entry).length ? entry : null, d.planId);
 }
 
 function drawDayEditor(box, view, ctx) {
@@ -616,7 +705,7 @@ function drawDayEditor(box, view, ctx) {
       </div></article>` : `<div class="card pd-empty"><p class="muted">Este día aún no tiene ejercicios.</p><button type="button" class="btn" id="pd-add2">+ Agregar ejercicios</button></div>`}`;
 
   const redraw = () => drawDayEditor(box, view, ctx);
-  $('#pd-back', box).onclick = async () => { await flushSave(ctx); planPage = 'days'; dayDraft = null; renderPlyo(view, ctx); };
+  $('#pd-back', box).onclick = async () => { await flushSave(ctx); planPage = planBase; dayDraft = null; renderPlyo(view, ctx); };
   $('#pd-name', box).oninput = (e) => { d.name = e.target.value.trim(); queueSave(ctx); };
   box.querySelectorAll('[data-group]').forEach((b) => (b.onclick = () => { const g = b.dataset.group; d.groups = d.groups.includes(g) ? d.groups.filter((x) => x !== g) : [...d.groups, g]; b.classList.toggle('on'); queueSave(ctx); }));
   const addPicker = () => picker(ctx, (ids) => {
@@ -684,76 +773,14 @@ function bindStripDrag(strip, onDrop) {
   strip.addEventListener('pointerup', end); strip.addEventListener('pointercancel', end);
 }
 
-async function setDayPlan(ctx, day, value) {
-  weekPlan = { ...weekPlan }; if (value) weekPlan[day] = value; else delete weekPlan[day];
-  const { error } = await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-  if (error) notify('No se pudo guardar el plan: ' + error.message);
-}
-
-function routineForm(ctx, existing, onDone) {
-  const selected = new Map((existing?.items || []).map((it) => [it.exercise_id, it]));
-  const m = modal(`<div class="sheet-h"><b>${existing ? 'Editar rutina' : 'Nueva rutina'}</b><button class="link" data-close>Cerrar</button></div>
-    <label for="rn">Nombre</label><input id="rn" maxlength="80" value="${esc(existing?.name || '')}" required>
-    <label for="rf">Objetivo (opcional)</label><input id="rf" maxlength="200" value="${esc(existing?.focus || '')}">
-    <label for="rq">Buscar ejercicio</label><input id="rq" type="search" placeholder="Buscar…">
-    <div id="routine-exlist" class="plan-exercise-list"></div>
-    <div class="sheet-f"><button class="btn" id="rsave" type="button">Guardar rutina</button></div><p class="msg" id="rmsg"></p>`);
-  const list = $('#routine-exlist', m);
-  const draw = () => {
-    const q = $('#rq', m).value.trim().toLowerCase();
-    const items = catalog.filter((e) => !q || `${e.name} ${e.name_es || ''}`.toLowerCase().includes(q));
-    list.innerHTML = items.map((e) => {
-      const cfg = selected.get(e.id);
-      const fields = fieldsFor(e).filter((f) => f !== 'rest_sec');
-      return `<article class="plan-pick" data-pick="${esc(e.id)}"><label><input type="checkbox" ${cfg ? 'checked' : ''}><span><b>${name(e)}</b><small>${esc((e.primary_muscles || []).join(', '))}</small></span></label>
-        <div class="plan-target">
-          <label>Series<input data-field="target_sets" type="number" min="1" max="20" inputmode="numeric" value="${cfg?.target_sets || 3}"></label>
-          ${fields.map((f) => `<label>${FIELD_LABELS[f][0]}<input data-field="${f}" type="number" min="0" step="${FIELD_LABELS[f][1]}" inputmode="decimal" value="${cfg?.targets?.[f] ?? ''}"></label>`).join('')}
-          <label>Descanso (s)<input data-field="rest_sec" type="number" min="0" step="5" inputmode="numeric" value="${cfg?.rest_sec || 60}"></label>
-        </div></article>`;
-    }).join('') || '<p class="muted">Sin resultados.</p>';
-    list.querySelectorAll('.plan-pick').forEach((card) => {
-      const id = card.dataset.pick, check = $('input[type=checkbox]', card);
-      const readCfg = () => {
-        const targets = {};
-        fieldsFor(catalog.find((e) => e.id === id) || {}).filter((f) => f !== 'rest_sec').forEach((f) => { const v = card.querySelector(`[data-field="${f}"]`)?.value; if (v !== '' && v != null) targets[f] = Number(v); });
-        return { exercise_id: id, target_sets: Math.max(1, Number(card.querySelector('[data-field=target_sets]').value) || 3), rest_sec: Math.max(0, Number(card.querySelector('[data-field=rest_sec]').value) || 60), targets };
-      };
-      check.onchange = () => { if (check.checked) selected.set(id, readCfg()); else selected.delete(id); };
-      card.querySelectorAll('[data-field]').forEach((inp) => (inp.oninput = () => { if (check.checked) selected.set(id, readCfg()); }));
-    });
-  };
-  $('#rq', m).oninput = draw; draw();
-  m.querySelector('[data-close]').onclick = () => m.remove();
-  $('#rsave', m).onclick = async () => {
-    const nm = $('#rn', m).value.trim();
-    if (!nm) { $('#rmsg', m).textContent = 'Ponle un nombre a la rutina.'; return; }
-    if (!selected.size) { $('#rmsg', m).textContent = 'Agrega al menos un ejercicio.'; return; }
-    const row = { user_id: ctx.user.id, name: nm, focus: $('#rf', m).value.trim() || null, items: [...selected.values()], updated_at: new Date().toISOString() };
-    const saved = existing
-      ? await supabase.from('plyo_routines').update(row).eq('id', existing.id).select('*').single()
-      : await supabase.from('plyo_routines').insert(row).select('*').single();
-    if (saved.error) { $('#rmsg', m).textContent = saved.error.message; return; }
-    routines = existing ? routines.map((r) => (r.id === existing.id ? saved.data : r)) : [...routines, saved.data];
-    m.remove(); notify('Rutina guardada.', 'success'); onDone(saved.data);
-  };
-}
-
-async function duplicateRoutine(ctx, id, view) {
-  const r = routines.find((x) => x.id === id); if (!r) return;
-  const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, name: `${r.name} (copia)`, focus: r.focus, items: r.items }).select('*').single();
-  if (error) { notify(error.message); return; }
-  routines = [...routines, data]; notify('Rutina duplicada.', 'success'); renderPlyo(view, ctx);
-}
-
-async function deleteRoutine(ctx, id, view) {
-  if (!(await confirmDialog('¿Eliminar esta rutina? Los días que la usan quedarán sin asignar.', 'Eliminar rutina'))) return;
-  const { error } = await supabase.from('plyo_routines').delete().eq('id', id);
-  if (error) { notify(error.message); return; }
-  routines = routines.filter((r) => r.id !== id);
-  Object.keys(weekPlan).forEach((d) => { if (weekPlan[d]?.routineId === id) delete weekPlan[d]; });
-  await supabase.from('plyo_plans').upsert({ user_id: ctx.user.id, plan: weekPlan, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-  notify('Rutina eliminada.', 'success'); renderPlyo(view, ctx);
+async function setDayPlan(ctx, day, value, planId = editId) {
+  const plan = planOf(planId); if (!plan) return;
+  const days = { ...(plan.days || {}) }; if (value) days[day] = value; else delete days[day];
+  plan.days = days;
+  if (draftPlan && plan === draftPlan) return;                  // todavía no creada: solo en memoria
+  weekPlan = { ...weekPlan, _plans: plansList().map((p) => (p.id === plan.id ? plan : p)) };
+  if (weekPlan._activePlan === plan.id) mirrorActive(plan);
+  await savePlans(ctx);
 }
 
 /* ----------------------------------- Progreso ----------------------------------- */
