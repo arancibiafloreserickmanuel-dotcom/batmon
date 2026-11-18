@@ -1646,3 +1646,12 @@ body.appbody .payment-wallet .method-cash{background:linear-gradient(180deg,rgba
 .method-cash .method-chip{background:rgba(0,0,0,.35);border-color:#fff8}
 .cash-bill{height:auto;aspect-ratio:1500/745;padding:0;border:0;background:url('/billete-200.webp') center/cover no-repeat;box-shadow:0 8px 22px rgba(0,0,0,.3)}
 .cash-bill::before,.cash-bill::after,.cash-bill>span,.cash-bill>strong,.cash-bill>i{display:none}
+
+/* Tarjeta de crédito: número y vencimiento con espacio propio */
+.flip-card{width:min(300px,100%);height:180px}
+.credit-brand{top:16px}
+.credit-chip{top:42px}.credit-contactless{top:42px}
+.credit-number{top:82px;left:20px;right:20px;font-size:15px;letter-spacing:.06em;white-space:nowrap;text-align:left}
+.credit-date{bottom:48px;left:20px;font-size:11px}
+.credit-holder{bottom:16px;left:20px;right:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+@media(max-width:380px){.credit-number{font-size:13px;letter-spacing:.04em}}
