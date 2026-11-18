@@ -2,6 +2,7 @@ import { supabase, $, esc } from '../supabase.js';
 import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart } from './common.js';
 
 const DRAFT_KEY = 'batmon_plyo_draft_v2';
+const REST_IMG = '/descanso.webp';
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const FIELD_LABELS = { // clave BD -> [etiqueta corta, step]
   reps: ['Reps', 1], contacts: ['Contactos', 1], height_cm: ['Altura cm', 0.5],
@@ -93,7 +94,7 @@ function renderTrain(box, view, ctx) {
   const isRest = !!entry?.rest && !routine;
   const hasPending = W && W.status !== 'done';
   const firstEx = routine ? catalog.find((e) => e.id === routine.items[0]?.exercise_id) : null;
-  const photo = firstEx?.images?.[0] ? `/exercises/${encodeURI(firstEx.images[0])}` : '';
+  const photo = isRest ? REST_IMG : firstEx?.images?.[0] ? `/exercises/${encodeURI(firstEx.images[0])}` : '';
   const repsOf = (it) => { const t = it.targets || {}; if (t.reps) return `${t.reps}`; if (t.contacts) return `${t.contacts} cont.`; if (t.seconds) return `${t.seconds} s`; if (t.time_sec) return `${t.time_sec} s`; return '—'; };
   const rows = routine ? routine.items.map((it) => {
     const ex = catalog.find((e) => e.id === it.exercise_id);
@@ -538,6 +539,7 @@ async function loadPrevSets() {
 }
 
 function dayPhoto(entry) {
+  if (entry?.rest) return REST_IMG;
   const r = entry?.routineId ? routines.find((x) => x.id === entry.routineId) : null;
   return exPhoto(exById(r?.items?.[0]?.exercise_id));
 }
@@ -564,7 +566,7 @@ function drawDays(box, view, ctx) {
       const entry = plan.days?.[d]; const photo = dayPhoto(entry);
       return `<article class="pd-day${entry?.rest ? ' is-rest' : ''}">
         <button type="button" class="pd-day__main" data-open="${d}">
-          <span class="pd-day__photo${photo ? ' has-photo' : ''}"${photo ? ` style="--p:url('${photo}')"` : ''}>${entry?.rest ? ICON.moon : photo ? '' : ICON.plus}</span>
+          <span class="pd-day__photo${photo ? ' has-photo' : ''}"${photo ? ` style="--p:url('${photo}')"` : ''}>${photo ? '' : ICON.plus}</span>
           <span class="pd-day__text"><b>${d}</b><small>${dates[i].getDate()}/${dates[i].getMonth() + 1} · ${daySubtitle(entry)}</small></span>
         </button>
         <div class="pd-day__tools">
