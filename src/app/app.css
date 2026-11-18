@@ -1583,3 +1583,12 @@ body.appbody .plyo-new-plan{display:flex;align-items:center;justify-content:cent
 .pd-active{padding:6px 12px;border-radius:99px;background:#111;color:#fff;font:700 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}
 body.appbody .pd-create{width:100%;margin:16px 0 8px}
 body.appbody .pd-create[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Selección en negro: chips de grupo y tarjetas de ejercicio (claro y oscuro) */
+body.appbody .pd-chip.on,body.appbody .pd-pill.on,body.appbody button.pd-chip.on{background:#000!important;color:#fff!important;border-color:#000!important}
+body.appbody[data-theme="dark"] .pd-chip.on,body.appbody[data-theme="dark"] .pd-pill.on{background:#000!important;color:#fff!important;border-color:#fff!important;box-shadow:0 0 0 1px #fff!important}
+body.appbody .ecard.sel,body.appbody[data-theme="dark"] .ecard.sel{background:#000!important;color:#fff!important;border:3px solid #000!important}
+body.appbody .ecard.sel span{color:#fff!important}
+body.appbody[data-theme="dark"] .ecard.sel{border-color:#fff!important}
+body.appbody .pd-newex{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 10px;padding:11px 14px;border-radius:12px;border:1.5px dashed var(--line);background:var(--surface);color:var(--ink);font:700 14px Inter,sans-serif;cursor:pointer;box-shadow:none!important}
+body.appbody .pd-newex:active{background:#000;color:#fff}

@@ -1,0 +1,724 @@
+[
+ {
+  "id": "Freehand_Jump_Squat",
+  "name": "Freehand Jump Squat",
+  "level": "intermediate",
+  "equipment": "body only",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Pies al ancho de hombros, manos detrás de la cabeza o al pecho.",
+   "Baja a sentadilla y salta explosivo hacia arriba.",
+   "Aterriza suave con rodillas flexionadas y repite."
+  ],
+  "images": [
+   "Freehand_Jump_Squat/0.jpg",
+   "Freehand_Jump_Squat/1.jpg"
+  ]
+ },
+ {
+  "id": "Weighted_Jump_Squat",
+  "name": "Weighted Jump Squat",
+  "level": "intermediate",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "lower back"
+  ],
+  "instructions": [
+   "Sostén una carga ligera (barra o mancuernas) y baja a sentadilla.",
+   "Salta lo más alto que puedas manteniendo el torso firme.",
+   "Aterriza amortiguando con cadera y rodillas."
+  ],
+  "images": [
+   "Weighted_Jump_Squat/0.jpg",
+   "Weighted_Jump_Squat/1.jpg"
+  ]
+ },
+ {
+  "id": "Kneeling_Jump_Squat",
+  "name": "Kneeling Jump Squat",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "glutes"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Arrodíllate con la espalda recta y los brazos listos para impulsarte.",
+   "Balancea los brazos y salta para quedar de pie en sentadilla.",
+   "Aterriza estable y vuelve a la posición inicial."
+  ],
+  "images": [
+   "Kneeling_Jump_Squat/0.jpg",
+   "Kneeling_Jump_Squat/1.jpg"
+  ]
+ },
+ {
+  "id": "Frog_Hops",
+  "name": "Frog Hops",
+  "level": "intermediate",
+  "equipment": null,
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Ponte en cuclillas profundas con las manos entre los pies.",
+   "Salta hacia adelante extendiendo cadera y piernas.",
+   "Aterriza otra vez en cuclillas y encadena el siguiente salto."
+  ],
+  "images": [
+   "Frog_Hops/0.jpg",
+   "Frog_Hops/1.jpg"
+  ]
+ },
+ {
+  "id": "Rope_Jumping",
+  "name": "Rope Jumping",
+  "level": "intermediate",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Sostén la cuerda con las muñecas, codos pegados al cuerpo.",
+   "Salta con saltos pequeños y rápidos, aterrizando en la punta de los pies.",
+   "Mantén un ritmo constante y la mirada al frente."
+  ],
+  "images": [
+   "Rope_Jumping/0.jpg",
+   "Rope_Jumping/1.jpg"
+  ]
+ },
+ {
+  "id": "Wind_Sprints",
+  "name": "Wind Sprints",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [],
+  "instructions": [
+   "Calienta bien y colócate en posición de salida.",
+   "Corre a máxima velocidad una distancia corta (20–50 m).",
+   "Camina de regreso para recuperar y repite."
+  ],
+  "images": [
+   "Wind_Sprints/0.jpg",
+   "Wind_Sprints/1.jpg"
+  ]
+ },
+ {
+  "id": "Lunge_Sprint",
+  "name": "Lunge Sprint",
+  "level": "intermediate",
+  "equipment": "machine",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Parte en posición de zancada, con una rodilla adelante.",
+   "Cambia de pierna con un salto explosivo y arranca a correr.",
+   "Acelera unos metros manteniendo el torso inclinado."
+  ],
+  "images": [
+   "Lunge_Sprint/0.jpg",
+   "Lunge_Sprint/1.jpg"
+  ]
+ },
+ {
+  "id": "Prowler_Sprint",
+  "name": "Prowler Sprint",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "chest",
+   "glutes",
+   "quadriceps",
+   "shoulders"
+  ],
+  "instructions": [
+   "Empuja el trineo con los brazos extendidos y el torso inclinado.",
+   "Acelera con pasos potentes y cortos.",
+   "Recorre la distancia marcada y descansa."
+  ],
+  "images": [
+   "Prowler_Sprint/0.jpg",
+   "Prowler_Sprint/1.jpg"
+  ]
+ },
+ {
+  "id": "One-Arm_Medicine_Ball_Slam",
+  "name": "One-Arm Medicine Ball Slam",
+  "level": "beginner",
+  "equipment": "medicine ball",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "lats",
+   "shoulders"
+  ],
+  "instructions": [
+   "Sostén el balón con una mano por encima de la cabeza.",
+   "Lánzalo con fuerza contra el suelo usando todo el cuerpo.",
+   "Recógelo y repite con el mismo brazo; luego cambia."
+  ],
+  "images": [
+   "One-Arm_Medicine_Ball_Slam/0.jpg",
+   "One-Arm_Medicine_Ball_Slam/1.jpg"
+  ]
+ },
+ {
+  "id": "Plyo_Kettlebell_Pushups",
+  "name": "Plyo Kettlebell Pushups",
+  "level": "expert",
+  "equipment": "kettlebells",
+  "primary_muscles": [
+   "chest"
+  ],
+  "secondary_muscles": [
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Posición de flexión con una mano sobre la pesa rusa.",
+   "Empuja explosivo y cambia de mano en el aire.",
+   "Aterriza con control y repite al otro lado."
+  ],
+  "images": [
+   "Plyo_Kettlebell_Pushups/0.jpg",
+   "Plyo_Kettlebell_Pushups/1.jpg"
+  ]
+ },
+ {
+  "id": "One-Arm_Kettlebell_Swings",
+  "name": "One-Arm Kettlebell Swings",
+  "level": "intermediate",
+  "equipment": "kettlebells",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "lower back",
+   "shoulders"
+  ],
+  "instructions": [
+   "Pies más anchos que los hombros, pesa rusa entre las piernas.",
+   "Empuja la cadera hacia adelante y lleva la pesa a la altura del pecho.",
+   "Deja que regrese entre las piernas y repite sin encorvar la espalda."
+  ],
+  "images": [
+   "One-Arm_Kettlebell_Swings/0.jpg",
+   "One-Arm_Kettlebell_Swings/1.jpg"
+  ]
+ },
+ {
+  "id": "Kettlebell_Thruster",
+  "name": "Kettlebell Thruster",
+  "level": "intermediate",
+  "equipment": "kettlebells",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "quadriceps",
+   "triceps"
+  ],
+  "instructions": [
+   "Sostén la pesa rusa a la altura del pecho y baja a sentadilla.",
+   "Sube explosivo y empuja la pesa por encima de la cabeza.",
+   "Regrésala al pecho y repite."
+  ],
+  "images": [
+   "Kettlebell_Thruster/0.jpg",
+   "Kettlebell_Thruster/1.jpg"
+  ]
+ },
+ {
+  "id": "Power_Stairs",
+  "name": "Power Stairs",
+  "level": "intermediate",
+  "equipment": "other",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "adductors",
+   "calves",
+   "glutes",
+   "lower back",
+   "quadriceps",
+   "shoulders",
+   "traps"
+  ],
+  "instructions": [
+   "Colócate frente a las escaleras o bloques.",
+   "Sube con pasos o saltos explosivos, apoyando bien todo el pie.",
+   "Baja con control y repite."
+  ],
+  "images": [
+   "Power_Stairs/0.jpg",
+   "Power_Stairs/1.jpg"
+  ]
+ },
+ {
+  "id": "Push_Press",
+  "name": "Push Press",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "quadriceps",
+   "triceps"
+  ],
+  "instructions": [
+   "Barra a la altura de los hombros, pies al ancho de caderas.",
+   "Flexiona levemente las rodillas e impulsa para subir la barra sobre la cabeza.",
+   "Baja con control a los hombros y repite."
+  ],
+  "images": [
+   "Push_Press/0.jpg",
+   "Push_Press/1.jpg"
+  ]
+ },
+ {
+  "id": "Power_Clean",
+  "name": "Power Clean",
+  "level": "intermediate",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "forearms",
+   "glutes",
+   "lower back",
+   "middle back",
+   "quadriceps",
+   "shoulders",
+   "traps",
+   "triceps"
+  ],
+  "instructions": [
+   "Barra en el suelo, espalda recta, agarre al ancho de hombros.",
+   "Extiende cadera y rodillas con fuerza y encoge los hombros para subir la barra.",
+   "Recíbela sobre los hombros con las rodillas flexionadas."
+  ],
+  "images": [
+   "Power_Clean/0.jpg",
+   "Power_Clean/1.jpg"
+  ]
+ },
+ {
+  "id": "Hang_Clean",
+  "name": "Hang Clean",
+  "level": "intermediate",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "forearms",
+   "glutes",
+   "hamstrings",
+   "lower back",
+   "shoulders",
+   "traps"
+  ],
+  "instructions": [
+   "Sostén la barra a la altura de las rodillas, espalda recta.",
+   "Empuja la cadera hacia adelante y jala la barra hacia los hombros.",
+   "Recíbela en posición frontal y baja con control."
+  ],
+  "images": [
+   "Hang_Clean/0.jpg",
+   "Hang_Clean/1.jpg"
+  ]
+ },
+ {
+  "id": "Power_Snatch",
+  "name": "Power Snatch",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "lower back",
+   "quadriceps",
+   "shoulders",
+   "traps",
+   "triceps"
+  ],
+  "instructions": [
+   "Agarre ancho sobre la barra, espalda recta.",
+   "Extiende con fuerza y lleva la barra sobre la cabeza en un solo movimiento.",
+   "Recíbela con brazos firmes y baja con control."
+  ],
+  "images": [
+   "Power_Snatch/0.jpg",
+   "Power_Snatch/1.jpg"
+  ]
+ },
+ {
+  "id": "Dumbbell_Clean",
+  "name": "Dumbbell Clean",
+  "level": "intermediate",
+  "equipment": "dumbbell",
+  "primary_muscles": [
+   "hamstrings"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "forearms",
+   "glutes",
+   "lower back",
+   "quadriceps",
+   "shoulders",
+   "traps"
+  ],
+  "instructions": [
+   "Mancuerna al lado del cuerpo, rodillas ligeramente flexionadas.",
+   "Extiende caderas y jala la mancuerna hasta el hombro.",
+   "Recíbela y baja con control."
+  ],
+  "images": [
+   "Dumbbell_Clean/0.jpg",
+   "Dumbbell_Clean/1.jpg"
+  ]
+ },
+ {
+  "id": "One-Arm_Kettlebell_Snatch",
+  "name": "One-Arm Kettlebell Snatch",
+  "level": "expert",
+  "equipment": "kettlebells",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "lower back",
+   "traps",
+   "triceps"
+  ],
+  "instructions": [
+   "Pesa rusa entre las piernas, torso inclinado.",
+   "Extiende cadera y lleva la pesa sobre la cabeza en un solo arco.",
+   "Recíbela con el brazo extendido y vuelve a la posición inicial."
+  ],
+  "images": [
+   "One-Arm_Kettlebell_Snatch/0.jpg",
+   "One-Arm_Kettlebell_Snatch/1.jpg"
+  ]
+ },
+ {
+  "id": "Power_Jerk",
+  "name": "Power Jerk",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Barra sobre los hombros, pies al ancho de caderas.",
+   "Flexiona las rodillas y empuja explosivo para lanzar la barra arriba.",
+   "Recíbela con los brazos estirados y las piernas semiflexionadas."
+  ],
+  "images": [
+   "Power_Jerk/0.jpg",
+   "Power_Jerk/1.jpg"
+  ]
+ },
+ {
+  "id": "Clean_and_Jerk",
+  "name": "Clean and Jerk",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "abdominals",
+   "glutes",
+   "hamstrings",
+   "lower back",
+   "quadriceps",
+   "traps",
+   "triceps"
+  ],
+  "instructions": [
+   "Realiza una cargada para llevar la barra a los hombros.",
+   "Flexiona y extiende las piernas para lanzar la barra sobre la cabeza.",
+   "Estabiliza arriba y baja con control."
+  ],
+  "images": [
+   "Clean_and_Jerk/0.jpg",
+   "Clean_and_Jerk/1.jpg"
+  ]
+ },
+ {
+  "id": "Jackknife_Sit-Up",
+  "name": "Jackknife Sit-Up",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [],
+  "instructions": [
+   "Acuéstate boca arriba con brazos extendidos sobre la cabeza.",
+   "Sube brazos y piernas a la vez para tocar los pies.",
+   "Baja con control sin apoyar del todo y repite."
+  ],
+  "images": [
+   "Jackknife_Sit-Up/0.jpg",
+   "Jackknife_Sit-Up/1.jpg"
+  ]
+ },
+ {
+  "id": "Tire_Flip",
+  "name": "Tire Flip",
+  "level": "intermediate",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "chest",
+   "forearms",
+   "glutes",
+   "hamstrings",
+   "lower back",
+   "shoulders",
+   "traps",
+   "triceps"
+  ],
+  "instructions": [
+   "Agáchate frente al neumático con la espalda recta.",
+   "Empuja con las piernas y voltea el neumático con las manos.",
+   "Sigue empujando con pasos cortos hasta que caiga."
+  ],
+  "images": [
+   "Tire_Flip/0.jpg",
+   "Tire_Flip/1.jpg"
+  ]
+ },
+ {
+  "id": "Sled_Push",
+  "name": "Sled Push",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "chest",
+   "glutes",
+   "hamstrings",
+   "triceps"
+  ],
+  "instructions": [
+   "Manos en el trineo, brazos estirados, torso inclinado.",
+   "Empuja con pasos potentes y continuos.",
+   "Recorre la distancia y recupera."
+  ],
+  "images": [
+   "Sled_Push/0.jpg",
+   "Sled_Push/1.jpg"
+  ]
+ },
+ {
+  "id": "Bear_Crawl_Sled_Drags",
+  "name": "Bear Crawl Sled Drags",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ],
+  "instructions": [
+   "Colócate en cuatro apoyos con el arnés o la cuerda del trineo.",
+   "Avanza gateando con rodillas cerca del suelo.",
+   "Mantén la espalda plana y el ritmo constante."
+  ],
+  "images": [
+   "Bear_Crawl_Sled_Drags/0.jpg",
+   "Bear_Crawl_Sled_Drags/1.jpg"
+  ]
+ },
+ {
+  "id": "Battling_Ropes",
+  "name": "Battling Ropes",
+  "level": "beginner",
+  "equipment": "other",
+  "primary_muscles": [
+   "shoulders"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "forearms"
+  ],
+  "instructions": [
+   "Pies al ancho de hombros, rodillas semiflexionadas, una cuerda en cada mano.",
+   "Haz ondas rápidas y alternas con los brazos.",
+   "Mantén el core firme durante todo el intervalo."
+  ],
+  "images": [
+   "Battling_Ropes/0.jpg",
+   "Battling_Ropes/1.jpg"
+  ]
+ },
+ {
+  "id": "Step-up_with_Knee_Raise",
+  "name": "Step-up with Knee Raise",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "glutes"
+  ],
+  "secondary_muscles": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "instructions": [
+   "Párate frente a un banco o cajón estable.",
+   "Sube con una pierna y lleva la otra rodilla al pecho.",
+   "Baja con control y alterna las piernas."
+  ],
+  "images": [
+   "Step-up_with_Knee_Raise/0.jpg",
+   "Step-up_with_Knee_Raise/1.jpg"
+  ]
+ },
+ {
+  "id": "Kettlebell_Sumo_High_Pull",
+  "name": "Kettlebell Sumo High Pull",
+  "level": "intermediate",
+  "equipment": "kettlebells",
+  "primary_muscles": [
+   "traps"
+  ],
+  "secondary_muscles": [
+   "adductors",
+   "glutes",
+   "hamstrings",
+   "quadriceps",
+   "shoulders"
+  ],
+  "instructions": [
+   "Pies muy abiertos, pesa rusa entre las piernas.",
+   "Extiende caderas y jala la pesa hasta la altura del pecho con los codos arriba.",
+   "Baja la pesa con control y repite."
+  ],
+  "images": [
+   "Kettlebell_Sumo_High_Pull/0.jpg",
+   "Kettlebell_Sumo_High_Pull/1.jpg"
+  ]
+ },
+ {
+  "id": "Speed_Squats",
+  "name": "Speed Squats",
+  "level": "expert",
+  "equipment": "barbell",
+  "primary_muscles": [
+   "quadriceps"
+  ],
+  "secondary_muscles": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "lower back"
+  ],
+  "instructions": [
+   "Barra ligera sobre los hombros, pies al ancho de hombros.",
+   "Baja controlado y sube lo más rápido posible.",
+   "Mantén la técnica en cada repetición."
+  ],
+  "images": [
+   "Speed_Squats/0.jpg",
+   "Speed_Squats/1.jpg"
+  ]
+ },
+ {
+  "id": "Spider_Crawl",
+  "name": "Spider Crawl",
+  "level": "beginner",
+  "equipment": "body only",
+  "primary_muscles": [
+   "abdominals"
+  ],
+  "secondary_muscles": [
+   "chest",
+   "shoulders",
+   "triceps"
+  ],
+  "instructions": [
+   "Posición de plancha con manos y pies apoyados.",
+   "Avanza llevando una rodilla hacia el codo del mismo lado.",
+   "Alterna los lados manteniendo la cadera baja."
+  ],
+  "images": [
+   "Spider_Crawl/0.jpg",
+   "Spider_Crawl/1.jpg"
+  ]
+ }
+]

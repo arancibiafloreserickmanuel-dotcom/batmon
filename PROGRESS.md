@@ -366,3 +366,8 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 - Botón **Crear nueva rutina** fuera de "Mis rutinas guardadas": nombre, notas, "usar como activa" y los 7 días (copiar/pegar/luna, editor de día). Se crea al tocar "Crear rutina" (necesita ≥1 día con ejercicios).
 - "Mis rutinas guardadas" lista las rutinas semanales (Seleccionar, Duplicar, Eliminar); al tocar una se abren sus días. Dentro: Cambiar nombre y "Usar como activa".
 - El plan antiguo de días sueltos se migra solo a una rutina llamada "Mi plan".
+
+## Ejercicios extra y búsqueda en español
+- 30 ejercicios nuevos (`src/data/plyometrics_extra.json`, imágenes en `public/exercises`), migración `0021_plyo_extra_exercises.sql` (aplicar en Supabase).
+- `src/app/exercise-i18n.js`: nombres/pasos/alias en español (`src/data/exercise_es.json`), equipo y músculos traducidos, búsqueda con sinónimos ES/EN, sin tildes y con tolerancia a errores.
+- Selector de ejercicios: grupo/nivel/equipo como desplegables, "Crear ejercicio propio" arriba con icono, selección en negro (claro y oscuro). Chips de grupos de la rutina también en negro.

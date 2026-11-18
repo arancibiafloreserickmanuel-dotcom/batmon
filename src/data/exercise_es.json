@@ -1,0 +1,805 @@
+{
+ "Alternate_Leg_Diagonal_Bound": {
+  "n": "Saltos diagonales alternos",
+  "h": [
+   "Saltos largos en diagonal alternando piernas, aterrizando suave en cada apoyo."
+  ],
+  "a": []
+ },
+ "Backward_Medicine_Ball_Throw": {
+  "n": "Lanzamiento de balón medicinal hacia atrás",
+  "h": [
+   "Lanza el balón medicinal hacia atrás por encima de la cabeza usando piernas y cadera."
+  ],
+  "a": []
+ },
+ "Bench_Jump": {
+  "n": "Salto al banco",
+  "h": [
+   "Salta con ambas piernas sobre un banco o cajón y baja con control."
+  ],
+  "a": []
+ },
+ "Bench_Sprint": {
+  "n": "Carrera sobre banco",
+  "h": [
+   "Con un pie sobre el banco, cambia de pierna lo más rápido posible simulando una carrera."
+  ],
+  "a": []
+ },
+ "Box_Jump_Multiple_Response": {
+  "n": "Saltos repetidos al cajón",
+  "h": [
+   "Saltos continuos sobre el cajón, rebotando rápido entre repeticiones."
+  ],
+  "a": []
+ },
+ "Box_Skip": {
+  "n": "Saltos con elevación de rodilla",
+  "h": [
+   "Skips (saltitos con elevación de rodilla) avanzando entre cajones."
+  ],
+  "a": []
+ },
+ "Carioca_Quick_Step": {
+  "n": "Pasos rápidos cruzados",
+  "h": [
+   "Pasos laterales cruzados rápidos, alternando el pie por delante y por detrás."
+  ],
+  "a": []
+ },
+ "Catch_and_Overhead_Throw": {
+  "n": "Recepción y lanzamiento por encima",
+  "h": [
+   "Recibe el balón y devuélvelo por encima de la cabeza contra una pared o con un compañero."
+  ],
+  "a": []
+ },
+ "Chest_Push_from_3_point_stance": {
+  "n": "Empuje de pecho desde tres apoyos",
+  "h": [
+   "Desde tres apoyos, impulsa el balón con el pecho al ponerte de pie."
+  ],
+  "a": []
+ },
+ "Chest_Push_multiple_response": {
+  "n": "Empujes repetidos de pecho",
+  "h": [
+   "Empujes de pecho con balón medicinal repetidos y rápidos, de rodillas."
+  ],
+  "a": []
+ },
+ "Chest_Push_single_response": {
+  "n": "Empuje único de pecho",
+  "h": [
+   "Un empuje explosivo de pecho con balón medicinal, de rodillas."
+  ],
+  "a": []
+ },
+ "Chest_Push_with_Run_Release": {
+  "n": "Empuje de pecho con salida en carrera",
+  "h": [
+   "Empuja el balón con el pecho y sal corriendo al soltarlo."
+  ],
+  "a": []
+ },
+ "Depth_Jump_Leap": {
+  "n": "Salto en profundidad y zancada",
+  "h": [
+   "Cae desde un cajón y salta enseguida hacia adelante hasta el otro cajón."
+  ],
+  "a": []
+ },
+ "Double_Leg_Butt_Kick": {
+  "n": "Talones a glúteos con dos piernas",
+  "h": [
+   "Saltos llevando los talones hacia los glúteos con las dos piernas."
+  ],
+  "a": []
+ },
+ "Drop_Push": {
+  "n": "Flexión con caída",
+  "h": [
+   "Flexión con caída entre dos plataformas bajas, rebotando al tocar el suelo."
+  ],
+  "a": []
+ },
+ "Dumbbell_Seated_Box_Jump": {
+  "n": "Salto sentado al cajón con mancuernas",
+  "h": [
+   "Sentado en un banco con mancuerna, salta explosivo hacia un cajón lateral."
+  ],
+  "a": []
+ },
+ "Fast_Skipping": {
+  "n": "Skipping rápido",
+  "h": [
+   "Skipping rápido: rodillas arriba, brazos coordinados y poco tiempo en el suelo."
+  ],
+  "a": []
+ },
+ "Front_Box_Jump": {
+  "n": "Salto frontal al cajón",
+  "h": [
+   "Salto frontal con ambas piernas para subir a un cajón y aterrizar estable."
+  ],
+  "a": []
+ },
+ "Front_Cone_Hops_or_hurdle_hops": {
+  "n": "Saltos frontales sobre conos o vallas",
+  "h": [
+   "Saltos hacia adelante sobre conos o vallas pequeñas, con contacto breve en el suelo."
+  ],
+  "a": []
+ },
+ "Heavy_Bag_Thrust": {
+  "n": "Empuje de saco pesado",
+  "h": [
+   "Empuja con fuerza un saco pesado usando piernas y cadera."
+  ],
+  "a": []
+ },
+ "Hurdle_Hops": {
+  "n": "Saltos sobre vallas",
+  "h": [
+   "Saltos con dos piernas sobre una fila de vallas, rebotando de una a otra."
+  ],
+  "a": []
+ },
+ "Incline_Push-Up_Depth_Jump": {
+  "n": "Flexión inclinada con salto en profundidad",
+  "h": [
+   "Flexión inclinada con caída y salto en profundidad entre plataformas."
+  ],
+  "a": []
+ },
+ "Isometric_Chest_Squeezes": {
+  "n": "Presión isométrica de pecho",
+  "h": [
+   "Aprieta las palmas frente al pecho manteniendo la tensión varios segundos."
+  ],
+  "a": []
+ },
+ "Knee_Tuck_Jump": {
+  "n": "Salto con rodillas al pecho",
+  "h": [
+   "Salto vertical llevando las rodillas al pecho en el aire."
+  ],
+  "a": []
+ },
+ "Kneeling_Arm_Drill": {
+  "n": "Técnica de brazos de rodillas",
+  "h": [
+   "De rodillas, practica el movimiento de brazos de la carrera con ritmo."
+  ],
+  "a": []
+ },
+ "Lateral_Bound": {
+  "n": "Salto lateral amplio",
+  "h": [
+   "Salto lateral amplio de una pierna a la otra, aterrizando con control."
+  ],
+  "a": []
+ },
+ "Lateral_Box_Jump": {
+  "n": "Salto lateral al cajón",
+  "h": [
+   "Salto lateral para subir a un cajón colocado a un costado."
+  ],
+  "a": []
+ },
+ "Lateral_Cone_Hops": {
+  "n": "Saltos laterales sobre conos",
+  "h": [
+   "Saltos laterales sobre una fila de conos con contacto rápido."
+  ],
+  "a": []
+ },
+ "Linear_3-Part_Start_Technique": {
+  "n": "Técnica de salida lineal en tres fases",
+  "h": [
+   "Práctica de la salida en tres fases para acelerar al arrancar un sprint."
+  ],
+  "a": []
+ },
+ "Linear_Acceleration_Wall_Drill": {
+  "n": "Ejercicio de aceleración lineal contra pared",
+  "h": [
+   "Inclinado contra una pared, alterna rodillas con rapidez para trabajar la aceleración."
+  ],
+  "a": []
+ },
+ "Linear_Depth_Jump": {
+  "n": "Salto lineal en profundidad",
+  "h": [
+   "Cae de un cajón y salta de inmediato sobre otro en línea recta."
+  ],
+  "a": []
+ },
+ "Medicine_Ball_Chest_Pass": {
+  "n": "Pase de pecho con balón medicinal",
+  "h": [
+   "Pase de pecho con balón medicinal contra una pared o con un compañero."
+  ],
+  "a": []
+ },
+ "Medicine_Ball_Full_Twist": {
+  "n": "Giro completo con balón medicinal",
+  "h": [
+   "Giro completo del torso pasando el balón medicinal a un compañero."
+  ],
+  "a": []
+ },
+ "Medicine_Ball_Scoop_Throw": {
+  "n": "Lanzamiento de abajo hacia arriba con balón medicinal",
+  "h": [
+   "Lanza el balón de abajo hacia arriba extendiendo piernas y cadera."
+  ],
+  "a": []
+ },
+ "Mountain_Climbers": {
+  "n": "Escaladores",
+  "h": [
+   "En posición de plancha, lleva las rodillas al pecho alternando a buen ritmo."
+  ],
+  "a": []
+ },
+ "Moving_Claw_Series": {
+  "n": "Serie de desplazamientos en garra",
+  "h": [
+   "Serie de desplazamientos para mejorar la técnica de carrera y el apoyo."
+  ],
+  "a": []
+ },
+ "Overhead_Slam": {
+  "n": "Lanzamiento al suelo por encima de la cabeza",
+  "h": [
+   "Eleva el balón por encima de la cabeza y estréllalo con fuerza contra el suelo."
+  ],
+  "a": []
+ },
+ "Plyo_Push-up": {
+  "n": "Flexión pliométrica",
+  "h": [
+   "Flexión explosiva en la que las manos se despegan del suelo."
+  ],
+  "a": []
+ },
+ "Quick_Leap": {
+  "n": "Salto rápido",
+  "h": [
+   "Salto rápido hacia un cajón y bajada inmediata con poco contacto."
+  ],
+  "a": []
+ },
+ "Return_Push_from_Stance": {
+  "n": "Empuje de retorno desde posición",
+  "h": [
+   "Empuja el balón de vuelta a un compañero desde una postura firme."
+  ],
+  "a": []
+ },
+ "Rocket_Jump": {
+  "n": "Salto cohete",
+  "h": [
+   "Sentadilla rápida y salto vertical estirando brazos y cuerpo hacia arriba."
+  ],
+  "a": []
+ },
+ "Scissors_Jump": {
+  "n": "Salto de tijera",
+  "h": [
+   "Desde zancada, salta y cambia de pierna en el aire."
+  ],
+  "a": []
+ },
+ "Side_Hop-Sprint": {
+  "n": "Salto lateral y carrera",
+  "h": [
+   "Salto lateral sobre un cono y arranque inmediato en sprint."
+  ],
+  "a": []
+ },
+ "Side_Standing_Long_Jump": {
+  "n": "Salto largo lateral de pie",
+  "h": [
+   "Salto largo lateral desde parado, aterrizando estable."
+  ],
+  "a": []
+ },
+ "Side_to_Side_Box_Shuffle": {
+  "n": "Desplazamiento lateral alrededor del cajón",
+  "h": [
+   "Desplazamientos laterales rápidos sobre y alrededor de un cajón."
+  ],
+  "a": []
+ },
+ "Single-Cone_Sprint_Drill": {
+  "n": "Ejercicio de carrera con un cono",
+  "h": [
+   "Ejercicio de pies rápidos y carrera alrededor de un solo cono."
+  ],
+  "a": []
+ },
+ "Single-Leg_Hop_Progression": {
+  "n": "Progresión de saltos a una pierna",
+  "h": [
+   "Saltitos a una pierna avanzando entre conos."
+  ],
+  "a": []
+ },
+ "Single-Leg_Lateral_Hop": {
+  "n": "Salto lateral a una pierna",
+  "h": [
+   "Salto lateral a una pierna sobre un cono o valla."
+  ],
+  "a": []
+ },
+ "Single-Leg_Stride_Jump": {
+  "n": "Salto de zancada a una pierna",
+  "h": [
+   "Zancada saltando a una pierna sobre un cajón."
+  ],
+  "a": []
+ },
+ "Single_Leg_Butt_Kick": {
+  "n": "Talón al glúteo a una pierna",
+  "h": [
+   "Talón al glúteo a una pierna con saltitos."
+  ],
+  "a": []
+ },
+ "Single_Leg_Push-off": {
+  "n": "Impulso a una pierna",
+  "h": [
+   "Con un pie sobre el cajón, impulsa hacia arriba con esa pierna."
+  ],
+  "a": []
+ },
+ "Sledgehammer_Swings": {
+  "n": "Balanceos con mazo",
+  "h": [
+   "Golpea un neumático con un mazo usando todo el cuerpo."
+  ],
+  "a": []
+ },
+ "Split_Jump": {
+  "n": "Salto en zancada",
+  "h": [
+   "Salto en zancada: cambia de pierna en el aire y aterriza en zancada."
+  ],
+  "a": []
+ },
+ "Standing_Long_Jump": {
+  "n": "Salto largo de pie",
+  "h": [
+   "Salto largo desde parado: balancea los brazos y aterriza amortiguando."
+  ],
+  "a": []
+ },
+ "Standing_Two-Arm_Overhead_Throw": {
+  "n": "Lanzamiento de pie por encima con dos brazos",
+  "h": [
+   "Lanza el balón por encima de la cabeza con las dos manos, de pie."
+  ],
+  "a": []
+ },
+ "Star_Jump": {
+  "n": "Salto de estrella",
+  "h": [
+   "Salto de estrella: abre brazos y piernas en el aire y cierra al aterrizar."
+  ],
+  "a": []
+ },
+ "Stride_Jump_Crossover": {
+  "n": "Salto cruzado de zancada",
+  "h": [
+   "Zancada saltando sobre un cajón y cruzando al otro lado."
+  ],
+  "a": []
+ },
+ "Supine_Chest_Throw": {
+  "n": "Lanzamiento de pecho tumbado boca arriba",
+  "h": [
+   "Acostado boca arriba, lanza el balón hacia arriba con el pecho."
+  ],
+  "a": []
+ },
+ "Supine_One-Arm_Overhead_Throw": {
+  "n": "Lanzamiento por encima con un brazo, tumbado",
+  "h": [
+   "Acostado boca arriba, lanza el balón por encima de la cabeza con un brazo."
+  ],
+  "a": []
+ },
+ "Supine_Two-Arm_Overhead_Throw": {
+  "n": "Lanzamiento por encima con dos brazos, tumbado",
+  "h": [
+   "Acostado boca arriba, lanza el balón por encima de la cabeza con dos brazos."
+  ],
+  "a": []
+ },
+ "Vertical_Swing": {
+  "n": "Balanceo vertical",
+  "h": [
+   "Balanceo vertical de una mancuerna entre las piernas y sobre la cabeza."
+  ],
+  "a": []
+ },
+ "Freehand_Jump_Squat": {
+  "n": "Sentadilla con salto",
+  "h": [
+   "Pies al ancho de hombros, manos detrás de la cabeza o al pecho.",
+   "Baja a sentadilla y salta explosivo hacia arriba.",
+   "Aterriza suave con rodillas flexionadas y repite."
+  ],
+  "a": [
+   "squat jump",
+   "jump squat",
+   "salto sentadilla"
+  ]
+ },
+ "Weighted_Jump_Squat": {
+  "n": "Sentadilla con salto con peso",
+  "h": [
+   "Sostén una carga ligera (barra o mancuernas) y baja a sentadilla.",
+   "Salta lo más alto que puedas manteniendo el torso firme.",
+   "Aterriza amortiguando con cadera y rodillas."
+  ],
+  "a": [
+   "weighted jump squat",
+   "salto con carga"
+  ]
+ },
+ "Kneeling_Jump_Squat": {
+  "n": "Salto desde rodillas a sentadilla",
+  "h": [
+   "Arrodíllate con la espalda recta y los brazos listos para impulsarte.",
+   "Balancea los brazos y salta para quedar de pie en sentadilla.",
+   "Aterriza estable y vuelve a la posición inicial."
+  ],
+  "a": [
+   "kneeling squat jump",
+   "salto de rodillas"
+  ]
+ },
+ "Frog_Hops": {
+  "n": "Saltos de rana",
+  "h": [
+   "Ponte en cuclillas profundas con las manos entre los pies.",
+   "Salta hacia adelante extendiendo cadera y piernas.",
+   "Aterriza otra vez en cuclillas y encadena el siguiente salto."
+  ],
+  "a": [
+   "rana",
+   "frog jump",
+   "sapo"
+  ]
+ },
+ "Rope_Jumping": {
+  "n": "Salto de cuerda",
+  "h": [
+   "Sostén la cuerda con las muñecas, codos pegados al cuerpo.",
+   "Salta con saltos pequeños y rápidos, aterrizando en la punta de los pies.",
+   "Mantén un ritmo constante y la mirada al frente."
+  ],
+  "a": [
+   "soga",
+   "comba",
+   "jump rope",
+   "skipping rope",
+   "saltar la cuerda"
+  ]
+ },
+ "Wind_Sprints": {
+  "n": "Sprints cortos",
+  "h": [
+   "Calienta bien y colócate en posición de salida.",
+   "Corre a máxima velocidad una distancia corta (20–50 m).",
+   "Camina de regreso para recuperar y repite."
+  ],
+  "a": [
+   "velocidad",
+   "carreras cortas",
+   "wind sprint"
+  ]
+ },
+ "Lunge_Sprint": {
+  "n": "Sprint con zancada",
+  "h": [
+   "Parte en posición de zancada, con una rodilla adelante.",
+   "Cambia de pierna con un salto explosivo y arranca a correr.",
+   "Acelera unos metros manteniendo el torso inclinado."
+  ],
+  "a": [
+   "zancada y sprint",
+   "lunge sprint"
+  ]
+ },
+ "Prowler_Sprint": {
+  "n": "Sprint con trineo",
+  "h": [
+   "Empuja el trineo con los brazos extendidos y el torso inclinado.",
+   "Acelera con pasos potentes y cortos.",
+   "Recorre la distancia marcada y descansa."
+  ],
+  "a": [
+   "prowler",
+   "empuje de trineo",
+   "sled sprint"
+  ]
+ },
+ "One-Arm_Medicine_Ball_Slam": {
+  "n": "Golpe de balón medicinal a un brazo",
+  "h": [
+   "Sostén el balón con una mano por encima de la cabeza.",
+   "Lánzalo con fuerza contra el suelo usando todo el cuerpo.",
+   "Recógelo y repite con el mismo brazo; luego cambia."
+  ],
+  "a": [
+   "slam a un brazo",
+   "ball slam"
+  ]
+ },
+ "Plyo_Kettlebell_Pushups": {
+  "n": "Flexiones pliométricas con pesa rusa",
+  "h": [
+   "Posición de flexión con una mano sobre la pesa rusa.",
+   "Empuja explosivo y cambia de mano en el aire.",
+   "Aterriza con control y repite al otro lado."
+  ],
+  "a": [
+   "flexiones con pesa rusa",
+   "pushup kettlebell"
+  ]
+ },
+ "One-Arm_Kettlebell_Swings": {
+  "n": "Balanceo de pesa rusa a un brazo",
+  "h": [
+   "Pies más anchos que los hombros, pesa rusa entre las piernas.",
+   "Empuja la cadera hacia adelante y lleva la pesa a la altura del pecho.",
+   "Deja que regrese entre las piernas y repite sin encorvar la espalda."
+  ],
+  "a": [
+   "swing",
+   "kettlebell swing",
+   "columpio con pesa"
+  ]
+ },
+ "Kettlebell_Thruster": {
+  "n": "Thruster con pesa rusa",
+  "h": [
+   "Sostén la pesa rusa a la altura del pecho y baja a sentadilla.",
+   "Sube explosivo y empuja la pesa por encima de la cabeza.",
+   "Regrésala al pecho y repite."
+  ],
+  "a": [
+   "thruster",
+   "sentadilla y press"
+  ]
+ },
+ "Power_Stairs": {
+  "n": "Escaleras de potencia",
+  "h": [
+   "Colócate frente a las escaleras o bloques.",
+   "Sube con pasos o saltos explosivos, apoyando bien todo el pie.",
+   "Baja con control y repite."
+  ],
+  "a": [
+   "stairs",
+   "subir escaleras",
+   "gradas"
+  ]
+ },
+ "Push_Press": {
+  "n": "Press de empuje",
+  "h": [
+   "Barra a la altura de los hombros, pies al ancho de caderas.",
+   "Flexiona levemente las rodillas e impulsa para subir la barra sobre la cabeza.",
+   "Baja con control a los hombros y repite."
+  ],
+  "a": [
+   "push press",
+   "press con impulso"
+  ]
+ },
+ "Power_Clean": {
+  "n": "Cargada de potencia",
+  "h": [
+   "Barra en el suelo, espalda recta, agarre al ancho de hombros.",
+   "Extiende cadera y rodillas con fuerza y encoge los hombros para subir la barra.",
+   "Recíbela sobre los hombros con las rodillas flexionadas."
+  ],
+  "a": [
+   "power clean",
+   "clean",
+   "cargada"
+  ]
+ },
+ "Hang_Clean": {
+  "n": "Cargada colgante",
+  "h": [
+   "Sostén la barra a la altura de las rodillas, espalda recta.",
+   "Empuja la cadera hacia adelante y jala la barra hacia los hombros.",
+   "Recíbela en posición frontal y baja con control."
+  ],
+  "a": [
+   "hang clean",
+   "clean colgante"
+  ]
+ },
+ "Power_Snatch": {
+  "n": "Arrancada de potencia",
+  "h": [
+   "Agarre ancho sobre la barra, espalda recta.",
+   "Extiende con fuerza y lleva la barra sobre la cabeza en un solo movimiento.",
+   "Recíbela con brazos firmes y baja con control."
+  ],
+  "a": [
+   "power snatch",
+   "snatch",
+   "arranque"
+  ]
+ },
+ "Dumbbell_Clean": {
+  "n": "Cargada con mancuerna",
+  "h": [
+   "Mancuerna al lado del cuerpo, rodillas ligeramente flexionadas.",
+   "Extiende caderas y jala la mancuerna hasta el hombro.",
+   "Recíbela y baja con control."
+  ],
+  "a": [
+   "clean con mancuerna",
+   "dumbbell clean"
+  ]
+ },
+ "One-Arm_Kettlebell_Snatch": {
+  "n": "Arrancada con pesa rusa a un brazo",
+  "h": [
+   "Pesa rusa entre las piernas, torso inclinado.",
+   "Extiende cadera y lleva la pesa sobre la cabeza en un solo arco.",
+   "Recíbela con el brazo extendido y vuelve a la posición inicial."
+  ],
+  "a": [
+   "kettlebell snatch",
+   "snatch con pesa rusa"
+  ]
+ },
+ "Power_Jerk": {
+  "n": "Envión de potencia",
+  "h": [
+   "Barra sobre los hombros, pies al ancho de caderas.",
+   "Flexiona las rodillas y empuja explosivo para lanzar la barra arriba.",
+   "Recíbela con los brazos estirados y las piernas semiflexionadas."
+  ],
+  "a": [
+   "jerk",
+   "power jerk"
+  ]
+ },
+ "Clean_and_Jerk": {
+  "n": "Cargada y envión",
+  "h": [
+   "Realiza una cargada para llevar la barra a los hombros.",
+   "Flexiona y extiende las piernas para lanzar la barra sobre la cabeza.",
+   "Estabiliza arriba y baja con control."
+  ],
+  "a": [
+   "clean and jerk",
+   "dos tiempos"
+  ]
+ },
+ "Jackknife_Sit-Up": {
+  "n": "Abdominal en navaja",
+  "h": [
+   "Acuéstate boca arriba con brazos extendidos sobre la cabeza.",
+   "Sube brazos y piernas a la vez para tocar los pies.",
+   "Baja con control sin apoyar del todo y repite."
+  ],
+  "a": [
+   "abdominal navaja",
+   "jackknife",
+   "v-up",
+   "v up"
+  ]
+ },
+ "Tire_Flip": {
+  "n": "Volteo de neumático",
+  "h": [
+   "Agáchate frente al neumático con la espalda recta.",
+   "Empuja con las piernas y voltea el neumático con las manos.",
+   "Sigue empujando con pasos cortos hasta que caiga."
+  ],
+  "a": [
+   "tire flip",
+   "llanta",
+   "volteo de llanta"
+  ]
+ },
+ "Sled_Push": {
+  "n": "Empuje de trineo",
+  "h": [
+   "Manos en el trineo, brazos estirados, torso inclinado.",
+   "Empuja con pasos potentes y continuos.",
+   "Recorre la distancia y recupera."
+  ],
+  "a": [
+   "sled push",
+   "trineo"
+  ]
+ },
+ "Bear_Crawl_Sled_Drags": {
+  "n": "Arrastre de trineo en gateo",
+  "h": [
+   "Colócate en cuatro apoyos con el arnés o la cuerda del trineo.",
+   "Avanza gateando con rodillas cerca del suelo.",
+   "Mantén la espalda plana y el ritmo constante."
+  ],
+  "a": [
+   "gateo de oso",
+   "bear crawl"
+  ]
+ },
+ "Battling_Ropes": {
+  "n": "Cuerdas de batalla",
+  "h": [
+   "Pies al ancho de hombros, rodillas semiflexionadas, una cuerda en cada mano.",
+   "Haz ondas rápidas y alternas con los brazos.",
+   "Mantén el core firme durante todo el intervalo."
+  ],
+  "a": [
+   "battle ropes",
+   "cuerdas ondulatorias",
+   "soga de batalla"
+  ]
+ },
+ "Step-up_with_Knee_Raise": {
+  "n": "Subida al banco con rodilla arriba",
+  "h": [
+   "Párate frente a un banco o cajón estable.",
+   "Sube con una pierna y lleva la otra rodilla al pecho.",
+   "Baja con control y alterna las piernas."
+  ],
+  "a": [
+   "step up",
+   "subida al cajón",
+   "step up rodilla"
+  ]
+ },
+ "Kettlebell_Sumo_High_Pull": {
+  "n": "Jalón alto sumo con pesa rusa",
+  "h": [
+   "Pies muy abiertos, pesa rusa entre las piernas.",
+   "Extiende caderas y jala la pesa hasta la altura del pecho con los codos arriba.",
+   "Baja la pesa con control y repite."
+  ],
+  "a": [
+   "sumo high pull",
+   "jalon sumo"
+  ]
+ },
+ "Speed_Squats": {
+  "n": "Sentadillas rápidas",
+  "h": [
+   "Barra ligera sobre los hombros, pies al ancho de hombros.",
+   "Baja controlado y sube lo más rápido posible.",
+   "Mantén la técnica en cada repetición."
+  ],
+  "a": [
+   "speed squat",
+   "sentadilla de velocidad"
+  ]
+ },
+ "Spider_Crawl": {
+  "n": "Gateo de araña",
+  "h": [
+   "Posición de plancha con manos y pies apoyados.",
+   "Avanza llevando una rodilla hacia el codo del mismo lado.",
+   "Alterna los lados manteniendo la cadera baja."
+  ],
+  "a": [
+   "spider crawl",
+   "araña"
+  ]
+ }
+}

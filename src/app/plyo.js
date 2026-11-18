@@ -1,4 +1,5 @@
 import { supabase, $, esc } from '../supabase.js';
+import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
 import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart } from './common.js';
 
 const DRAFT_KEY = 'batmon_plyo_draft_v2';
@@ -61,7 +62,7 @@ export async function renderPlyo(view, ctx) {
     supabase.from('plyo_routines').select('*').eq('user_id', ctx.user.id).order('created_at'),
   ]);
   if (exError) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(exError.message)}</p>`; return; }
-  catalog = exData; weekPlan = planRow?.plan || {}; routines = routineRows; ensurePlans();
+  catalog = exData.map((e) => { localize(e); e._group = groupLabel(plyoGroup(e)); return e; }); weekPlan = planRow?.plan || {}; routines = routineRows; ensurePlans();
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
   W = W || draft.get(userDraftKey());
 
@@ -205,7 +206,7 @@ function drawSession(box, view, ctx) {
     ${it ? `<article class="card pd-ex ses-card">
       <div class="pd-ex__img${exPhoto(ex) ? '' : ' ph'}">${exPhoto(ex) ? `<img src="${exPhoto(ex)}" alt="">` : '?'}</div>
       <div><h3>${name(ex)}</h3><p class="muted ses-sub">${it.sets.filter((s) => s._ok).length}/${it.sets.length} series completadas</p>
-        ${pv.length ? `<p class="ses-hint">Última vez: <b>${pv.join(' · ')}</b> · intenta igualarlo o sumar 1</p>` : (ex.instructions || [])[0] ? `<p class="ses-hint">${esc(ex.instructions[0])}</p>` : ''}</div>
+        ${pv.length ? `<p class="ses-hint">Última vez: <b>${pv.join(' · ')}</b> · intenta igualarlo o sumar 1</p>` : (ex.how || [])[0] ? `<p class="ses-hint">${esc(ex.how[0])}</p>` : ''}</div>
       <div class="pd-pills">
         <button type="button" class="pd-pill${it.solo ? ' on' : ''}" id="ses-solo">${ICON.reps}<span>Solo reps</span></button>
         <button type="button" class="pd-pill" id="ses-swap">${ICON.swap}<span>Reemplazar</span></button>
@@ -928,27 +929,27 @@ function bindAssessmentForm(box, view, ctx) {
 function picker(ctx, onPick) {
   const chosen = new Set();
   const levels = [...new Set(catalog.map((e) => e.level).filter(Boolean))];
-  const equips = [...new Set(catalog.map((e) => e.equipment || 'none'))].sort();
+  const equips = [...new Set(catalog.map((e) => e.equipment || 'none'))].sort((x, y) => equipEs(x).localeCompare(equipEs(y), 'es'));
   const m = modal(`<div class="sheet-h"><b>Agregar ejercicios</b><button class="link" data-close>Cerrar</button></div>
-    <input id="q" type="search" placeholder="Buscar ejercicio…">
-    <div class="pd-cats" id="cats"><button type="button" class="pd-chip on" data-cat="">Todos</button>${PLYO_GROUPS.map((g) => `<button type="button" class="pd-chip" data-cat="${g[0]}">${g[1]}</button>`).join('')}</div>
-    <div class="row"><select id="lv"><option value="">Todos los niveles</option>${levels.map((l) => `<option value="${l}">${LEVEL[l] || l}</option>`).join('')}</select>
-    <select id="eq"><option value="">Todo el equipo</option>${equips.map((l) => `<option value="${l}">${l === 'none' ? 'Sin equipo' : l}</option>`).join('')}</select></div>
+    <button type="button" class="pd-newex" id="newex"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Crear ejercicio propio</span></button>
+    <input id="q" type="search" placeholder="Buscar: salto, jump, cajón, balón, sentadilla…" autocomplete="off">
+    <div class="row"><select id="cat"><option value="">Todos los grupos</option>${PLYO_GROUPS.map((g) => `<option value="${g[0]}">${g[1]}</option>`).join('')}</select>
+    <select id="lv"><option value="">Todos los niveles</option>${levels.map((l) => `<option value="${l}">${LEVEL[l] || l}</option>`).join('')}</select></div>
+    <div class="row"><select id="eq"><option value="">Todo el equipo</option>${equips.map((l) => `<option value="${esc(l)}">${esc(equipEs(l))}</option>`).join('')}</select></div>
     <div id="grid" class="egrid"></div>
-    <div class="sheet-f"><button class="btn" id="ok">Agregar</button> <button class="link" id="newex">Crear ejercicio propio</button></div>`);
+    <div class="sheet-f"><button class="btn" id="ok">Agregar</button></div>`);
   const grid = $('#grid', m);
-  let cat = '';
-  m.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; m.querySelectorAll('[data-cat]').forEach((c) => c.classList.toggle('on', c === b)); draw(); }));
   const draw = () => {
-    const q = $('#q', m).value.trim().toLowerCase(), lv = $('#lv', m).value, eq = $('#eq', m).value;
-    const list = catalog.filter((e) => (!q || (e.name + ' ' + (e.name_es || '')).toLowerCase().includes(q)) && (!lv || e.level === lv) && (!eq || (e.equipment || 'none') === eq) && (!cat || plyoGroup(e) === cat));
-    grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard ${chosen.has(e.id) ? 'sel' : ''}" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados.</p>';
+    const lv = $('#lv', m).value, eq = $('#eq', m).value, cat = $('#cat', m).value;
+    const base = catalog.filter((e) => (!lv || e.level === lv) && (!eq || (e.equipment || 'none') === eq) && (!cat || plyoGroup(e) === cat));
+    const list = searchExercises(base, $('#q', m).value);
+    grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard ${chosen.has(e.id) ? 'sel' : ''}" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados. Prueba con otro nombre, en español o inglés.</p>';
     grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => { chosen.has(c.dataset.id) ? chosen.delete(c.dataset.id) : chosen.add(c.dataset.id); c.classList.toggle('sel'); $('#ok', m).textContent = chosen.size ? `Agregar ${chosen.size}` : 'Agregar'; }));
   };
-  ['q', 'lv', 'eq'].forEach((id) => ($('#' + id, m).oninput = draw));
+  ['q', 'lv', 'eq', 'cat'].forEach((id) => ($('#' + id, m).oninput = draw));
   m.querySelector('[data-close]').onclick = () => m.remove();
   $('#ok', m).onclick = () => { if (chosen.size) onPick([...chosen]); m.remove(); };
-  $('#newex', m).onclick = () => customForm(ctx, (e) => { catalog.push(e); chosen.add(e.id); draw(); });
+  $('#newex', m).onclick = () => customForm(ctx, (e) => { localize(e); e._group = groupLabel(plyoGroup(e)); catalog.push(e); chosen.add(e.id); draw(); });
   draw();
 }
 
@@ -982,27 +983,26 @@ function openLibrary(ctx, view) {
 }
 
 function library(box, view, ctx) {
-  box.innerHTML = `<input id="lib-q" type="search" placeholder="Buscar por nombre, músculo o equipo…">
+  box.innerHTML = `<input id="lib-q" type="search" placeholder="Buscar por nombre (español o inglés), músculo o equipo…" autocomplete="off">
     <div id="lib-grid" class="egrid"></div>
     <p><button class="link" id="newex">+ Crear ejercicio propio</button></p>`;
   const grid = $('#lib-grid', box);
   const draw = () => {
-    const q = $('#lib-q', box).value.trim().toLowerCase();
-    const list = catalog.filter((e) => !q || `${e.name} ${e.name_es || ''} ${(e.primary_muscles || []).join(' ')} ${e.equipment || ''} ${e.level || ''}`.toLowerCase().includes(q));
+    const list = searchExercises(catalog, $('#lib-q', box).value);
     grid.innerHTML = list.length ? list.map((e) => `<button type="button" class="ecard" data-id="${esc(e.id)}">${thumb(e, 'th big')}<span>${name(e)}</span></button>`).join('') : '<p class="muted">Sin resultados.</p>';
     grid.querySelectorAll('.ecard').forEach((c) => (c.onclick = () => detail(catalog.find((e) => e.id === c.dataset.id), ctx, view)));
   };
   $('#lib-q', box).oninput = draw; draw();
-  $('#newex', box).onclick = () => customForm(ctx, () => draw());
+  $('#newex', box).onclick = () => customForm(ctx, (e) => { localize(e); e._group = groupLabel(plyoGroup(e)); catalog.push(e); draw(); });
 }
 
 function detail(e, ctx, view) {
   const mine = e.source === 'custom' && e.created_by === ctx.user.id;
   const m = modal(`<div class="sheet-h"><b>${name(e)}</b><button class="link" data-close>Cerrar</button></div>
     <div class="imgs">${(e.images || []).map((i) => `<img src="/exercises/${esc(i)}" alt="" loading="lazy">`).join('')}</div>
-    <p class="muted">${esc(LEVEL[e.level] || e.level || '')} · ${esc(e.equipment || 'sin equipo')}</p>
-    <p><b>Músculos:</b> ${esc((e.primary_muscles || []).join(', ') || '—')}${e.secondary_muscles?.length ? ` <span class="muted">(+ ${esc(e.secondary_muscles.join(', '))})</span>` : ''}</p>
-    <ol>${(e.instructions || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+    <p class="muted">${esc(LEVEL[e.level] || e.level || '')} · ${esc(equipEs(e.equipment))}</p>
+    <p><b>Músculos:</b> ${esc((e.primary_muscles || []).map(muscleEs).join(', ') || '—')}${e.secondary_muscles?.length ? ` <span class="muted">(+ ${esc(e.secondary_muscles.map(muscleEs).join(', '))})</span>` : ''}</p>
+    <ol>${(e.how?.length ? e.how : e.instructions || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
     ${mine ? '<button class="link" id="del">Borrar mi ejercicio</button>' : ''}`);
   m.querySelector('[data-close]').onclick = () => m.remove();
   const d = $('#del', m);
