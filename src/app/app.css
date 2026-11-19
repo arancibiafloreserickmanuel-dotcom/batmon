@@ -1697,3 +1697,5 @@ body.appbody #event-form #ef-submit{width:100%;min-height:50px;margin-top:18px!i
   .training-module-card__media{flex:0 0 42%;width:42%}
   .training-module-card__copy{flex:1;min-width:0}
 }
+/* Las fotos vienen con fondo blanco: la caja de imagen es blanca en claro y oscuro */
+body.appbody .training-module-card__media{background:#fff!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
