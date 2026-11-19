@@ -141,6 +141,32 @@ Orden vertical con 14–16 px entre bloques:
 - Flechas de navegación entre páginas **discretas** a los lados (Contador ← → Configuración), sin botones de zoom.
 - Controles del mapa (`.run-maptools`) con tinta y fondo semitransparente; `mt-dark` para mapa oscuro.
 
+### Campo de subida de imagen / video `.up` (`src/app/upload-field.js` + `.css`)
+- **Se aplica solo** a todo `<input type="file">` (salvo `hidden` o `data-no-upload-field`) con `autoEnhanceFileInputs()`. No hay que marcarlo a mano; el input real queda dentro y el formulario lo lee igual (`input.files`).
+- Base: "Image upload field" de Animorio. **Respetar la animación tal cual**: el campo (148 px) se encoge a una fila (96 px) con miniatura 72 px; la vista previa se **revela de arriba hacia abajo** (velo desenfocado 7 px + `clip-path`) mientras avanza la barra y el porcentaje (ease `slow(0.4,0.6)`, 2,2 s); al terminar: brillo que cruza, rebote, check verde que se dibuja, texto "Cargando" → "Listo". Quitar (✕) devuelve el campo inicial.
+- Aspecto actual: **oscuro en ambos temas** (`#111318`, acento `#7c9cff`, ok `#5fe0a2`), variables propias `--u-*` para no chocar con la app. Por ahora no se adapta a la paleta gris/negro; se hará después.
+- Varias fotos: muestra la primera con "+N". Video: fotograma como miniatura. La barra es visual; la subida real ocurre al guardar el formulario.
+- GSAP se carga bajo demanda (import dinámico) en la primera selección. Respeta `prefers-reduced-motion`. Texto en español.
+- Sin cursor fantasma ni bucle de demostración.
+
+### Zona de documentos con pila (pendiente, sin uso aún)
+- Base: "Piling upload zone" de Animorio (GSAP + Matter.js): los archivos caen con física, se apilan, se apartan al pasar el puntero y se pueden lanzar; "Subir" los envía uno a uno desde arriba de la pila.
+- **Reservada para documentos** (PDF, etc.). Hoy no existe ningún campo de documentos; cuando aparezca, usar esta animación sin cambiarla y añadir `matter-js` al proyecto. Imágenes/videos usan siempre el campo `.up`.
+
+### Compartir actividad `.share-box` (`src/app/share.js`)
+- Aparece al terminar una carrera o sesión de pliometría. Interruptor `.share-switch` **apagado por defecto** (naranja `#fc4c02` al activar). Nada se publica solo.
+- Campos al activar: título, descripción, lugar (autocompletado por GPS, editable), fotos (campo `.up`), autoevaluación. Visible solo para amigos aceptados; las notas personales nunca se comparten.
+
+### Tarjeta de actividad `.act-card`
+- Orden: cabecera (avatar 46 px, nombre, fecha, lugar con icono) → título → estadísticas (distancia/ritmo/tiempo; en pliometría tiempo/series/ejercicios) → caja de logros → **mapa** (230 px, Leaflet, trazo naranja) → descripción → fotos → "¡Sé el primero en dar like!" → barra de acciones (me gusta · comentar · compartir).
+- **Sin mapa** (pliometría, carrera manual): la tarjeta sale solo con estadísticas, sin hueco.
+- Acciones: botones sin placa; "me gusta" activo en naranja con relleno suave. Comentarios se despliegan dentro de la tarjeta.
+- Vive en Running → pestaña **Actividades** (4.ª pestaña; `.tabs-pill--4`, indicador al 25 %).
+
+### Logros `.logro` / `.act-logro`
+- Tres niveles por color de trofeo SVG: bronce `#c4723a`, plata `#8f98a3`, oro `#e5a60b`. Conseguido: fondo suave y "Conseguido" en verde; pendiente: gris con barra de progreso.
+- Se calculan en el cliente con los datos reales (sin tabla). Perfil → pestaña **Logros**; en la tarjeta salen los de esa actividad ("Tu carrera más larga…").
+
 ---
 
 ## Reglas para crear algo nuevo
@@ -151,3 +177,4 @@ Orden vertical con 14–16 px entre bloques:
 5. Todo texto de la interfaz en **español** (los nombres en inglés solo se usan para buscar).
 6. Títulos en Anton, mayúsculas; texto en Inter.
 7. Iconos de trazo (`stroke="currentColor"`, 2–2.4 px), nunca emojis.
+8. Subida de archivos: imagen/video → campo `.up` (automático); documentos → zona de pila. No crear otros selectores de archivo.
