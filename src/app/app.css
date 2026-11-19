@@ -1946,3 +1946,10 @@ body.appbody button.rank-stat,body.appbody button.rank-stat:active{background:no
 .coin-card .rank-card__icon{width:84px;height:84px}
 .coin-card h2 b{font-size:34px}
 .coin-card h2{display:flex;align-items:baseline;gap:8px}
+
+/* Móvil: menú del Club y filtros de Retos sin cortarse */
+.running-pages.tabs-pill--4{width:100%;max-width:420px}
+.running-pages.tabs-pill--4 .tabs-pill__label{min-width:0;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(10px,3vw,12px)}
+.reto-filters{flex-wrap:wrap !important;overflow:visible !important;padding:4px 2px 12px}
+.reto-filters button{padding:7px 13px;font-size:13px}
+@media(max-width:420px){.reto-grid{gap:10px}.reto-card{padding:12px}.reto-card h2{font-size:15px}.reto-badge{width:54px;height:60px;font-size:15px}}
