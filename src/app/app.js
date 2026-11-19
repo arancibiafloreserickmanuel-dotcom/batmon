@@ -624,6 +624,7 @@ async function renderHome(v) {
     ${weeklyCards.length ? `<section class="home-weekly"><div class="home-section-heading"><div><span class="muted">Resumen</span><h2>Esta semana</h2></div><small>${weekActs.length + weekWorkouts.length} ${weekActs.length + weekWorkouts.length === 1 ? 'actividad' : 'actividades'}</small></div>${activityError ? '<p class="muted">Métricas semanales no disponibles.</p>' : `<div class="home-week-grid">${weeklyCards.join('')}</div>`}</section>` : ''}
     <section class="home-recent-section"><h2>Lo que ya hiciste</h2>${recentMarkup}</section>`;
 
+  v.querySelectorAll('#day-slides a[href="#running"]').forEach((link) => link.addEventListener('click', () => { try { localStorage.setItem(`batmon_running_page_${ctx.user.id}`, 'run'); } catch { /* sin almacenamiento */ } }));
   const slidesBox = v.querySelector('#day-slides');
   if (slidesBox) slidesBox.addEventListener('scroll', () => { const i = Math.round(slidesBox.scrollLeft / Math.max(1, slidesBox.clientWidth)); v.querySelectorAll('#day-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
   setupUnifiedCalendar(v, calendarEvents, { plan, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
