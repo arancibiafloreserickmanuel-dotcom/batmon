@@ -19,7 +19,7 @@ const loadGsap = () => gsapPromise || (gsapPromise = Promise.all([import('gsap')
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const weight = (bytes) => bytes > 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
-const FILM = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><rect width="72" height="72" fill="#1c2029"/><path d="M28 22l20 14-20 14z" fill="#7c9cff"/></svg>');
+const FILM = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><rect width="72" height="72" fill="#d8d8d8"/><path d="M28 22l20 14-20 14z" fill="#222"/></svg>');
 
 function videoPoster(file) {
   return new Promise((resolve) => {
@@ -67,7 +67,7 @@ export function enhanceFileInput(input) {
   const arrow = $('[data-arrow]'), fileEl = $('[data-file]'), thumbBox = $('[data-thumbbox]'), thumb = $('[data-thumb]'), veil = $('[data-veil]'), sheen = $('[data-sheen]');
   const ok = $('[data-ok]'), tick = $('[data-tick]'), nameEl = $('[data-name]'), sizeEl = $('[data-size]'), statusEl = $('[data-status]'), bar = $('[data-bar]');
   const removeBtn = $('[data-remove]'), live = $('[data-live]');
-  veil.style.backdropFilter = veil.style.webkitBackdropFilter = `blur(${BLUR}px) saturate(0.4)`;
+  veil.style.backdropFilter = veil.style.webkitBackdropFilter = `blur(${BLUR}px) saturate(0)`;
 
   const prog = { p: 0 };
   let state = 'empty', flow = null, g = null, token = 0;

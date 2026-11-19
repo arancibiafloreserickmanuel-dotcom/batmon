@@ -144,7 +144,7 @@ Orden vertical con 14–16 px entre bloques:
 ### Campo de subida de imagen / video `.up` (`src/app/upload-field.js` + `.css`)
 - **Se aplica solo** a todo `<input type="file">` (salvo `hidden` o `data-no-upload-field`) con `autoEnhanceFileInputs()`. No hay que marcarlo a mano; el input real queda dentro y el formulario lo lee igual (`input.files`).
 - Base: "Image upload field" de Animorio. **Respetar la animación tal cual**: el campo (148 px) se encoge a una fila (96 px) con miniatura 72 px; la vista previa se **revela de arriba hacia abajo** (velo desenfocado 7 px + `clip-path`) mientras avanza la barra y el porcentaje (ease `slow(0.4,0.6)`, 2,2 s); al terminar: brillo que cruza, rebote, check verde que se dibuja, texto "Cargando" → "Listo". Quitar (✕) devuelve el campo inicial.
-- Aspecto actual: **oscuro en ambos temas** (`#111318`, acento `#7c9cff`, ok `#5fe0a2`), variables propias `--u-*` para no chocar con la app. Por ahora no se adapta a la paleta gris/negro; se hará después.
+- Aspecto: **diseño Batmon** — relieve neumórfico (`--button-shadow` / `--button-shadow-active`), **textura de papel** fina, **solo blanco, grises y negro** (sin acentos de color; acento = `--button-ink`), títulos en Anton mayúsculas, vista previa velada en escala de grises. Sigue el tema claro/oscuro. Variables propias `--u-*`.
 - Varias fotos: muestra la primera con "+N". Video: fotograma como miniatura. La barra es visual; la subida real ocurre al guardar el formulario.
 - GSAP se carga bajo demanda (import dinámico) en la primera selección. Respeta `prefers-reduced-motion`. Texto en español.
 - Sin cursor fantasma ni bucle de demostración.
