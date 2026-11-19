@@ -181,7 +181,9 @@ export function reassignPlan(plan, days, longDay) {
 
 export function planWeekIndex(plan, d = new Date()) {
   if (!plan?.weeks?.length) return 0;
-  const w = Math.floor((mondayOf(d) - new Date(`${plan.startDate}T12:00:00`)) / 604800000) - (plan.shift || 0);
+  let w = Math.floor((mondayOf(d) - new Date(`${plan.startDate}T12:00:00`)) / 604800000) - (plan.shift || 0);
+  // Plan creado esta misma semana (jue–dom) pero con inicio el lunes siguiente: la semana actual cuenta como semana 1.
+  if (w < 0 && plan.createdAt && mondayOf(new Date(plan.createdAt)).getTime() === mondayOf(d).getTime() && mondayOf(d).getTime() === mondayOf(new Date()).getTime()) w = 0;
   return w;
 }
 export function runSessionOn(plan, d = new Date()) {

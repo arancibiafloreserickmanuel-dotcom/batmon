@@ -612,7 +612,7 @@ async function renderHome(v) {
     }
     slides.sort((x, y) => String(x.at).localeCompare(String(y.at)));
     if (!slides.length) {
-      slides.push({ at: '', html: `<article class="day-slide day-slide--rest" aria-label="Día de descanso"><div class="day-slide__body"><span class="day-kicker">Hoy</span><h2>Descansa, ${esc(userName)}</h2><p class="day-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p><a href="${ctx.modules.running ? '#running' : '#training'}" class="btn cal-btn-primary">Registrar entrenamiento</a></div></article>` });
+      slides.push({ at: '', html: `<article class="day-slide day-slide--rest" aria-label="Día de descanso"><div class="day-slide__body"><span class="day-kicker">Hoy</span><h2>Descansa, ${esc(userName)}</h2><p class="day-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p></div></article>` });
     }
     return `<section class="card day-card" aria-label="Tu día"><div class="day-slides" id="day-slides">${slides.map((x) => x.html).join('')}</div>${slides.length > 1 ? `<div class="day-dots" id="day-dots">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>`;
   };
