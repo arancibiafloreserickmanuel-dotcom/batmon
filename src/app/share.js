@@ -2,6 +2,7 @@
 import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog, fmt, paceStr } from './common.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
+import { rankFor, TIER_POINTS } from './ranks.js';
 
 const EFFORT = [[2, 'Muy fácil'], [4, 'Fácil'], [6, 'Moderado'], [8, 'Duro'], [10, 'Máximo esfuerzo']];
 const EFFORT_LABEL = Object.fromEntries(EFFORT);
@@ -144,15 +145,33 @@ export function computeLogros({ activities = [], workouts = [], shared = 0 }) {
   add('plyo1', 'Primer salto', 'Primera sesión de pliometría', 'bronze', plyo.length, 1);
   add('plyo10', 'Explosivo', '10 sesiones de pliometría', 'silver', plyo.length, 10);
   add('plyo30', 'Potencia total', '30 sesiones de pliometría', 'gold', plyo.length, 30);
+  add('plyo100', 'Leyenda explosiva', '100 sesiones de pliometría', 'gold', plyo.length, 100);
+  const bike = activities.filter((a) => a.discipline === 'cycling'), swim = activities.filter((a) => a.discipline === 'swimming'), gym = workouts.filter((w) => w.kind === 'training');
+  const sum = (l) => l.reduce((n, a) => n + Number(a.distance_km || 0), 0);
+  add('bike1', 'Primera pedalada', 'Registra tu primera salida en bici', 'bronze', bike.length, 1);
+  add('bike100', 'Cien en bici', 'Acumula 100 km en bicicleta', 'silver', sum(bike), 100, 'km');
+  add('bike500', 'Rutero', 'Acumula 500 km en bicicleta', 'gold', sum(bike), 500, 'km');
+  add('swim1', 'Al agua', 'Registra tu primera sesión de natación', 'bronze', swim.length, 1);
+  add('swim10', 'Diez kilómetros nadados', 'Acumula 10 km de natación', 'silver', sum(swim), 10, 'km');
+  add('swim50', 'Delfín', 'Acumula 50 km de natación', 'gold', sum(swim), 50, 'km');
+  add('gym1', 'Primera serie', 'Primer entrenamiento de fuerza', 'bronze', gym.length, 1);
+  add('gym25', 'Hierro constante', '25 entrenamientos de fuerza', 'silver', gym.length, 25);
+  add('gym100', 'Rutina de acero', '100 entrenamientos de fuerza', 'gold', gym.length, 100);
+  add('multi', 'Atleta completo', 'Entrena running, pliometría y fuerza o bici/natación', 'silver', [runs.length, plyo.length, gym.length + bike.length + swim.length].filter((n) => n > 0).length, 3);
   add('share1', 'Compartido', 'Comparte tu primera actividad', 'bronze', shared, 1);
   add('share10', 'Referente del club', 'Comparte 10 actividades', 'silver', shared, 10);
   return list;
 }
 
-export function logrosMarkup(list) {
-  const done = list.filter((l) => l.earned).length;
-  return `<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">${done} de ${list.length} conseguidos</span><h2>Logros</h2></div></div>
-    <div class="logros-grid">${list.map((l) => `<article class="logro logro--${l.tier} ${l.earned ? 'is-earned' : ''}" title="${esc(l.desc)}"><span class="logro__icon">${ICON.trophy}</span><b>${esc(l.title)}</b><small>${esc(l.desc)}</small>${l.earned ? '<em>Conseguido</em>' : `<i class="logro__bar"><u style="width:${Math.round(l.have / l.need * 100)}%"></u></i><em>${fmt(l.have, l.unit ? 1 : 0)} / ${l.need}${l.unit ? ' ' + l.unit : ''}</em>`}</article>`).join('')}</div></section>`;
+/** Total de logros (la moneda): logros de cuenta conseguidos + logros ganados en retos. */
+export const logrosPoints = (list, challengePoints = 0) => list.filter((l) => l.earned).reduce((n, l) => n + (TIER_POINTS[l.tier] || 0), 0) + challengePoints;
+
+export function logrosMarkup(list, extra = { points: 0, items: [] }) {
+  const done = list.filter((l) => l.earned).length, account = logrosPoints(list, 0), total = account + extra.points, rank = rankFor(total);
+  const rankCard = `<section class="card rank-card"><img class="rank-card__icon" src="${rank.iconBig}" alt="Rango ${esc(rank.name)}"><div class="rank-card__body"><span class="muted">Tu rango</span><h2>${esc(rank.name)}</h2><p><b>${total}</b> logros${rank.next ? ` · te faltan <b>${rank.missing}</b> para ${esc(rank.nextName)}` : ' · rango máximo'}</p><i class="rank-card__bar"><u style="width:${Math.round(rank.progress * 100)}%"></u></i><small class="muted">Logros de cuenta: ${account} · Retos: ${extra.points}</small></div></section>
+    <p class="muted rank-note">Los <b>logros</b> son la moneda para subir de rango. Se ganan con logros de cuenta (constancia en Running, Ciclismo, Natación, Pliometría y Fuerza) y completando <b>retos</b> del club. El rango no depende de tu físico, peso ni medidas: solo de tu constancia y esfuerzo registrado.</p>`;
+  return `${rankCard}<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">${done} de ${list.length} conseguidos</span><h2>Logros</h2></div></div>
+    <div class="logros-grid">${list.map((l) => `<article class="logro logro--${l.tier} ${l.earned ? 'is-earned' : ''}" title="${esc(l.desc)}"><span class="logro__icon">${ICON.trophy}</span><b>${esc(l.title)}</b><small>${esc(l.desc)}</small><span class="logro__pts">+${TIER_POINTS[l.tier]}</span>${l.earned ? '<em>Conseguido</em>' : `<i class="logro__bar"><u style="width:${Math.round(l.have / l.need * 100)}%"></u></i><em>${fmt(l.have, l.unit ? 1 : 0)} / ${l.need}${l.unit ? ' ' + l.unit : ''}</em>`}</article>`).join('')}</div></section>${extra.items.length ? `<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">Retos completados</span><h2>Logros de retos</h2></div></div>${extra.items.map((r) => `<p class="rank-reto"><span>${esc(r.title)}</span><b>+${r.reward}</b></p>`).join('')}</section>` : ''}`;
 }
 
 /** Logros de una sola actividad (se guardan al compartir y salen en la tarjeta). */

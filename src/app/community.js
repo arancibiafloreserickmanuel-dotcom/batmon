@@ -1,52 +1,22 @@
 import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
+import { renderEventsFeed, renderChallenges } from './club-pages.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 
 let section = 'activity';
 const MODULES = [['running','Running'],['cycling','Ciclismo'],['plyo','Pliometría'],['training','Entrenamiento'],['swimming','Natación']];
 
 export async function renderCommunity(view, ctx) {
-  const TABS = [['activity', 'Actividad'], ['members', 'Miembros'], ['challenges', 'Retos']];
+  const TABS = [['activity', 'Actividad'], ['events', 'Eventos'], ['challenges', 'Retos'], ['members', 'Miembros']];
   view.innerHTML = `<section class="community-page run-module"><header class="run-module__head"><div><p class="run-kicker">CLUB · BATMON CROWD</p><h1>Club</h1></div></header>
-    <nav class="running-pages tabs-pill" aria-label="Secciones del Club">${TABS.map(([key, label]) => `<input class="tabs-pill__input" type="radio" name="club-page" id="club-page-${key}" value="${key}"${section === key ? ' checked' : ''}><label class="tabs-pill__label" for="club-page-${key}">${label}</label>`).join('')}<div class="tabs-pill__indicator" aria-hidden="true"></div></nav>
+    <nav class="running-pages tabs-pill tabs-pill--4" aria-label="Secciones del Club">${TABS.map(([key, label]) => `<input class="tabs-pill__input" type="radio" name="club-page" id="club-page-${key}" value="${key}"${section === key ? ' checked' : ''}><label class="tabs-pill__label" for="club-page-${key}">${label}</label>`).join('')}<div class="tabs-pill__indicator" aria-hidden="true"></div></nav>
     <div id="community-content"><p class="card muted">Cargando comunidad…</p></div></section>`;
   view.querySelectorAll('.tabs-pill__input').forEach(input => { input.onchange = () => { section = input.value; renderCommunity(view, ctx); }; });
   const box = $('#community-content', view);
   if (section === 'members') await renderMembers(box, ctx);
+  else if (section === 'events') await renderEventsFeed(box, ctx);
   else if(section==='challenges') await renderChallenges(box,ctx);
   else await renderActivity(box, ctx);
-}
-
-async function renderChallenges(box, ctx) {
-  const [{data:challenges=[],error:challengeError},{data:joined=[],error:joinedError}]=await Promise.all([
-    supabase.from('club_challenges').select('*').order('starts_on',{ascending:false}),
-    supabase.from('challenge_participants').select('challenge_id').eq('user_id',ctx.user.id),
-  ]);
-  if(challengeError||joinedError){box.innerHTML=`<div class="card warn">No se pudieron cargar los retos. Comprueba que esté aplicada la migración 0015: ${esc(challengeError?.message||joinedError?.message||'')}</div>`;return;}
-  if(!challenges.length){box.innerHTML='<div class="card profile-empty">Todavía no hay retos del club.</div>';return;}
-  const joinedIds=new Set(joined.map(row=>row.challenge_id));
-  const {data:participants=[]}=await supabase.from('challenge_participants').select('challenge_id');
-  const counts=new Map();for(const row of participants||[])counts.set(row.challenge_id,(counts.get(row.challenge_id)||0)+1);
-  box.innerHTML=`<div class="challenge-list">${challenges.map(challenge=>{
-    const now=new Date(),start=new Date(`${challenge.starts_on}T00:00:00`),end=new Date(`${challenge.ends_on}T23:59:59`);
-    const status=now<start?'Próximamente':now>end?'Finalizado':'En curso';
-    const unit=challenge.metric==='distance_km'?'km':'sesiones';
-    return `<article class="card challenge-card"><div class="challenge-top"><span class="notification-kind">${esc(MODULES.find(([key])=>key===challenge.discipline)?.[1]||challenge.discipline)} · ${status}</span><span>${counts.get(challenge.id)||0} participantes</span></div><h2>${esc(challenge.title)}</h2><p>${esc(challenge.description||'')}</p><p class="muted">${new Date(`${challenge.starts_on}T12:00:00`).toLocaleDateString('es-BO')} – ${new Date(`${challenge.ends_on}T12:00:00`).toLocaleDateString('es-BO')} · Meta ${challenge.goal_value} ${unit}</p><div class="quick-actions">${joinedIds.has(challenge.id)?'<span class="muted">Ya participas</span>':status==='Finalizado'?'<span class="muted">Reto finalizado</span>':`<button class="btn sm" data-join-challenge="${challenge.id}">Participar</button>`}<button type="button" class="link" data-leaderboard="${challenge.id}">Ver clasificación</button></div><div class="challenge-leaderboard" id="challenge-rank-${challenge.id}" hidden></div></article>`;
-  }).join('')}</div>`;
-  box.querySelectorAll('[data-join-challenge]').forEach(button=>button.onclick=async()=>{
-    button.disabled=true;const {error}=await supabase.from('challenge_participants').insert({challenge_id:button.dataset.joinChallenge,user_id:ctx.user.id});
-    if(error){button.disabled=false;notify('No se pudo registrar tu participación: '+error.message);return;}notify('Ya participas en el reto.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
-  });
-  box.querySelectorAll('[data-leaderboard]').forEach(button=>button.onclick=async()=>{
-    const target=$(`#challenge-rank-${button.dataset.leaderboard}`,box);
-    if(!target)return; target.hidden=!target.hidden; if(target.dataset.loaded==='true')return;
-    target.innerHTML='<p class="muted">Calculando resultados reales…</p>';
-    const {data:ranking=[],error}=await supabase.rpc('club_challenge_leaderboard',{p_challenge_id:button.dataset.leaderboard});
-    if(error){target.innerHTML=`<p class="msg">No se pudo calcular: ${esc(error.message)}</p>`;return;}
-    const challenge=challenges.find(item=>item.id===button.dataset.leaderboard);
-    target.innerHTML=ranking.length?`<ol>${ranking.map((row,index)=>`<li><b>${esc(row.full_name||'Socio')}</b><span>${row.score}${challenge.metric==='distance_km'?' km':' sesiones'}${row.completed?' · Meta cumplida':''}</span></li>`).join('')}</ol>`:'<p class="muted">Aún no hay participantes con actividad registrada.</p>';
-    target.dataset.loaded='true';
-  });
 }
 
 async function renderActivity(box, ctx) {

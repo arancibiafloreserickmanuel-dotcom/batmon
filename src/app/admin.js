@@ -341,6 +341,24 @@ async function eventos() {
         <label for="ef-loc">Ubicación (opcional)</label>
         <input id="ef-loc" value="${esc(existing?.location || '')}" placeholder="Ej: Parque Central / Costanera">
 
+
+        <label for="ef-category">Categoría (ej. Carrera 10K) (opcional)</label>
+        <input id="ef-category" maxlength="40" value="${esc(existing?.category || '')}">
+        <label for="ef-terrain">Terreno (opcional)</label>
+        <input id="ef-terrain" maxlength="40" value="${esc(existing?.terrain || '')}">
+        <label for="ef-price">Precio (opcional)</label>
+        <input id="ef-price" maxlength="40" value="${esc(existing?.price || '')}">
+        <label for="ef-elevation">Desnivel (opcional)</label>
+        <input id="ef-elevation" maxlength="40" value="${esc(existing?.elevation || '')}">
+        <label for="ef-temperature">Temperatura (opcional)</label>
+        <input id="ef-temperature" maxlength="40" value="${esc(existing?.temperature || '')}">
+        <label for="ef-humidity">Humedad (opcional)</label>
+        <input id="ef-humidity" maxlength="40" value="${esc(existing?.humidity || '')}">
+        <label for="ef-wind">Viento (opcional)</label>
+        <input id="ef-wind" maxlength="40" value="${esc(existing?.wind || '')}">
+        <label for="ef-more">Más información (texto o enlace, opcional)</label>
+        <textarea id="ef-more" rows="3" maxlength="4000">${esc(existing?.more_info || '')}</textarea>
+
         <label for="ef-img">Imagen del evento (foto)</label>
         <input id="ef-img" type="file" accept="image/*">
         ${existing?.image_path ? `<p class="muted" style="margin-top:4px;">Tiene imagen previa guardada.</p>` : ''}
@@ -371,6 +389,9 @@ async function eventos() {
       const location = m.querySelector('#ef-loc').value.trim();
       const file = m.querySelector('#ef-img').files[0];
       const notifyChecked = m.querySelector('#ef-notify').checked;
+      const extra = {};
+      for (const k of ['category','terrain','price','elevation','temperature','humidity','wind']) { const v = m.querySelector('#ef-' + k).value.trim(); if (v || existing?.[k]) extra[k] = v || null; }
+      { const v = m.querySelector('#ef-more').value.trim(); if (v || existing?.more_info) extra.more_info = v || null; }
 
       const eventDateTime = new Date(`${dateVal}T${timeVal}:00`).toISOString();
 
@@ -400,6 +421,7 @@ async function eventos() {
         image_path: imagePath,
         notify_members: notifyChecked,
         updated_at: new Date().toISOString(),
+        ...extra,
       };
 
       let eventId = existing?.id;
@@ -555,7 +577,7 @@ async function retos() {
   const body=$('#body');
   if(error){body.innerHTML=`<h1>Retos del club</h1><div class="card warn">No se pudieron cargar. Aplica la migración 0015 cuando esté lista: ${esc(error.message)}</div>`;return;}
   const disciplineLabel={running:'Running',cycling:'Ciclismo',swimming:'Natación',plyo:'Pliometría',training:'Entrenamiento'};
-  body.innerHTML=`<h1>Retos del club</h1><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p><form class="card admin-challenge-form" id="challenge-form"><input type="hidden" name="id"><label>Título<input name="title" maxlength="100" required></label><label>Descripción<textarea name="description" maxlength="500" rows="3"></textarea></label><div class="row"><label>Disciplina<select name="discipline">${Object.entries(disciplineLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Medición<select name="metric"><option value="sessions">Sesiones</option><option value="distance_km">Distancia (km)</option></select></label></div><div class="row"><label>Meta<input name="goal_value" type="number" min="1" step="0.1" required></label><label>Inicio<input name="starts_on" type="date" required></label><label>Fin<input name="ends_on" type="date" required></label></div><div class="quick-actions"><button class="btn" type="submit">Crear reto</button><button class="btn ghost" type="button" id="challenge-cancel" hidden>Cancelar edición</button></div><p class="msg" aria-live="polite"></p></form><h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map(row=>`<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric==='distance_km'?'Kilómetros':'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description||'')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('')||'<p class="card muted">Aún no hay retos.</p>'}</div>`;
+  body.innerHTML=`<h1>Retos del club</h1><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p><form class="card admin-challenge-form" id="challenge-form"><input type="hidden" name="id"><label>Título<input name="title" maxlength="100" required></label><label>Descripción<textarea name="description" maxlength="500" rows="3"></textarea></label><div class="row"><label>Disciplina<select name="discipline">${Object.entries(disciplineLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Medición<select name="metric"><option value="sessions">Sesiones</option><option value="distance_km">Distancia (km)</option></select></label></div><div class="row"><label>Meta<input name="goal_value" type="number" min="1" step="0.1" required></label><label>Logros de recompensa<input name="reward_logros" type="number" min="0" max="5000" step="1" placeholder="50"></label><label>Insignia (máx. 6 caracteres)<input name="badge" maxlength="6" placeholder="400'"></label><label>Inicio<input name="starts_on" type="date" required></label><label>Fin<input name="ends_on" type="date" required></label></div><div class="quick-actions"><button class="btn" type="submit">Crear reto</button><button class="btn ghost" type="button" id="challenge-cancel" hidden>Cancelar edición</button></div><p class="msg" aria-live="polite"></p></form><h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map(row=>`<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric==='distance_km'?'Kilómetros':'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description||'')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('')||'<p class="card muted">Aún no hay retos.</p>'}</div>`;
   const form=$('#challenge-form',body);
   form.elements.discipline.onchange=()=>{if(form.elements.discipline.value==='plyo'||form.elements.discipline.value==='training'){form.elements.metric.value='sessions';form.elements.metric.querySelector('[value="distance_km"]').disabled=true;}else form.elements.metric.querySelector('[value="distance_km"]').disabled=false;};
   form.onsubmit=async event=>{
@@ -563,13 +585,14 @@ async function retos() {
     if(end<start){msg.textContent='La fecha final debe ser igual o posterior al inicio.';return;}
     if((discipline==='plyo'||discipline==='training')&&metric==='distance_km'){msg.textContent='Pliometría y Entrenamiento solo admiten retos por sesiones.';return;}
     button.disabled=true;const row={title:String(data.get('title')).trim(),description:String(data.get('description')||'').trim()||null,discipline,metric,goal_value:Number(data.get('goal_value')),starts_on:start,ends_on:end};
+    {const r=String(data.get('reward_logros')||'').trim(),bd=String(data.get('badge')||'').trim();if(r!=='')row.reward_logros=Number(r);if(bd||(id&&rows.find(x=>x.id===id)?.badge))row.badge=bd||null;}
     const result=id?await supabase.from('club_challenges').update(row).eq('id',id):await supabase.from('club_challenges').insert({...row,created_by:me.id});
     button.disabled=false;if(result.error){msg.textContent=`No se guardó el reto: ${result.error.message}`;return;}notify(id?'Reto actualizado.':'Reto creado.','success');retos();
   };
   $('#challenge-cancel',body).onclick=()=>retos();
   body.querySelectorAll('[data-edit-challenge]').forEach(button=>button.onclick=()=>{
     const row=rows.find(item=>item.id===button.dataset.editChallenge);if(!row)return;
-    for(const key of ['id','title','description','discipline','metric','goal_value','starts_on','ends_on'])form.elements[key].value=row[key]??'';
+    for(const key of ['id','title','description','discipline','metric','goal_value','starts_on','ends_on','reward_logros','badge'])form.elements[key].value=row[key]??'';
     form.elements.discipline.dispatchEvent(new Event('change'));
     $('#challenge-cancel',body).hidden=false;form.querySelector('[type="submit"]').textContent='Guardar cambios';form.scrollIntoView({behavior:'smooth',block:'start'});
   });

@@ -187,3 +187,9 @@ Orden vertical con 14–16 px entre bloques:
 6. Títulos en Anton, mayúsculas; texto en Inter.
 7. Iconos de trazo (`stroke="currentColor"`, 2–2.4 px), nunca emojis.
 8. Subida de archivos: imagen/video → campo `.up` (automático); documentos → zona de pila. No crear otros selectores de archivo.
+
+## Eventos como página, feed y retos en tarjetas
+- Evento = página (`#evento/<id>`), no modal: portada grande con botones redondos (volver/compartir), fecha, título Anton, lugar, chip de categoría, descripción con "Más información", tarjetas HORA/LUGAR, rejilla de datos (Terreno, Precio, Desnivel, Temperatura, Humedad, Viento) y Voy/No voy.
+- Feed de Club → Eventos: tarjetas con foto 16:10, próximos primero y luego anteriores (en gris).
+- Retos: rejilla de 2 columnas, insignia hexagonal monocroma, chips de filtro por disciplina, botón "Unirse"; clic abre `#reto/<id>`.
+- Rango: tarjeta con icono de `public/ranks`, barra de progreso en negro. Ver `rangos.md`.

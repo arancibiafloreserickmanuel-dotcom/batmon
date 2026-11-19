@@ -7,6 +7,7 @@ import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
 import { renderCommunity } from './community.js';
+import { renderEventPage, renderChallengePage } from './club-pages.js';
 import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles } from './auth.js';
 import { computeLogros, logrosMarkup } from './share.js';
 import { autoEnhanceFileInputs } from './upload-field.js';
@@ -108,7 +109,17 @@ function route() {
   if (!ctx) return;
   if (location.hash.slice(1) !== 'running') document.body.classList.remove('run-takeover');
   moduleBack = null;
-  const tab = (location.hash.slice(1) || 'inicio');
+  const rawHash = (location.hash.slice(1) || 'inicio');
+  const pageMatch = rawHash.match(/^(evento|reto)\/([\w-]+)$/);
+  if (pageMatch) {
+    const origin = pageMatch[1] === 'reto' ? 'club' : (sessionStorage.getItem('batmon_event_from') || 'club');
+    document.querySelectorAll('#tabs a').forEach((a) => { const on = a.getAttribute('href') === '#' + origin; a.classList.toggle('on', on); a.setAttribute('aria-current', on ? 'page' : 'false'); });
+    const stop = showDelayedLoading(view);
+    window.scrollTo(0, 0);
+    Promise.resolve().then(() => (pageMatch[1] === 'evento' ? renderEventPage : renderChallengePage)(view, ctx, pageMatch[2])).then(stop);
+    return;
+  }
+  const tab = rawHash;
   const isTrainingRoute = tab === 'training' || TRAINING_MODULES.some((item) => item.route === tab);
   document.querySelectorAll('#tabs a').forEach((a) => {
     const href = a.getAttribute('href');
@@ -427,7 +438,7 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
       if (item.kind === 'event') return `<button type="button" class="cal10__ev" data-event-id="${esc(item.id)}">${item.image_url ? `<img class="cal10__ev-img" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="cal10__agenda-symbol" aria-hidden="true">BC</span>'}<span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)}${item.location ? ` · ${esc(item.location)}` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></button>`;
       return `<a class="cal10__ev cal10__agenda-link cal10__agenda-${esc(item.kind)}" href="${esc(item.route || '#training')}"><span class="cal10__agenda-symbol" aria-hidden="true">${item.kind === 'routine' ? 'R' : item.kind === 'challenge' ? 'C' : '✓'}</span><span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)} · ${esc(item.detail)}${item.kind === 'routine' && item.duration ? ` · ${fmt(item.duration, 0)} min` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></a>`;
     }).join('')}</section>`).join('');
-    eventsList.querySelectorAll('[data-event-id]').forEach((button)=>button.onclick=()=>openClubEvent(button.dataset.eventId));
+    eventsList.querySelectorAll('[data-event-id]').forEach((button)=>button.onclick=()=>{sessionStorage.setItem('batmon_event_from','inicio');location.hash='#evento/'+button.dataset.eventId;});
   }
 
   // Toggles de filtro (Día, Semana, Mes para eventos)
@@ -487,41 +498,13 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
 }
 
 /* ---------------- Inicio ---------------- */
-async function openClubEvent(eventId) {
-  const {data:event,error}=await supabase.from('events').select('*').eq('id',eventId).single();
-  if(error||!event){notify('No se pudo abrir el evento.');return;}
-  const [{data:rsvp},{data:confirmedRows},{data:directoryRows},{data:image}]=await Promise.all([
-    supabase.from('event_rsvps').select('id,status').eq('event_id',eventId).eq('user_id',ctx.user.id).maybeSingle(),
-    supabase.from('event_rsvps').select('user_id').eq('event_id',eventId).eq('status','confirmed'),
-    supabase.rpc('profile_directory'),
-    !event.image_path?Promise.resolve({data:null}):event.image_path.startsWith('http')?Promise.resolve({data:{signedUrl:event.image_path}}):supabase.storage.from('event-media').createSignedUrl(event.image_path,3600),
-  ]);
-  const confirmed=confirmedRows||[];
-  const directory=directoryRows||[];
-  const people=await Promise.all(confirmed.map(async row=>{
-    const person=row.user_id===ctx.user.id?ctx.profile:(directory||[]).find(profile=>profile.id===row.user_id);
-    const name=person?.full_name||'Socio Batmon';
-    if(!person?.avatar_path)return {name,avatar:''};
-    const {data:avatar}=await supabase.storage.from('profile-media').createSignedUrl(person.avatar_path,1800);
-    return {name,avatar:avatar?.signedUrl||''};
-  }));
-  const eventDate=new Date(event.event_date);
-  const dateLabel=eventDate.toLocaleDateString('es-BO',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'').toUpperCase();
-  const timeLabel=eventDate.toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
-  const initials=name=>name.split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
-  const modal=document.createElement('div');modal.className='modal event-detail-modal';modal.innerHTML=`<section class="sheet event-detail-sheet" aria-labelledby="event-detail-title"><button type="button" class="event-detail-close" data-close aria-label="Cerrar evento">Cerrar</button><div class="event-detail-cover">${image?.signedUrl?`<img class="event-detail-cover-image" src="${esc(image.signedUrl)}" alt="">`:''}<div class="event-detail-cover-copy"><span>${dateLabel}</span><h2 id="event-detail-title">${esc(event.title)}</h2></div></div><div class="event-detail-content"><p class="event-detail-desc">${esc(event.description||'')}</p><div class="event-detail-meta"><div class="event-detail-info-card"><small>HORA</small><b>${timeLabel}</b></div><div class="event-detail-info-card"><small>LUGAR</small><b>${esc(event.location||'Por confirmar')}</b></div></div><div class="event-detail-actions"><button class="btn ${rsvp?.status==='confirmed'?'is-confirmed':''}" data-confirm>${rsvp?.status==='confirmed'?'Voy ✓':'Voy'}</button><button class="btn ghost" data-cancel>No voy</button></div><section class="event-attendees" aria-label="Personas confirmadas"><p><b>${people.length} confirmados</b></p><div class="event-attendee-list">${people.length?people.map(person=>`<div class="event-attendee">${person.avatar?`<img src="${esc(person.avatar)}" alt="">`:`<span class="event-attendee-initials">${esc(initials(person.name))}</span>`}<small>${esc(person.name)}</small></div>`).join(''):'<span class="muted">Aún no hay confirmaciones.</span>'}</div></section></div></section>`;
-  document.body.append(modal);decorateBackButton(modal.querySelector('[data-close]'),'Cerrar',true);modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelector('[data-confirm]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget||modal.querySelector('[data-confirm]');if(button)button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'confirmed',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){if(button)button.disabled=false;notify('No se pudo confirmar: '+e.message);}else{notify('Asistencia confirmada.','success');modal.remove();void renderHome(view);}});
-  modal.querySelector('[data-cancel]')?.addEventListener('click',async(eventClick)=>{const button=eventClick.currentTarget||modal.querySelector('[data-cancel]');const title=rsvp?.status==='confirmed'?'¿Confirmas que no asistirás a este evento? Se quitará tu confirmación.':'¿Quieres indicar que no asistirás a este evento?';if(!(await confirmDialog(title,'No voy')))return;if(button)button.disabled=true;const {error:e}=await supabase.from('event_rsvps').upsert({event_id:eventId,user_id:ctx.user.id,status:'cancelled',updated_at:new Date().toISOString()},{onConflict:'event_id,user_id'});if(e){if(button)button.disabled=false;notify('No se pudo actualizar tu respuesta: '+e.message);}else{notify('Tu respuesta quedó registrada.','success');modal.remove();void renderHome(view);}});
-}
-
 async function renderHome(v) {
   const [activityResult, workoutResult, membershipResult, planResult, eventResult, notificationResult, exerciseResult, challengeResult, plyoPlanResult, plyoRoutineResult, runPlanResult] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(300),
     supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id, exercise_id, reps, weight_kg)').order('performed_on', { ascending: false }).limit(150),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
     supabase.from('training_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
-    supabase.from('events').select('id,title,description,event_date,location,image_path').order('event_date'),
+    supabase.from('events').select('id,title,description,event_date,location,image_path,category').order('event_date'),
     supabase.from('event_notifications').select('id', { count: 'exact', head: true }).eq('user_id', ctx.user.id).eq('is_read', false),
     supabase.from('exercises').select('id,name,name_es,category,images').in('category', ['training', 'plyometrics']).eq('is_active', true),
     supabase.from('club_challenges').select('id,title,discipline,starts_on,ends_on').order('starts_on'),
@@ -704,14 +687,17 @@ async function renderMembership(v) {
 }
 
 async function renderProfile(v) {
-  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, { data: avatarData }, sharedRes] = await Promise.all([
+  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, { data: avatarData }, sharedRes, challengeRes] = await Promise.all([
     supabase.from('activities').select('discipline,distance_km,duration_min,performed_on').order('performed_on', { ascending: false }).limit(300),
     supabase.from('workouts').select('kind,performed_on,duration_min,workout_sets(id)').order('performed_on', { ascending: false }).limit(200),
     supabase.from('friendships').select('id,status,requester,addressee').or(`requester.eq.${ctx.user.id},addressee.eq.${ctx.user.id}`),
     ctx.profile?.avatar_path ? supabase.storage.from('profile-media').createSignedUrl(ctx.profile.avatar_path,3600) : Promise.resolve({data:null}),
     supabase.from('shared_activities').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id),
+    supabase.rpc('my_challenge_logros'),
   ]);
   const sharedCount = sharedRes?.count || 0;
+  const challengeRows = (challengeRes?.data || []);
+  const challengeExtra = { points: challengeRows.reduce((n, r) => n + (r.reward || 0), 0), items: challengeRows };
   const todayDate = new Date();
   const key = `profile_period_${ctx.user.id}`;
   const period = localStorage.getItem(key) || 'week';
@@ -739,7 +725,7 @@ async function renderProfile(v) {
     <div class="profile-actions"><button id="edit-profile" class="btn ghost">Editar perfil</button><button id="membership-open" class="btn ghost">Membresía</button></div>
     <nav class="profile-highlights" aria-label="Accesos a entrenamientos">${moduleData.map(([id,title,img])=>`<button data-module="${id}" class="module-highlight module-${id} ${selectedModule===id?'selected':''}"><span><img src="/profile-modules/${img}" alt=""></span><small>${title}</small></button>`).join('')}</nav>
     <nav class="profile-media-tabs" aria-label="Fotos, videos y progreso"><button data-media="posts" class="${mediaView==='posts'?'on':''}">▦ <span>Fotos</span></button><button data-media="videos" class="${mediaView==='videos'?'on':''}">▷ <span>Videos</span></button><button data-media="progress" class="${mediaView==='progress'?'on':''}">▥ <span>Progreso</span></button><button data-media="logros" class="${mediaView==='logros'?'on':''}">★ <span>Logros</span></button></nav>
-    ${mediaView==='logros'?logrosMarkup(computeLogros({activities,workouts,shared:sharedCount})):mediaView==='progress'?`<section class="card profile-chart"><div class="profile-section-head"><div><span class="muted">${selectedModule==='all'?'Todos tus módulos':DISC[selectedModule]|| (selectedModule==='plyo'?'Pliometría':'Entrenamiento')}</span><h2>Actividad</h2></div><div class="period-switch">${[['day','Día'],['week','Semana'],['month','Mes']].map(([k,t])=>`<button data-period="${k}" class="${period===k?'on':''}">${t}</button>`).join('')}</div></div><div class="profile-bars">${values.map((n,i)=>`<div><i style="height:${Math.max(4,n/max*100)}%"></i><small>${period==='month'?(i+1):days[i].slice(8)}</small></div>`).join('')}</div><p class="muted">Sesiones registradas por día</p><button id="measurement-open" class="btn ghost">Añadir medidas corporales</button></section>`:mediaView==='videos'?'<div class="profile-empty">Aún no hay videos de entrenamiento.</div>':`<div class="profile-post-grid">${[...moduleActivities.map(a=>({date:a.performed_on,title:DISC[a.discipline],detail:`${fmt(a.distance_km)} km`})),...moduleWorkouts.map(w=>({date:w.performed_on,title:w.kind==='training'?'Entrenamiento':'Pliometría',detail:`${w.workout_sets.length} series`}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,18).map(a=>`<article><b>${esc(a.title)}</b><span>${a.detail}</span><small>${a.date}</small></article>`).join('')||'<div class="profile-empty">Tus entrenamientos aparecerán aquí.</div>'}</div>`}</section>`;
+    ${mediaView==='logros'?logrosMarkup(computeLogros({activities,workouts,shared:sharedCount}),challengeExtra):mediaView==='progress'?`<section class="card profile-chart"><div class="profile-section-head"><div><span class="muted">${selectedModule==='all'?'Todos tus módulos':DISC[selectedModule]|| (selectedModule==='plyo'?'Pliometría':'Entrenamiento')}</span><h2>Actividad</h2></div><div class="period-switch">${[['day','Día'],['week','Semana'],['month','Mes']].map(([k,t])=>`<button data-period="${k}" class="${period===k?'on':''}">${t}</button>`).join('')}</div></div><div class="profile-bars">${values.map((n,i)=>`<div><i style="height:${Math.max(4,n/max*100)}%"></i><small>${period==='month'?(i+1):days[i].slice(8)}</small></div>`).join('')}</div><p class="muted">Sesiones registradas por día</p><button id="measurement-open" class="btn ghost">Añadir medidas corporales</button></section>`:mediaView==='videos'?'<div class="profile-empty">Aún no hay videos de entrenamiento.</div>':`<div class="profile-post-grid">${[...moduleActivities.map(a=>({date:a.performed_on,title:DISC[a.discipline],detail:`${fmt(a.distance_km)} km`})),...moduleWorkouts.map(w=>({date:w.performed_on,title:w.kind==='training'?'Entrenamiento':'Pliometría',detail:`${w.workout_sets.length} series`}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,18).map(a=>`<article><b>${esc(a.title)}</b><span>${a.detail}</span><small>${a.date}</small></article>`).join('')||'<div class="profile-empty">Tus entrenamientos aparecerán aquí.</div>'}</div>`}</section>`;
   $('#avatar-view',v).onclick=()=>avatarUrl?openPhotoViewer(avatarUrl,ctx.profile?.full_name||''):notify('Aún no tienes foto. Súbela en Editar perfil.','info');
   $('#settings-open',v).onclick=e=>{const button=e.currentTarget;button.classList.add('is-opening');button.disabled=true;setTimeout(()=>renderProfileSettings(v),320);};
   $('#notifications-open',v).onclick=()=>renderNotifications(v);
