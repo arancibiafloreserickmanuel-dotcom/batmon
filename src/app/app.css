@@ -1916,3 +1916,16 @@ button.community-avatar,button.act-avatar,button.profile-avatar{padding:0;border
 .reto-badge{width:64px;height:72px;display:grid;place-items:center;font-family:Anton,sans-serif;font-size:18px;color:var(--button-ink);background:var(--button-face);box-shadow:var(--button-shadow);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
 .reto-badge svg{width:28px;height:28px}
 @media(max-width:380px){.reto-grid{grid-template-columns:1fr}}
+
+/* Icono de rango junto al nombre + ventana de información */
+.profile-identity h1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rank-mini{border:0;background:none;padding:0;width:26px;height:26px;cursor:pointer;display:inline-grid;place-items:center;flex:none}
+.rank-mini img{width:26px;height:26px;object-fit:contain;display:block}
+.rank-info__me{display:flex;gap:14px;align-items:center;margin-bottom:8px}
+.rank-info__me img{width:84px;height:84px;object-fit:contain}
+.rank-info__me b{font-family:Anton,sans-serif;font-size:22px;letter-spacing:.04em;font-weight:400}
+.rank-info__ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.rank-info__ladder span{display:grid;justify-items:center;gap:2px;padding:8px 4px;border-radius:14px;background:var(--card-surface,var(--surface));box-shadow:var(--button-shadow);opacity:.65}
+.rank-info__ladder span.on{opacity:1;box-shadow:var(--button-shadow-active)}
+.rank-info__ladder img{width:40px;height:40px;object-fit:contain}
+.rank-info__ladder em{font-style:normal;font-size:11px;color:var(--muted)}

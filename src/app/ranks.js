@@ -37,3 +37,20 @@ export function rankFor(points) {
 export const rankBadge = (rank, size = 28) => `<img class="rank-badge" src="${rank.icon}" alt="Rango ${rank.name}" width="${size}" height="${size}" loading="lazy">`;
 
 export const TIER_POINTS = { bronze: 10, silver: 25, gold: 60 };
+
+const escHtml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/** Ventana con la explicación de los rangos (se abre al tocar el icono del perfil). */
+export function openRankInfo(rank, account = 0, challenges = 0) {
+  const modal = document.createElement('div'); modal.className = 'modal rank-info';
+  modal.innerHTML = `<section class="sheet" role="dialog" aria-modal="true" aria-label="Rangos"><div class="sheet-h"><h2>Rangos</h2><button class="link" type="button" data-close>Cerrar</button></div>
+    <div class="rank-info__me"><img src="${rank.iconBig}" alt=""><div><b>${escHtml(rank.name)}</b><p class="muted">${rank.points} logros${rank.next ? ` · faltan ${rank.missing} para ${escHtml(rank.nextName)}` : ' · rango máximo'}</p><small class="muted">Cuenta: ${account} · Retos: ${challenges}</small></div></div>
+    <p><b>¿Qué son los logros?</b> Son la moneda para subir de rango. Se ganan con los logros de tu cuenta (bronce +10, plata +25, oro +60) y completando retos del club.</p>
+    <p><b>¿Cómo subo?</b> Entrena con constancia en Running, Ciclismo, Natación, Pliometría y Fuerza, comparte tus entrenamientos y completa retos.</p>
+    <p><b>¿Es justo?</b> Sí: el rango no depende de tu físico, peso ni medidas, solo de tu constancia y esfuerzo registrado.</p>
+    <div class="rank-info__ladder">${TIERS.map((t) => `<span class="${t.key === rank.tier.key ? 'on' : ''}"><img src="${rankIcon(t, 1)}" alt="" loading="lazy"><small>${t.name}</small><em>${t.start}+</em></span>`).join('')}</div></section>`;
+  document.body.append(modal);
+  const close = () => modal.remove();
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  modal.querySelector('[data-close]').onclick = close;
+}
