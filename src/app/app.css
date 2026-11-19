@@ -1697,5 +1697,9 @@ body.appbody #event-form #ef-submit{width:100%;min-height:50px;margin-top:18px!i
   .training-module-card__media{flex:0 0 42%;width:42%}
   .training-module-card__copy{flex:1;min-width:0}
 }
-/* Las fotos vienen con fondo blanco: la caja de imagen es blanca en claro y oscuro */
-body.appbody .training-module-card__media{background:#fff!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
+/* Las fotos son transparentes: la persona va directamente sobre la tarjeta */
+body.appbody .training-module-card__media{background:transparent!important;box-shadow:none!important;border-radius:0}
+.training-module-card__media img{filter:drop-shadow(0 8px 10px rgba(0,0,0,.22))}
+/* Orden limpio: cuadrícula uniforme sin posiciones especiales */
+body.appbody .training-hub__grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))!important}
+body.appbody .training-hub__grid .training-module-card{grid-column:auto!important;max-width:none!important;justify-self:stretch!important}
