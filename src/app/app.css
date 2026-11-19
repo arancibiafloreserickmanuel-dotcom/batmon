@@ -1936,3 +1936,13 @@ body.appbody button.profile-avatar,body.appbody button.community-avatar,body.app
 body.appbody button.profile-avatar:has(img),body.appbody button.community-avatar:has(img),body.appbody button.act-avatar:has(img){background:transparent !important}
 body.appbody button.profile-avatar,body.appbody button.community-avatar,body.appbody button.act-avatar{border-radius:50% !important}
 body.appbody button.profile-avatar:not(:has(img)){background:#111 !important;color:#fff !important}
+
+/* Perfil: nombre más pequeño, rango junto a Amigos, tarjeta de monedas */
+.profile-identity h1{font-size:20px !important;line-height:1.15}
+.profile-counts{grid-template-columns:repeat(4,1fr) !important}
+body.appbody button.rank-stat,body.appbody button.rank-stat:active{background:none !important;box-shadow:none !important;border:0 !important;border-radius:0 !important;padding:0 !important;min-height:0 !important;transform:none !important;color:inherit !important;cursor:pointer;text-align:center}
+.rank-stat b{display:flex !important;align-items:center;justify-content:center;gap:4px;font:15px Anton,sans-serif !important;letter-spacing:.02em}
+.rank-stat b img{width:24px;height:24px;object-fit:contain}
+.coin-card .rank-card__icon{width:84px;height:84px}
+.coin-card h2 b{font-size:34px}
+.coin-card h2{display:flex;align-items:baseline;gap:8px}
