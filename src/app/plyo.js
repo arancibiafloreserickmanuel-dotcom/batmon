@@ -3,6 +3,7 @@ import { mountPlyoCoach } from './coach-ui.js';
 import { loadAthlete, saveAthlete, plyoWeekIndex, plyoItems } from './coach.js';
 import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
 import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart } from './common.js';
+import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros } from './share.js';
 
 const DRAFT_KEY = 'batmon_plyo_draft_v2';
 const REST_IMG = '/descanso.webp';
@@ -302,12 +303,13 @@ function drawFinish(box, view, ctx) {
       <label for="wm">Duración exacta (automática)</label><input id="wm" type="text" readonly value="${durSec >= 3600 ? `${Math.floor(durSec / 3600)}:${fmtClock(durSec % 3600)}` : fmtClock(durSec)}" aria-readonly="true">
       <label for="wr">Esfuerzo (RPE 1-10)</label><input id="wr" type="number" min="1" max="10" inputmode="numeric" value="${W.rpe}">
       <label for="wn">Notas</label><input id="wn" type="text" maxlength="300" value="${esc(W.notes)}">
-      <button class="btn" id="savew" type="button">Finalizar y guardar</button><button class="link" id="clr" type="button">Descartar sesión</button><p class="msg" id="wm2"></p></section>`;
+      ${shareSectionMarkup({ titlePlaceholder: 'Sesión de pliometría' })}<button class="btn" id="savew" type="button">Finalizar y guardar</button><button class="link" id="clr" type="button">Descartar sesión</button><p class="msg" id="wm2"></p></section>`;
   $('#fin-back', box).onclick = () => { sesFinishing = false; delete W.endedAt; sesSave(); drawSession(box, view, ctx); };
   $('#wd', box).oninput = (e) => { W.date = e.target.value; sesSave(); };
   $('#wr', box).oninput = (e) => { W.rpe = e.target.value; sesSave(); };
   $('#wn', box).oninput = (e) => { W.notes = e.target.value; sesSave(); };
   $('#clr', box).onclick = () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { sesReset(true); W = null; draft.del(userDraftKey()); activeView = 'home'; renderPlyo(view, ctx); } });
+  bindShareSection(box);
   $('#savew', box).onclick = () => finishSession(box, view, ctx);
 }
 
@@ -317,6 +319,7 @@ async function finishSession(box, view, ctx) {
   const items = W.items.map((it, pos) => ({ ex: it.ex, pos, sets: it.sets.filter(real) })).filter((it) => it.sets.length);
   if (!items.length) { msg.textContent = 'Completa al menos una serie.'; return; }
   const btn = $('#savew', box); btn.disabled = true;
+  const share = readShare(box, 'Sesión de pliometría');
   const { data: w, error } = await supabase.from('workouts').insert({
     kind: 'plyometrics', performed_on: W.date, duration_min: Math.min(999, Math.max(0.1, Math.round(((W.endedAt || Date.now()) - (W.startedAt || Date.now())) / 6000) / 10)), rpe: num(W.rpe), notes: W.notes.trim() || null,
     source_routine_id: W.routineId || null, plan_day: W.planDay || null,
@@ -329,10 +332,18 @@ async function finishSession(box, view, ctx) {
   }));
   const { error: e2 } = await supabase.from('workout_sets').insert(rows);
   if (e2) { await supabase.from('workouts').delete().eq('id', w.id); msg.textContent = 'Error en las series: ' + e2.message; btn.disabled = false; return; }
+  let shareError = null;
+  if (share) {
+    const sec = Math.round(((W.endedAt || Date.now()) - (W.startedAt || Date.now())) / 1000);
+    const { data: prev = [] } = await supabase.from('workouts').select('kind').eq('kind', 'plyometrics').neq('id', w.id);
+    const stats = { duration_sec: sec, sets: rows.length, exercises: items.length, logros: activityLogros({ kind: 'plyo', previous: prev || [] }) };
+    ({ error: shareError } = await publishShare(ctx.user.id, { kind: 'plyo', sourceId: w.id, performedOn: W.date, stats, route: [], share }));
+  }
   const finishedW = { ...W, items: W.items.map((it) => ({ ...it, sets: it.sets.filter(real) })).filter((it) => it.sets.length) };
   sesReset(true); W = null; draft.del(userDraftKey()); activeView = 'home';
   if (finishedW.routineId) await maybeUpdateRoutine(ctx, finishedW);
-  notify('Sesión guardada.', 'success');
+  if (share && shareError) notify(`Sesión guardada, pero no se pudo compartir: ${shareError.message}`);
+  else notify(share ? 'Sesión guardada y compartida.' : 'Sesión guardada.', 'success');
   await renderPlyo(view, ctx);
 }
 

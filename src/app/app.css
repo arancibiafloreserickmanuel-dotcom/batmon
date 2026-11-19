@@ -1781,3 +1781,53 @@ body.appbody[data-theme="dark"] .coach-prog i{background:#fff}
 .cw-sess small{grid-column:2;text-align:left}
 body.appbody .cw-nav [data-next]{background-color:#000!important;color:#fff!important;border-color:#000!important}
 body.appbody[data-theme="dark"] .cw-nav [data-next]{border-color:#fff!important}
+
+/* ───── Actividades compartidas, logros y formulario Compartir ───── */
+.running-pages.tabs-pill--4{width:min(380px,100%)}
+.running-pages.tabs-pill--4 .tabs-pill__indicator{width:calc(25% - 1.2px)}
+.tabs-pill__input:nth-of-type(4):checked ~ .tabs-pill__indicator{transform:translateX(300%)}
+.running-pages.tabs-pill--4 .tabs-pill__label{font-size:11px}
+
+.share-box{display:grid;gap:10px;border:1px solid var(--line);border-radius:var(--card-radius,14px);padding:12px}
+.share-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;cursor:pointer}
+.share-toggle span{display:grid;gap:3px}.share-toggle small{color:var(--muted);font-size:11px;font-weight:400;line-height:1.35}
+.share-switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:46px!important;min-height:0!important;height:26px;border-radius:99px;background:color-mix(in srgb,var(--ink) 22%,var(--surface))!important;border:0!important;position:relative;padding:0!important;margin:0;transition:background .2s}
+.share-switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0004;transition:transform .2s}
+.share-switch:checked{background:#fc4c02!important}.share-switch:checked::after{transform:translateX(20px)}
+.share-fields{display:grid;gap:10px}.share-fields[hidden]{display:none}.share-fields label{margin:0}
+
+.act-list{display:grid;gap:12px}
+.act-card{margin:0;padding:0;overflow:hidden}
+.act-head{display:flex;align-items:flex-start;gap:12px;padding:14px 14px 4px}
+.act-avatar{flex:0 0 46px;width:46px;height:46px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 12%,var(--surface));font:400 15px Anton,sans-serif}
+.act-avatar img{width:100%;height:100%;object-fit:cover}
+.act-who{display:grid;gap:2px;min-width:0;flex:1}.act-who small{color:var(--muted);font-size:12px}
+.act-place{display:flex;align-items:center;gap:5px}.act-kind{display:inline-flex;width:16px;height:16px}.act-kind svg{width:16px;height:16px}
+.act-del{align-self:flex-start;font-size:11px;color:var(--muted)}
+.act-title{margin:6px 14px 8px;font:700 20px/1.2 Inter,sans-serif}
+.act-stats{display:flex;flex-wrap:wrap;gap:8px 22px;padding:0 14px 12px}.act-stats div{display:grid;gap:2px}.act-stats small{color:var(--muted);font-size:11px}.act-stats b{font-size:17px}
+.act-logros{display:grid;gap:8px;margin:0 14px 12px}
+.act-logro{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--ink) 7%,var(--surface))}
+.act-logro span{width:26px;height:26px;flex:0 0 26px}.act-logro span svg{width:100%;height:100%}.act-logro b{font-size:13px;line-height:1.3}
+.act-logro--gold span,.logro--gold .logro__icon{color:#e5a60b}.act-logro--silver span,.logro--silver .logro__icon{color:#8f98a3}.act-logro--bronze span,.logro--bronze .logro__icon{color:#c4723a}
+.act-map{height:230px;background:color-mix(in srgb,var(--ink) 8%,var(--surface));position:relative;z-index:0}
+.act-map__err{padding:16px}
+.act-desc{margin:12px 14px 0;font-size:14px;line-height:1.45;white-space:pre-wrap}
+.act-photos{display:flex;gap:6px;overflow-x:auto;margin-top:12px}.act-photos img{height:200px;width:auto;max-width:92%;object-fit:cover}
+.act-likes{margin:12px 14px 4px;font-size:13px;color:var(--muted)}
+.act-actions{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:8px}
+body.appbody .act-actions button{background:transparent!important;border:0!important;box-shadow:none!important;color:var(--ink);min-height:48px;padding:10px;display:grid;place-items:center;border-radius:0!important}
+.act-actions button svg{width:24px;height:24px}
+body.appbody .act-actions button.on{color:#fc4c02}.act-actions button.on svg{fill:currentColor;fill-opacity:.18}
+.act-comments{display:grid;gap:8px;padding:6px 14px 14px;border-top:1px solid var(--line)}.act-comments[hidden]{display:none}
+.act-comments p{margin:0;font-size:13px;line-height:1.4}.act-comments .link{font-size:11px;color:var(--muted)}
+.act-comment-form{display:flex;gap:8px}.act-comment-form input{flex:1;margin:0}.act-comment-form .btn{margin:0}
+
+.logros-card{display:grid;gap:12px}
+.logros-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.logro{display:grid;gap:4px;justify-items:start;padding:12px;border:1px solid var(--line);border-radius:14px;opacity:.55}
+.logro.is-earned{opacity:1;background:color-mix(in srgb,var(--ink) 5%,var(--surface))}
+.logro__icon{width:30px;height:30px;color:var(--muted)}.logro__icon svg{width:100%;height:100%}.logro:not(.is-earned) .logro__icon{filter:grayscale(1)}
+.logro b{font-size:13px}.logro small{font-size:11px;color:var(--muted);line-height:1.3}.logro em{font-style:normal;font-size:10px;color:var(--muted);text-transform:uppercase}
+.logro.is-earned em{color:#2f8f4e;font-weight:700}
+.logro__bar{display:block;width:100%;height:4px;border-radius:4px;background:color-mix(in srgb,var(--ink) 12%,var(--surface));overflow:hidden}.logro__bar u{display:block;height:100%;background:var(--ink)}

@@ -1,0 +1,299 @@
+// Actividades compartidas: formulario de "Compartir" al terminar, feed en tarjetas y logros.
+import { supabase, $, esc } from '../supabase.js';
+import { notify, confirmDialog, fmt, paceStr } from './common.js';
+
+const EFFORT = [[2, 'Muy fácil'], [4, 'Fácil'], [6, 'Moderado'], [8, 'Duro'], [10, 'Máximo esfuerzo']];
+const EFFORT_LABEL = Object.fromEntries(EFFORT);
+const ICON = {
+  run: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16l3-1 2-5 4 2 3 3h4v3H4z"/><path d="M9 10l1-3"/></svg>',
+  dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  like: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v9H4v-9zM7 11l4-7c1.5 0 2.5 1 2.5 2.5V9h5.2a1.8 1.8 0 0 1 1.8 2.1l-1.3 7A2 2 0 0 1 17.2 20H7"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v8h14v-8"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0V3zM4 4h3v2H5a1 1 0 0 0 0 2h2.2A7 7 0 0 0 7.7 10H5a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2zm16 0a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-2.7a7 7 0 0 0 .5-2H19a1 1 0 0 0 0-2h-2V4h3zM11 14h2v3h3v2H8v-2h3z"/></svg>',
+};
+
+/* ───────────── Formulario "Compartir" (preguntas al terminar) ───────────── */
+
+export function shareSectionMarkup({ titlePlaceholder = 'Mi actividad' } = {}) {
+  return `<section class="share-box" data-share>
+    <label class="share-toggle"><span><b>Compartir actividad</b><small>Tus amigos del club la verán en Actividades. Solo se comparte si lo activas.</small></span><input type="checkbox" class="share-switch" data-share-on></label>
+    <div class="share-fields" data-share-fields hidden>
+      <label>Título<input data-share-title maxlength="100" placeholder="${esc(titlePlaceholder)}"></label>
+      <label>Descripción<textarea data-share-desc rows="3" maxlength="1000" placeholder="¿Cómo te ha ido? Comparte más detalles sobre tu actividad."></textarea></label>
+      <label>Lugar<input data-share-place maxlength="120" placeholder="Ej. Sucre, Chuquisaca"></label>
+      <label>Añadir fotos · hasta 3<input type="file" data-share-photos accept="image/jpeg,image/png,image/webp" multiple></label>
+      <label>¿Cómo autoevalúas esta actividad?<select data-share-effort><option value="">Elegir</option>${EFFORT.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></label>
+      <p class="muted">Visibilidad: tus amigos del club. Tus notas personales nunca se comparten.</p>
+    </div>
+  </section>`;
+}
+
+export function bindShareSection(root, { route = [], onPlace } = {}) {
+  const box = root.querySelector('[data-share]');
+  if (!box) return;
+  const toggle = box.querySelector('[data-share-on]'), fields = box.querySelector('[data-share-fields]');
+  let guessed = false;
+  toggle.onchange = () => {
+    fields.hidden = !toggle.checked;
+    if (toggle.checked && !guessed && route.length) {
+      guessed = true;
+      guessPlace(route).then((place) => { const input = box.querySelector('[data-share-place]'); if (place && input && !input.value) input.value = place; });
+    }
+  };
+}
+
+export function readShare(root, fallbackTitle) {
+  const box = root.querySelector('[data-share]');
+  if (!box || !box.querySelector('[data-share-on]').checked) return null;
+  const effort = Number(box.querySelector('[data-share-effort]').value) || null;
+  return {
+    title: box.querySelector('[data-share-title]').value.trim() || fallbackTitle,
+    description: box.querySelector('[data-share-desc]').value.trim(),
+    place: box.querySelector('[data-share-place]').value.trim(),
+    effort,
+    files: Array.from(box.querySelector('[data-share-photos]').files || []),
+  };
+}
+
+async function guessPlace(route) {
+  const first = route.flat().find((p) => Number.isFinite(+p.lat) && Number.isFinite(+p.lon));
+  if (!first) return '';
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=es&lat=${(+first.lat).toFixed(3)}&lon=${(+first.lon).toFixed(3)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return '';
+    const a = (await res.json()).address || {};
+    return [a.city || a.town || a.village || a.municipality || a.county, a.state].filter(Boolean).join(', ');
+  } catch { return ''; }
+}
+
+function compactRoute(route) {
+  const segs = (Array.isArray(route?.[0]) ? route : [route || []]).filter((s) => s?.length);
+  const total = segs.reduce((n, s) => n + s.length, 0), step = Math.max(1, Math.ceil(total / 240));
+  return segs.map((s) => s.filter((_, i) => i % step === 0 || i === s.length - 1)
+    .filter((p) => Number.isFinite(+p.lat) && Number.isFinite(+p.lon))
+    .map((p) => [Number((+p.lat).toFixed(5)), Number((+p.lon).toFixed(5))])).filter((s) => s.length > 1);
+}
+
+async function uploadSharePhotos(userId, files) {
+  if (!files.length) return [];
+  if (files.length > 3) throw new Error('Puedes subir hasta 3 fotos.');
+  const out = [];
+  for (const [i, file] of files.entries()) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Usa imágenes JPG, PNG o WebP.');
+    if (file.size > 8 * 1024 * 1024) throw new Error('Cada foto debe pesar menos de 8 MB.');
+    const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const path = `${userId}/shared-${Date.now()}-${i}.${ext}`;
+    const { error } = await supabase.storage.from('profile-media').upload(path, file, { contentType: file.type });
+    if (error) { if (out.length) await supabase.storage.from('profile-media').remove(out); throw new Error(error.message); }
+    out.push(path);
+  }
+  return out;
+}
+
+/** Publica la actividad ya guardada. Devuelve { error } sin lanzar nunca: la actividad privada no debe perderse. */
+export async function publishShare(userId, { kind, sourceId, performedOn, stats, route = [], share }) {
+  let photos = [];
+  try { photos = await uploadSharePhotos(userId, share.files); } catch (e) { return { error: e }; }
+  const { error } = await supabase.from('shared_activities').insert({
+    kind, source_id: sourceId || null, title: share.title, description: share.description, place: share.place || null,
+    performed_on: performedOn, stats, route: compactRoute(route), photos, effort: share.effort,
+  });
+  if (error && photos.length) await supabase.storage.from('profile-media').remove(photos);
+  return { error };
+}
+
+/* ───────────── Logros ───────────── */
+
+const mondayKey = (iso) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+
+/** Logros de la cuenta, calculados con los datos reales del socio (sin tabla propia). */
+export function computeLogros({ activities = [], workouts = [], shared = 0 }) {
+  const runs = activities.filter((a) => a.discipline === 'running');
+  const plyo = workouts.filter((w) => w.kind === 'plyometrics');
+  const km = runs.reduce((n, a) => n + Number(a.distance_km || 0), 0);
+  const maxKm = Math.max(0, ...runs.map((a) => Number(a.distance_km || 0)));
+  const weeks = new Map();
+  runs.forEach((a) => weeks.set(mondayKey(a.performed_on), (weeks.get(mondayKey(a.performed_on)) || 0) + 1));
+  const bestWeek = Math.max(0, ...weeks.values());
+  const days = [...new Set([...runs, ...workouts].map((x) => x.performed_on))].sort();
+  let streak = 0, best = 0, prev = null;
+  for (const d of days) {
+    const gap = prev ? Math.round((new Date(`${d}T12:00:00`) - new Date(`${prev}T12:00:00`)) / 86400000) : 0;
+    streak = prev && gap === 1 ? streak + 1 : 1; best = Math.max(best, streak); prev = d;
+  }
+  const list = [];
+  const add = (id, title, desc, tier, have, need, unit = '') => list.push({ id, title, desc, tier, have: Math.min(have, need), need, unit, earned: have >= need });
+  add('run1', 'Primer paso', 'Registra tu primera carrera', 'bronze', runs.length, 1);
+  add('run10', 'Corredor constante', '10 carreras registradas', 'silver', runs.length, 10);
+  add('run50', 'Fondista', '50 carreras registradas', 'gold', runs.length, 50);
+  add('km25', '25 kilómetros', 'Acumula 25 km corriendo', 'bronze', km, 25, 'km');
+  add('km100', '100 kilómetros', 'Acumula 100 km corriendo', 'silver', km, 100, 'km');
+  add('km500', '500 kilómetros', 'Acumula 500 km corriendo', 'gold', km, 500, 'km');
+  add('d5', 'Cinco mil', 'Una carrera de 5 km o más', 'bronze', maxKm, 5, 'km');
+  add('d10', 'Diez mil', 'Una carrera de 10 km o más', 'silver', maxKm, 10, 'km');
+  add('d21', 'Media maratón', 'Una carrera de 21 km o más', 'gold', maxKm, 21, 'km');
+  add('week3', 'Semana activa', '3 carreras en una misma semana', 'bronze', bestWeek, 3);
+  add('streak7', 'Racha de 7 días', 'Entrena 7 días seguidos', 'gold', best, 7);
+  add('plyo1', 'Primer salto', 'Primera sesión de pliometría', 'bronze', plyo.length, 1);
+  add('plyo10', 'Explosivo', '10 sesiones de pliometría', 'silver', plyo.length, 10);
+  add('plyo30', 'Potencia total', '30 sesiones de pliometría', 'gold', plyo.length, 30);
+  add('share1', 'Compartido', 'Comparte tu primera actividad', 'bronze', shared, 1);
+  add('share10', 'Referente del club', 'Comparte 10 actividades', 'silver', shared, 10);
+  return list;
+}
+
+export function logrosMarkup(list) {
+  const done = list.filter((l) => l.earned).length;
+  return `<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">${done} de ${list.length} conseguidos</span><h2>Logros</h2></div></div>
+    <div class="logros-grid">${list.map((l) => `<article class="logro logro--${l.tier} ${l.earned ? 'is-earned' : ''}" title="${esc(l.desc)}"><span class="logro__icon">${ICON.trophy}</span><b>${esc(l.title)}</b><small>${esc(l.desc)}</small>${l.earned ? '<em>Conseguido</em>' : `<i class="logro__bar"><u style="width:${Math.round(l.have / l.need * 100)}%"></u></i><em>${fmt(l.have, l.unit ? 1 : 0)} / ${l.need}${l.unit ? ' ' + l.unit : ''}</em>`}</article>`).join('')}</div></section>`;
+}
+
+/** Logros de una sola actividad (se guardan al compartir y salen en la tarjeta). */
+export function activityLogros({ kind, distanceKm = 0, durationMin = 0, previous = [] }) {
+  const out = [];
+  if (kind === 'running') {
+    const before = previous.filter((a) => a.discipline === 'running');
+    if (!before.length) out.push({ tier: 'gold', text: '¡Tu primera carrera registrada!' });
+    const prevMax = Math.max(0, ...before.map((a) => Number(a.distance_km || 0)));
+    if (before.length && distanceKm > prevMax) out.push({ tier: 'gold', text: '¡Tu carrera más larga hasta hoy!' });
+    const pace = distanceKm >= 1 && durationMin > 0 ? durationMin / distanceKm : 0;
+    const prevPaces = before.filter((a) => Number(a.distance_km) >= 1 && Number(a.duration_min) > 0).map((a) => a.duration_min / a.distance_km);
+    if (pace && prevPaces.length && pace < Math.min(...prevPaces)) out.push({ tier: 'silver', text: '¡Tu ritmo medio más rápido!' });
+    for (const k of [5, 10, 21]) if (distanceKm >= k && !before.some((a) => Number(a.distance_km) >= k)) out.push({ tier: 'bronze', text: `¡Tu primera carrera de ${k} km!` });
+  } else if (kind === 'plyo') {
+    const n = previous.filter((w) => w.kind === 'plyometrics').length + 1;
+    if (n === 1) out.push({ tier: 'gold', text: '¡Tu primera sesión de pliometría!' });
+    else if ([10, 25, 50, 100].includes(n)) out.push({ tier: 'silver', text: `¡Sesión ${n} de pliometría!` });
+  }
+  return out.slice(0, 3);
+}
+
+/* ───────────── Feed de tarjetas ───────────── */
+
+const dateLabel = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' });
+const clock = (sec) => { sec = Math.round(sec || 0); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(s).padStart(2, '0')} s`; };
+const initials = (name) => (name || 'BC').split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
+
+function statsMarkup(a) {
+  const s = a.stats || {};
+  const cells = [];
+  if (a.kind === 'running') {
+    cells.push(['Distancia', `${fmt(s.distance_km, 2)} km`]);
+    if (s.elevation_m) cells.push(['Desnivel', `${fmt(s.elevation_m, 0)} m`]);
+    else if (s.distance_km && s.duration_sec) cells.push(['Ritmo', `${paceStr(Number(s.distance_km), s.duration_sec / 60)} /km`]);
+    cells.push(['Tiempo', clock(s.duration_sec)]);
+  } else {
+    cells.push(['Tiempo', clock(s.duration_sec)]);
+    if (s.sets) cells.push(['Series', String(s.sets)]);
+    if (s.exercises) cells.push(['Ejercicios', String(s.exercises)]);
+  }
+  if (a.effort) cells.push(['Esfuerzo', EFFORT_LABEL[a.effort] || String(a.effort)]);
+  return `<div class="act-stats">${cells.slice(0, 4).map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
+}
+
+async function mountRouteMap(el, route) {
+  try {
+    const [{ default: L }] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
+    if (!el.isConnected) return;
+    el.innerHTML = '';
+    const map = L.map(el, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const lines = route.map((seg) => L.polyline(seg, { color: '#fc4c02', weight: 4, opacity: .95, lineJoin: 'round' }).addTo(map));
+    map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [24, 24], maxZoom: 16 });
+  } catch { el.innerHTML = '<p class="muted act-map__err">No se pudo cargar el mapa.</p>'; }
+}
+
+export async function renderSharedFeed(box, ctx) {
+  box.innerHTML = '<p class="muted">Cargando actividades…</p>';
+  const me = ctx.user.id;
+  const { data: edges = [], error: fe } = await supabase.from('friendships').select('requester,addressee').eq('status', 'accepted').or(`requester.eq.${me},addressee.eq.${me}`);
+  if (fe) { box.innerHTML = `<div class="card warn">No se pudieron cargar las actividades: ${esc(fe.message)}</div>`; return; }
+  const owners = [me, ...edges.map((e) => (e.requester === me ? e.addressee : e.requester))];
+  const [{ data: acts, error }, { data: directory = [] }] = await Promise.all([
+    supabase.from('shared_activities').select('*').in('user_id', owners).order('created_at', { ascending: false }).limit(40),
+    supabase.rpc('profile_directory'),
+  ]);
+  if (error) { box.innerHTML = `<div class="card warn">Aún no se pueden mostrar actividades compartidas. Falta aplicar la migración 0023 en Supabase. (${esc(error.message)})</div>`; return; }
+  if (!acts.length) { box.innerHTML = '<div class="card profile-empty">Todavía no hay actividades compartidas. Al terminar una carrera o sesión puedes activar «Compartir actividad» y aparecerá aquí para ti y tus amigos.</div>'; return; }
+
+  const ids = acts.map((a) => a.id);
+  const [likesRes, commentsRes] = await Promise.all([
+    supabase.from('activity_likes').select('activity_id,user_id').in('activity_id', ids),
+    supabase.from('activity_comments').select('id,activity_id,user_id,body,created_at').in('activity_id', ids).order('created_at', { ascending: true }),
+  ]);
+  let likes = likesRes.data || [], comments = commentsRes.data || [];
+  const people = new Map(directory.map((p) => [p.id, p]));
+  people.set(me, { id: me, full_name: ctx.profile?.full_name || 'Tú', avatar_path: ctx.profile?.avatar_path });
+  const sign = async (path) => (path ? (await supabase.storage.from('profile-media').createSignedUrl(path, 1800)).data?.signedUrl || '' : '');
+  const avatars = new Map(await Promise.all([...new Set(acts.map((a) => a.user_id))].map(async (id) => [id, await sign(people.get(id)?.avatar_path)])));
+  const photos = new Map(await Promise.all(acts.map(async (a) => [a.id, await Promise.all((a.photos || []).map(sign))])));
+  const nameOf = (id) => people.get(id)?.full_name || 'Socio Batmon';
+
+  const cardMarkup = (a) => {
+    const own = a.user_id === me, name = nameOf(a.user_id), logros = a.stats?.logros || [];
+    return `<article class="card act-card" data-act="${a.id}">
+      <header class="act-head"><span class="act-avatar">${avatars.get(a.user_id) ? `<img src="${esc(avatars.get(a.user_id))}" alt="">` : esc(initials(name))}</span>
+        <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
+        ${own ? '<button type="button" class="link act-del" data-del>Quitar</button>' : ''}</header>
+      <h2 class="act-title">${esc(a.title)}</h2>
+      ${statsMarkup(a)}
+      ${logros.length ? `<div class="act-logros">${logros.map((l) => `<div class="act-logro act-logro--${esc(l.tier)}"><span>${ICON.trophy}</span><b>${esc(l.text)}</b></div>`).join('')}</div>` : ''}
+      ${a.route?.length ? '<div class="act-map" data-route aria-label="Mapa del recorrido"></div>' : ''}
+      ${a.description ? `<p class="act-desc">${esc(a.description)}</p>` : ''}
+      ${(photos.get(a.id) || []).filter(Boolean).length ? `<div class="act-photos">${photos.get(a.id).filter(Boolean).map((u) => `<img src="${esc(u)}" alt="Foto de la actividad" loading="lazy">`).join('')}</div>` : ''}
+      <div class="act-foot" data-foot></div></article>`;
+  };
+
+  const footMarkup = (a) => {
+    const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
+    const others = l.filter((x) => x.user_id !== me).map((x) => nameOf(x.user_id).split(' ')[0]);
+    const text = !l.length ? '¡Sé el primero en dar like!' : liked ? (others.length ? `Te gusta a ti y a ${others.length} más` : 'Te gusta a ti') : `Les gusta a ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` y ${others.length - 2} más` : ''}`;
+    return `<p class="act-likes">${esc(text)}${c.length ? ` · ${c.length} comentario${c.length === 1 ? '' : 's'}` : ''}</p>
+      <div class="act-actions"><button type="button" data-like class="${liked ? 'on' : ''}" aria-pressed="${liked}" aria-label="Me gusta">${ICON.like}</button><button type="button" data-comments aria-label="Comentarios">${ICON.comment}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
+      <div class="act-comments" data-comment-box hidden>${c.map((x) => `<p data-cid="${x.id}"><b>${esc(nameOf(x.user_id))}</b> ${esc(x.body)}${x.user_id === me || ctx.isAdmin ? ' <button type="button" class="link" data-cdel>borrar</button>' : ''}</p>`).join('')}
+        <form class="act-comment-form"><input maxlength="500" placeholder="Escribe un comentario" required><button class="btn sm" type="submit">Enviar</button></form></div>`;
+  };
+
+  box.innerHTML = `<div class="act-list">${acts.map(cardMarkup).join('')}</div>`;
+  const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { observer.unobserve(e.target); const a = acts.find((x) => x.id === e.target.closest('[data-act]').dataset.act); mountRouteMap(e.target, a.route); } }), { rootMargin: '200px' }) : null;
+
+  const paintFoot = (card) => {
+    const a = acts.find((x) => x.id === card.dataset.act), foot = $('[data-foot]', card), open = !foot.querySelector('[data-comment-box]')?.hidden;
+    foot.innerHTML = footMarkup(a);
+    if (open) foot.querySelector('[data-comment-box]').hidden = false;
+    foot.querySelector('[data-like]').onclick = async () => {
+      const liked = likes.some((x) => x.activity_id === a.id && x.user_id === me);
+      if (liked) { likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); paintFoot(card); const { error: e } = await supabase.from('activity_likes').delete().eq('activity_id', a.id).eq('user_id', me); if (e) { notify(e.message); likes.push({ activity_id: a.id, user_id: me }); paintFoot(card); } }
+      else { likes.push({ activity_id: a.id, user_id: me }); paintFoot(card); const { error: e } = await supabase.from('activity_likes').insert({ activity_id: a.id }); if (e) { notify(e.message); likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); paintFoot(card); } }
+    };
+    foot.querySelector('[data-comments]').onclick = () => { const b = foot.querySelector('[data-comment-box]'); b.hidden = !b.hidden; if (!b.hidden) b.querySelector('input').focus(); };
+    foot.querySelector('[data-native]').onclick = async () => {
+      const text = `${a.title} · ${nameOf(a.user_id)} en Batmon Crowd`;
+      try { if (navigator.share) await navigator.share({ title: a.title, text, url: location.origin }); else { await navigator.clipboard.writeText(`${text} ${location.origin}`); notify('Enlace copiado.', 'success'); } } catch { /* cancelado */ }
+    };
+    foot.querySelector('.act-comment-form').onsubmit = async (e) => {
+      e.preventDefault(); const input = e.currentTarget.querySelector('input'), body = input.value.trim(); if (!body) return;
+      const { data, error: err } = await supabase.from('activity_comments').insert({ activity_id: a.id, body }).select('id,activity_id,user_id,body,created_at').single();
+      if (err) { notify(err.message); return; }
+      comments.push(data); paintFoot(card);
+    };
+    foot.querySelectorAll('[data-cdel]').forEach((btn) => { btn.onclick = async () => { const id = btn.closest('[data-cid]').dataset.cid; const { error: err } = await supabase.from('activity_comments').delete().eq('id', id); if (err) { notify(err.message); return; } comments = comments.filter((x) => x.id !== id); paintFoot(card); }; });
+  };
+
+  box.querySelectorAll('[data-act]').forEach((card) => {
+    paintFoot(card);
+    const mapEl = card.querySelector('[data-route]'), a = acts.find((x) => x.id === card.dataset.act);
+    if (mapEl) { if (observer) observer.observe(mapEl); else mountRouteMap(mapEl, a.route); }
+    const del = card.querySelector('[data-del]');
+    if (del) del.onclick = async () => {
+      if (!(await confirmDialog('La actividad dejará de verse en el club. Seguirá guardada en tu historial.', 'Quitar de Actividades'))) return;
+      const { error: err } = await supabase.from('shared_activities').delete().eq('id', a.id);
+      if (err) { notify(err.message); return; }
+      const removed = a.photos || []; if (removed.length) await supabase.storage.from('profile-media').remove(removed);
+      card.remove(); notify('Actividad quitada.', 'success');
+    };
+  });
+}
