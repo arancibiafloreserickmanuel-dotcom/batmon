@@ -1662,3 +1662,23 @@ body.appbody .payment-wallet .method-qr{background:url('/qr-tarjeta.webp') cente
 .method-qr .method-chip{background:#fff;color:#000;border-color:#000}
 .method-qr .method-bottom>span{align-items:flex-start;padding:5px 10px;border-radius:8px;background:#fff;color:#000;opacity:1}
 .method-qr .method-label{opacity:.7}
+
+/* Admin · Eventos en móvil (tarjetas y formulario de editar) */
+body.appbody #event-form{box-shadow:none!important;background:transparent!important;border:0!important;padding:0!important;display:grid;gap:6px}
+body.appbody #event-form label{display:block;margin:10px 0 2px;font:700 12px Inter,sans-serif;letter-spacing:.04em;color:var(--muted)}
+body.appbody #event-form input:not([type=checkbox]):not([type=file]),body.appbody #event-form textarea{width:100%;min-width:0;box-sizing:border-box;min-height:46px;font-size:16px;margin:0}
+body.appbody #event-form input[type=file]{width:100%;font-size:14px}
+body.appbody #event-form .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body.appbody #event-form .row>div{min-width:0}
+body.appbody #event-form #ef-submit{width:100%;min-height:50px;margin-top:18px!important}
+@media (max-width:600px){
+  .admin-events-header{flex-direction:column;align-items:stretch}
+  .admin-events-header .btn{width:100%;min-height:48px}
+  .admin-event-hero{flex-direction:column;gap:12px}
+  .admin-event-thumb{width:100%;height:150px;border-radius:14px}
+  .admin-event-info h3{font-size:18px}
+  .admin-event-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .admin-event-actions .btn{width:100%;min-height:46px;margin:0}
+  body.appbody #event-form .row{grid-template-columns:1fr}
+  body.appbody .sheet{max-height:92dvh;overflow-y:auto}
+}
