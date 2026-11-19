@@ -1,15 +1,16 @@
 import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
+import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 
 let section = 'activity';
 const MODULES = [['running','Running'],['cycling','Ciclismo'],['plyo','Pliometría'],['training','Entrenamiento'],['swimming','Natación']];
 
 export async function renderCommunity(view, ctx) {
-  view.innerHTML = `<section class="community-page"><h1>Club</h1><p class="muted">Actividad deportiva y miembros de Batmon Crowd.</p><div class="tabs sub" role="tablist"><button data-community-tab="activity">Actividad</button><button data-community-tab="members">Miembros</button><button data-community-tab="challenges">Retos</button></div><div id="community-content"><p class="card muted">Cargando comunidad…</p></div></section>`;
-  view.querySelectorAll('[data-community-tab]').forEach(button => {
-    button.classList.toggle('on', button.dataset.communityTab === section);
-    button.onclick = () => { section = button.dataset.communityTab; renderCommunity(view, ctx); };
-  });
+  const TABS = [['activity', 'Actividad'], ['members', 'Miembros'], ['challenges', 'Retos']];
+  view.innerHTML = `<section class="community-page run-module"><header class="run-module__head"><div><p class="run-kicker">CLUB · BATMON CROWD</p><h1>Club</h1></div></header>
+    <nav class="running-pages tabs-pill" aria-label="Secciones del Club">${TABS.map(([key, label]) => `<input class="tabs-pill__input" type="radio" name="club-page" id="club-page-${key}" value="${key}"${section === key ? ' checked' : ''}><label class="tabs-pill__label" for="club-page-${key}">${label}</label>`).join('')}<div class="tabs-pill__indicator" aria-hidden="true"></div></nav>
+    <div id="community-content"><p class="card muted">Cargando comunidad…</p></div></section>`;
+  view.querySelectorAll('.tabs-pill__input').forEach(input => { input.onchange = () => { section = input.value; renderCommunity(view, ctx); }; });
   const box = $('#community-content', view);
   if (section === 'members') await renderMembers(box, ctx);
   else if(section==='challenges') await renderChallenges(box,ctx);
@@ -61,8 +62,8 @@ async function renderActivity(box, ctx) {
   ]);
   if (error) { box.innerHTML = `<div class="card warn">No se pudo cargar el muro: ${esc(error.message)}</div>`; return; }
   if (!posts.length) {
-    box.innerHTML = `${postForm()}<div class="card profile-empty">Aún no hay publicaciones tuyas ni de tus amigos. Comparte una foto o video de entrenamiento para iniciar el muro.</div>`;
-    bindPostForm(box, ctx); return;
+    box.innerHTML = `${shareButton()}<div class="card profile-empty">Aún no hay publicaciones tuyas ni de tus amigos. Comparte una foto o video de entrenamiento para iniciar el muro.</div>`;
+    bindShareButton(box, ctx); return;
   }
   const postIds = posts.map(post => post.id);
   const [reactionResult, commentResult] = await Promise.all([
@@ -74,7 +75,8 @@ async function renderActivity(box, ctx) {
   const people = new Map(directory.map(person => [person.id,person.full_name || 'Socio Batmon']));
   people.set(ctx.user.id,ctx.profile?.full_name||'Tú');
   const owner = new Map(directory.map(person => [person.id,person]));
-  owner.set(ctx.user.id,{id:ctx.user.id,full_name:ctx.profile?.full_name||'Tú'});
+  owner.set(ctx.user.id,{id:ctx.user.id,full_name:ctx.profile?.full_name||'Tú',avatar_path:ctx.profile?.avatar_path,avatar_url:ctx.profile?.avatar_url});
+  const avatarOf=new Map(await Promise.all(ownerIds.map(async id=>[id,await avatarSrc(owner.get(id),1800)])));
   const media = await Promise.all(posts.map(async post => {
     const { data } = await supabase.storage.from('profile-media').createSignedUrl(post.media_path, 1800);
     return [post.id, data?.signedUrl || ''];
@@ -90,10 +92,11 @@ async function renderActivity(box, ctx) {
       ? `<video class="community-media" src="${esc(src)}" controls playsinline preload="metadata"></video>`
       : `<img class="community-media" src="${esc(src)}" alt="Publicación de ${esc(people.get(post.user_id)||'un socio')}" loading="lazy">`
       : '<div class="card warn">El archivo ya no está disponible.</div>';
-    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><span class="community-avatar">${esc((people.get(post.user_id)||'BC').split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase())}</span><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`<button type="button" class="link" data-like-post="${post.id}" aria-pressed="${ownLike}">${ownLike?'♥':'♡'} ${likes.length} Me gusta</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}">Eliminar</button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
+    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`<button type="button" class="link" data-like-post="${post.id}" aria-pressed="${ownLike}">${ownLike?'♥':'♡'} ${likes.length} Me gusta</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}">Eliminar</button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
   }).join('');
-  box.innerHTML = `${postForm()}<div class="quick-actions"><a class="link" href="#inicio">Ver calendario y eventos del club</a></div><div class="community-feed">${cards}</div>`;
-  bindPostForm(box, ctx);
+  box.innerHTML = `${shareButton()}<div class="quick-actions"><a class="link" href="#inicio">Ver calendario y eventos del club</a></div><div class="community-feed">${cards}</div>`;
+  bindShareButton(box, ctx);
+  box.querySelectorAll('[data-avatar]').forEach(b=>b.onclick=()=>openPhotoViewer(avatarOf.get(b.dataset.avatar),people.get(b.dataset.avatar)||''));
   box.querySelectorAll('[data-like-post]').forEach(button => button.onclick = async () => {
     const postId = button.dataset.likePost;
     const action = button.getAttribute('aria-pressed') === 'true'
@@ -121,26 +124,45 @@ async function renderActivity(box, ctx) {
   });
 }
 
-function postForm() {
-  return `<form class="card community-publish" id="community-publish"><h2>Compartir entrenamiento</h2><div class="row"><label>Disciplina<select name="module_key">${MODULES.map(([key,title])=>`<option value="${key}">${title}</option>`).join('')}</select></label><label>Foto o video<input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" required></label></div><label>Descripción<input name="caption" maxlength="500" placeholder="¿Qué entrenaste hoy?"></label><button class="btn" type="submit">Publicar</button><p class="msg" aria-live="polite"></p></form>`;
+function shareButton() {
+  return `<button type="button" class="btn share-open" data-share-open><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Compartir entrenamiento</button>`;
 }
 
-function bindPostForm(box, ctx) {
-  const form=$('#community-publish',box); if(!form)return;
-  form.onsubmit=async event=>{
-    event.preventDefault(); const file=form.elements.media.files[0], msg=form.querySelector('.msg'), button=form.querySelector('button[type="submit"]');
-    if(!file)return;
-    if(file.size>30*1024*1024){msg.textContent='El archivo supera el límite de 30 MB.';return;}
-    if(!['image/jpeg','image/png','image/webp','video/mp4','video/quicktime'].includes(file.type)){msg.textContent='Formato no permitido. Usa JPG, PNG, WebP, MP4 o MOV.';return;}
-    button.disabled=true; msg.textContent='Subiendo publicación…';
-    const ext=file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
-    const path=`${ctx.user.id}/posts/${crypto.randomUUID()}.${ext}`;
-    const {error: uploadError}=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type,upsert:false});
-    if(uploadError){button.disabled=false;msg.textContent=`No se pudo subir el archivo: ${uploadError.message}`;return;}
-    const row={user_id:ctx.user.id,module_key:form.elements.module_key.value,media_path:path,media_type:file.type.startsWith('video/')?'video':'image',caption:form.elements.caption.value.trim()};
-    const {error: postError}=await supabase.from('profile_posts').insert(row);
-    if(postError){await supabase.storage.from('profile-media').remove([path]);button.disabled=false;msg.textContent=`No se publicó: ${postError.message}`;return;}
-    notify('Publicación compartida con tus amigos.','success'); renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
+function bindShareButton(box, ctx) {
+  const open = $('[data-share-open]', box); if (!open) return;
+  open.onclick = async () => {
+    const { data: closeRows = [] } = await supabase.from('close_friends').select('friend');
+    const modal = document.createElement('div'); modal.className = 'modal share-module';
+    modal.innerHTML = `<section class="sheet share-sheet" role="dialog" aria-modal="true" aria-label="Compartir entrenamiento"><div class="sheet-h"><h2>Compartir entrenamiento</h2><button class="link" type="button" data-close>Cerrar</button></div>
+      <form id="community-publish" class="community-publish"><label>Disciplina<select name="module_key">${MODULES.map(([key,title])=>`<option value="${key}">${title}</option>`).join('')}</select></label><label>Foto o video<input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" required></label><label>Descripción<input name="caption" maxlength="500" placeholder="¿Qué entrenaste hoy?"></label>
+        <fieldset class="share-audience"><legend>¿Quién puede verlo?</legend>
+          <nav class="running-pages tabs-pill tabs-pill--2" aria-label="Quién puede verlo"><input class="tabs-pill__input" type="radio" name="visibility" id="vis-friends" value="friends" checked><label class="tabs-pill__label" for="vis-friends">Mis amigos</label><input class="tabs-pill__input" type="radio" name="visibility" id="vis-close" value="close"><label class="tabs-pill__label" for="vis-close">Mejores amigos</label><div class="tabs-pill__indicator" aria-hidden="true"></div></nav>
+          <small class="muted" data-audience-note></small></fieldset>
+        <button class="btn" type="submit">Publicar</button><p class="msg" role="status"></p></form></section>`;
+    document.body.append(modal);
+    const form = $('#community-publish', modal), note = $('[data-audience-note]', modal);
+    const paint = () => { note.textContent = form.elements.visibility.value === 'close' ? (closeRows.length ? `Solo lo verán tus ${closeRows.length} mejores amigos. Gestiónalos en Miembros.` : 'Aún no tienes mejores amigos: márcalos con ★ en Miembros.') : 'Lo verán todos tus amigos aceptados.'; };
+    form.querySelectorAll('[name=visibility]').forEach(r => r.onchange = paint); paint();
+    const close = () => modal.remove();
+    modal.onclick = e => { if (e.target === modal) close(); };
+    $('[data-close]', modal).onclick = close;
+    form.onsubmit = async event => {
+      event.preventDefault(); const file = form.elements.media.files[0], msg = form.querySelector('.msg'), button = form.querySelector('button[type="submit"]');
+      if (!file) { msg.textContent = 'Elige una foto o video.'; return; }
+      if (file.size > 30 * 1024 * 1024) { msg.textContent = 'El archivo supera el límite de 30 MB.'; return; }
+      if (!['image/jpeg','image/png','image/webp','video/mp4','video/quicktime'].includes(file.type)) { msg.textContent = 'Formato no permitido. Usa JPG, PNG, WebP, MP4 o MOV.'; return; }
+      button.disabled = true; msg.textContent = 'Subiendo publicación…';
+      const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const path = `${ctx.user.id}/posts/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('profile-media').upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadError) { button.disabled = false; msg.textContent = `No se pudo subir el archivo: ${uploadError.message}`; return; }
+      const onlyClose = form.elements.visibility.value === 'close';
+      const row = { user_id: ctx.user.id, module_key: form.elements.module_key.value, media_path: path, media_type: file.type.startsWith('video/') ? 'video' : 'image', caption: form.elements.caption.value.trim(), ...(onlyClose ? { visibility: 'close' } : {}) };
+      const { error: postError } = await supabase.from('profile_posts').insert(row);
+      if (postError) { await supabase.storage.from('profile-media').remove([path]); button.disabled = false; msg.textContent = `No se publicó: ${postError.message}`; return; }
+      notify(onlyClose ? 'Compartido con tus mejores amigos.' : 'Publicación compartida con tus amigos.', 'success'); close();
+      renderCommunity(box.closest('#view') || document.querySelector('#view'), ctx);
+    };
   };
 }
 
@@ -152,18 +174,23 @@ async function renderMembers(box, ctx) {
   if(directoryError||friendError){box.innerHTML=`<div class="card warn">No se pudo cargar el directorio: ${esc(directoryError?.message||friendError?.message||'')}</div>`;return;}
   const edgeByPerson=new Map();
   for(const edge of edges){const other=edge.requester===ctx.user.id?edge.addressee:edge.requester;edgeByPerson.set(other,edge);}
-  const avatars=await Promise.all(people.map(async person=>{
-    if(!person.avatar_path)return [person.id,''];
-    const {data}=await supabase.storage.from('profile-media').createSignedUrl(person.avatar_path,1800);
-    return [person.id,data?.signedUrl||''];
-  }));
+  const {data:closeRows=[]}=await supabase.from('close_friends').select('friend');
+  const closeSet=new Set(closeRows.map(row=>row.friend));
+  const avatars=await Promise.all(people.map(async person=>[person.id,await avatarSrc(person,1800)]));
   const avatarMap=new Map(avatars);
-  box.innerHTML=`<p class="muted">Las publicaciones del muro solo se muestran entre amigos aceptados.</p><div class="community-members">${people.map(person=>{
+  box.innerHTML=`<p class="muted">Las publicaciones solo se muestran entre amigos aceptados. Marca con ★ a tus mejores amigos para compartir cosas solo con ellos.</p><div class="community-members">${people.map(person=>{
     const relation=edgeByPerson.get(person.id), incoming=relation?.status==='pending'&&relation.addressee===ctx.user.id, outgoing=relation?.status==='pending'&&relation.requester===ctx.user.id, accepted=relation?.status==='accepted';
     const avatar=avatarMap.get(person.id), initials=(person.full_name||'BC').split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase();
-    const action=incoming?`<button class="btn sm" data-accept-friend="${relation.id}">Aceptar</button>`:accepted?`<button class="link" data-remove-friend="${relation.id}">Amigos · Quitar</button>`:outgoing?'<span class="muted">Solicitud enviada</span>':`<button class="btn sm" data-add-friend="${person.id}">Agregar amigo</button>`;
-    return `<article class="card community-member"><span class="community-avatar">${avatar?`<img src="${esc(avatar)}" alt="">`:esc(initials)}</span><b>${esc(person.full_name||'Socio Batmon')}</b>${action}</article>`;
+    const action=incoming?`<button class="btn sm" data-accept-friend="${relation.id}">Aceptar</button>`:accepted?`<span class="member-actions"><button type="button" class="btn sm member-close ${closeSet.has(person.id)?'on':''}" data-close-friend="${person.id}" aria-pressed="${closeSet.has(person.id)}">${closeSet.has(person.id)?'★ Mejor amigo':'☆ Mejor amigo'}</button><button class="link" data-remove-friend="${relation.id}">Quitar</button></span>`:outgoing?'<span class="muted">Solicitud enviada</span>':`<button class="btn sm" data-add-friend="${person.id}">Agregar amigo</button>`;
+    return `<article class="card community-member"><button type="button" class="community-avatar" data-avatar="${person.id}" aria-label="Ver foto">${avatar?avatarImg(avatar):esc(initials)}</button><b>${esc(person.full_name||'Socio Batmon')}</b>${action}</article>`;
   }).join('')||'<p class="card muted">No hay otros miembros disponibles.</p>'}</div>`;
+  box.querySelectorAll('[data-avatar]').forEach(b=>b.onclick=()=>openPhotoViewer(avatarMap.get(b.dataset.avatar),people.find(x=>x.id===b.dataset.avatar)?.full_name||''));
+  box.querySelectorAll('[data-close-friend]').forEach(button=>button.onclick=async()=>{
+    const id=button.dataset.closeFriend,on=button.getAttribute('aria-pressed')==='true';button.disabled=true;
+    const {error}=on?await supabase.from('close_friends').delete().eq('owner',ctx.user.id).eq('friend',id):await supabase.from('close_friends').insert({friend:id});
+    if(error){button.disabled=false;notify(`No se pudo actualizar: ${error.message}`);return;}
+    notify(on?'Quitado de mejores amigos.':'Añadido a mejores amigos.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
+  });
   box.querySelectorAll('[data-add-friend]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;const {error}=await supabase.from('friendships').insert({requester:ctx.user.id,addressee:button.dataset.addFriend,status:'pending'});
     if(error){button.disabled=false;notify('No se pudo enviar la solicitud: '+error.message);return;}notify('Solicitud de amistad enviada.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);

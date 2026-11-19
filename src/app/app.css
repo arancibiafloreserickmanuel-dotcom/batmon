@@ -1831,3 +1831,22 @@ body.appbody .act-actions button.on{color:#fc4c02}.act-actions button.on svg{fil
 .logro b{font-size:13px}.logro small{font-size:11px;color:var(--muted);line-height:1.3}.logro em{font-style:normal;font-size:10px;color:var(--muted);text-transform:uppercase}
 .logro.is-earned em{color:#2f8f4e;font-weight:700}
 .logro__bar{display:block;width:100%;height:4px;border-radius:4px;background:color-mix(in srgb,var(--ink) 12%,var(--surface));overflow:hidden}.logro__bar u{display:block;height:100%;background:var(--ink)}
+
+/* ───── Club (mismo diseño que Running), módulo de compartir, fotos de perfil ───── */
+.running-pages.tabs-pill--2{width:min(300px,100%);margin:0}
+.running-pages.tabs-pill--2 .tabs-pill__indicator{width:calc(50% - 2px)}
+.tabs-pill__input:nth-of-type(2):checked ~ .tabs-pill__indicator{transform:translateX(100%)}
+.community-page .running-pages{margin-bottom:10px}
+.share-open{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 12px}.share-open svg{width:18px;height:18px}
+.share-sheet{display:grid;gap:12px;overflow:auto}.share-sheet .community-publish{display:grid;gap:12px}
+.share-audience{border:0;padding:0;margin:0;display:grid;gap:8px}.share-audience legend{font-weight:700;font-size:13px;margin-bottom:6px}
+.member-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+body.appbody .member-close.on{background:var(--button-ink)!important;color:var(--button-face)!important}
+button.community-avatar,button.act-avatar,button.profile-avatar{padding:0;border:0;cursor:pointer;color:inherit}
+.profile-avatar{overflow:hidden}.profile-avatar img{width:100%;height:100%;object-fit:cover}
+.edit-avatar{display:flex;align-items:center;gap:14px}.edit-avatar__img{width:72px;height:72px;flex:0 0 72px;font-size:24px}.edit-avatar small{display:block;margin-top:2px}
+.photo-viewer{align-items:center;background:rgba(0,0,0,.88);z-index:200}
+.photo-viewer__box{position:relative;display:grid;justify-items:center;gap:12px;max-width:min(92vw,640px);color:#fff}
+.photo-viewer__box img{display:block;width:min(92vw,560px);max-height:78dvh;object-fit:contain;border-radius:20px;box-shadow:0 20px 60px #000a}
+.photo-viewer__box p{margin:0;font:400 18px Anton,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.photo-viewer__close{position:absolute;top:-6px;right:-6px;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:#fff;color:#111;font-size:16px;cursor:pointer;box-shadow:0 4px 14px #0008}

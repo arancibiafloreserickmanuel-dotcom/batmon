@@ -1,6 +1,7 @@
 // Actividades compartidas: formulario de "Compartir" al terminar, feed en tarjetas y logros.
 import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog, fmt, paceStr } from './common.js';
+import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 
 const EFFORT = [[2, 'Muy fácil'], [4, 'Fácil'], [6, 'Moderado'], [8, 'Duro'], [10, 'Máximo esfuerzo']];
 const EFFORT_LABEL = Object.fromEntries(EFFORT);
@@ -25,7 +26,8 @@ export function shareSectionMarkup({ titlePlaceholder = 'Mi actividad' } = {}) {
       <label>Lugar<input data-share-place maxlength="120" placeholder="Ej. Sucre, Chuquisaca"></label>
       <label>Añadir fotos · hasta 3<input type="file" data-share-photos accept="image/jpeg,image/png,image/webp" multiple></label>
       <label>¿Cómo autoevalúas esta actividad?<select data-share-effort><option value="">Elegir</option>${EFFORT.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></label>
-      <p class="muted">Visibilidad: tus amigos del club. Tus notas personales nunca se comparten.</p>
+      <label>¿Quién puede verlo?<select data-share-vis><option value="friends">Mis amigos</option><option value="close">Solo mejores amigos</option></select></label>
+      <p class="muted">Tus notas personales nunca se comparten.</p>
     </div>
   </section>`;
 }
@@ -53,6 +55,7 @@ export function readShare(root, fallbackTitle) {
     description: box.querySelector('[data-share-desc]').value.trim(),
     place: box.querySelector('[data-share-place]').value.trim(),
     effort,
+    visibility: box.querySelector('[data-share-vis]').value === 'close' ? 'close' : 'friends',
     files: Array.from(box.querySelector('[data-share-photos]').files || []),
   };
 }
@@ -100,6 +103,7 @@ export async function publishShare(userId, { kind, sourceId, performedOn, stats,
   const { error } = await supabase.from('shared_activities').insert({
     kind, source_id: sourceId || null, title: share.title, description: share.description, place: share.place || null,
     performed_on: performedOn, stats, route: compactRoute(route), photos, effort: share.effort,
+    ...(share.visibility === 'close' ? { visibility: 'close' } : {}), // sin la migración 0024 la columna no existe
   });
   if (error && photos.length) await supabase.storage.from('profile-media').remove(photos);
   return { error };
@@ -226,17 +230,17 @@ export async function renderSharedFeed(box, ctx) {
   ]);
   let likes = likesRes.data || [], comments = commentsRes.data || [];
   const people = new Map(directory.map((p) => [p.id, p]));
-  people.set(me, { id: me, full_name: ctx.profile?.full_name || 'Tú', avatar_path: ctx.profile?.avatar_path });
+  people.set(me, { id: me, full_name: ctx.profile?.full_name || 'Tú', avatar_path: ctx.profile?.avatar_path, avatar_url: ctx.profile?.avatar_url });
   const sign = async (path) => (path ? (await supabase.storage.from('profile-media').createSignedUrl(path, 1800)).data?.signedUrl || '' : '');
-  const avatars = new Map(await Promise.all([...new Set(acts.map((a) => a.user_id))].map(async (id) => [id, await sign(people.get(id)?.avatar_path)])));
+  const avatars = new Map(await Promise.all([...new Set(acts.map((a) => a.user_id))].map(async (id) => [id, await avatarSrc(people.get(id), 1800)])));
   const photos = new Map(await Promise.all(acts.map(async (a) => [a.id, await Promise.all((a.photos || []).map(sign))])));
   const nameOf = (id) => people.get(id)?.full_name || 'Socio Batmon';
 
   const cardMarkup = (a) => {
     const own = a.user_id === me, name = nameOf(a.user_id), logros = a.stats?.logros || [];
     return `<article class="card act-card" data-act="${a.id}">
-      <header class="act-head"><span class="act-avatar">${avatars.get(a.user_id) ? `<img src="${esc(avatars.get(a.user_id))}" alt="">` : esc(initials(name))}</span>
-        <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
+      <header class="act-head"><button type="button" class="act-avatar" data-avatar aria-label="Ver foto de ${esc(name)}">${avatars.get(a.user_id) ? avatarImg(avatars.get(a.user_id)) : esc(initialsOf(name))}</button>
+        <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}${a.visibility === 'close' ? ' · Mejores amigos' : ''}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
         ${own ? '<button type="button" class="link act-del" data-del>Quitar</button>' : ''}</header>
       <h2 class="act-title">${esc(a.title)}</h2>
       ${statsMarkup(a)}
@@ -287,6 +291,8 @@ export async function renderSharedFeed(box, ctx) {
     paintFoot(card);
     const mapEl = card.querySelector('[data-route]'), a = acts.find((x) => x.id === card.dataset.act);
     if (mapEl) { if (observer) observer.observe(mapEl); else mountRouteMap(mapEl, a.route); }
+    const av = card.querySelector('[data-avatar]');
+    if (av) av.onclick = () => openPhotoViewer(avatars.get(a.user_id), nameOf(a.user_id));
     const del = card.querySelector('[data-del]');
     if (del) del.onclick = async () => {
       if (!(await confirmDialog('La actividad dejará de verse en el club. Seguirá guardada en tu historial.', 'Quitar de Actividades'))) return;

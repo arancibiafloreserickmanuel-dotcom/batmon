@@ -167,6 +167,15 @@ Orden vertical con 14–16 px entre bloques:
 - Tres niveles por color de trofeo SVG: bronce `#c4723a`, plata `#8f98a3`, oro `#e5a60b`. Conseguido: fondo suave y "Conseguido" en verde; pendiente: gris con barra de progreso.
 - Se calculan en el cliente con los datos reales (sin tabla). Perfil → pestaña **Logros**; en la tarjeta salen los de esa actividad ("Tu carrera más larga…").
 
+### Club (mismo diseño que Running)
+- Cabecera `.run-module__head` (kicker "CLUB · BATMON CROWD" + título) y pestañas píldora `.running-pages.tabs-pill` (Actividad · Miembros · Retos). Para 2 opciones usar `.tabs-pill--2`, para 4 `.tabs-pill--4`.
+- **Compartir entrenamiento** es un botón `.share-open` (ancho completo, "+") que abre un **módulo** `.modal.share-module > .sheet` con disciplina, foto/video (campo `.up`), descripción y **"¿Quién puede verlo?"**: *Mis amigos* / *Mejores amigos* (píldora de 2 opciones).
+- **Mejores amigos:** se marcan con el botón ★ en Miembros (`.member-close`, activo = negro con letra clara). Solo el dueño ve su lista. Lo mismo aplica al compartir una actividad al terminar un entrenamiento.
+
+### Fotos de perfil y visor
+- Foto = la subida por el socio; si no hay, la de su cuenta de Google. Siempre `avatarImg()` (`referrerpolicy="no-referrer"`) de `src/app/avatar.js`.
+- Tocar cualquier avatar (perfil, miembros, publicaciones, actividades) abre el **visor grande** `.photo-viewer` (modal oscuro, foto de 560 px, nombre en Anton, ✕ blanco). Cambiar la foto se hace en **Editar perfil** (campo `.up`).
+
 ---
 
 ## Reglas para crear algo nuevo
