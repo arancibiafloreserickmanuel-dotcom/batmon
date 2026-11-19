@@ -1,5 +1,6 @@
 import './app.css';
 import { initDropdowns } from './dropdown.js';
+import { runSessionOn, whenLabel, sessionLine } from './coach.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, iso, today, monthStart, weekStart, DISC, RUN_TYPE, showDelayedLoading, notify, confirmDialog } from './common.js';
 import { renderRunning } from './running.js';
@@ -511,17 +512,18 @@ async function openClubEvent(eventId) {
 }
 
 async function renderHome(v) {
-  const [activityResult, workoutResult, membershipResult, planResult, eventResult, notificationResult, exerciseResult, challengeResult, plyoPlanResult, plyoRoutineResult] = await Promise.all([
+  const [activityResult, workoutResult, membershipResult, planResult, eventResult, notificationResult, exerciseResult, challengeResult, plyoPlanResult, plyoRoutineResult, runPlanResult] = await Promise.all([
     supabase.from('activities').select('*').order('performed_on', { ascending: false }).limit(300),
     supabase.from('workouts').select('id, kind, performed_on, duration_min, workout_sets(id, exercise_id, reps, weight_kg)').order('performed_on', { ascending: false }).limit(150),
     supabase.from('memberships').select('*').eq('period', monthStart()).order('created_at', { ascending: false }),
     supabase.from('training_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
     supabase.from('events').select('id,title,description,event_date,location,image_path').order('event_date'),
     supabase.from('event_notifications').select('id', { count: 'exact', head: true }).eq('user_id', ctx.user.id).eq('is_read', false),
-    supabase.from('exercises').select('id,name,name_es,category').in('category', ['training', 'plyometrics']).eq('is_active', true),
+    supabase.from('exercises').select('id,name,name_es,category,images').in('category', ['training', 'plyometrics']).eq('is_active', true),
     supabase.from('club_challenges').select('id,title,discipline,starts_on,ends_on').order('starts_on'),
     supabase.from('plyo_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
     supabase.from('plyo_routines').select('id,name,items').eq('user_id', ctx.user.id),
+    supabase.from('run_plans').select('plan').eq('user_id', ctx.user.id).maybeSingle(),
   ]);
   const acts = activityResult.data || [];
   const ws = workoutResult.data || [];
@@ -597,18 +599,46 @@ async function renderHome(v) {
   const recentUnavailable = (activityResult.error || workoutResult.error) && !recentItems.length;
   const recentMarkup = `<details class="card home-recent"><summary><span>Actividad reciente</span><small>${recentUnavailable ? 'No disponible' : recentItems.length ? `${recentItems.length} esta semana` : 'Sin actividad esta semana'}</small></summary>${recentItems.length ? `<div class="home-recent-list">${recentItems.map((item) => `<a class="home-recent-item" href="${esc(item.route)}"><span><b>${esc(item.title)}</b><small>${esc(item.detail)}</small></span><time datetime="${esc(item.date)}">${new Date(`${item.date}T12:00:00`).toLocaleDateString('es-BO', { day: 'numeric', month: 'short' })}</time></a>`).join('')}</div>` : `<p class="muted">${recentUnavailable ? 'No se pudo cargar la actividad reciente.' : 'Tus actividades completadas aparecerán aquí.'}</p>`}</details>`;
 
+  const daySlidesMarkup = () => {
+    const runPlan = runPlanResult.data?.plan || null;
+    const dayKey = dayLabels[todayDate.getDay()];
+    const runToday = ctx.modules.running ? runSessionOn(runPlan, todayDate) : null;
+    const runDone = weekActs.some((item) => item.discipline === 'running' && item.performed_on === todayIso);
+    const plyoEntry = ctx.modules.plyo ? plyoPlan[dayKey] : null;
+    const plyoRoutine = plyoEntry?.routineId ? plyoRoutinesById.get(plyoEntry.routineId) : null;
+    const plyoDone = todaysWorkouts.some((item) => item.kind === 'plyometrics');
+    const gymDone = todaysWorkouts.some((item) => item.kind === 'training');
+    const slides = [];
+    const btn = (href, label, done) => (done ? '<span class="day-done">✔ Hecho hoy</span>' : `<a class="btn cal-btn-primary" href="${href}">${label}</a>`);
+    if (runToday) {
+      const when = whenLabel(runToday.when);
+      slides.push({ at: runToday.when?.time || '99', html: `<article class="day-slide day-slide--run" aria-label="Running de hoy"><div class="day-slide__body"><span class="day-kicker">Running · Semana ${runToday.weekNo} de ${runToday.total}</span><h2>${esc(runToday.title)}</h2><p class="day-meta">${esc([sessionLine(runToday), when].filter(Boolean).join(' · '))}</p><p class="day-desc">${esc(runToday.detail || '')}</p>${btn('#running', 'Iniciar carrera', runDone)}</div></article>` });
+    }
+    if (plyoRoutine) {
+      const first = (plyoRoutine.items || []).map((it) => exercisesById.get(String(it.exercise_id))).find((e) => e?.images?.[0]);
+      const photo = first ? `/exercises/${encodeURI(first.images[0])}` : '';
+      const when = plyoEntry.time || (plyoEntry.after ? `Después: ${plyoEntry.after}` : '');
+      slides.push({ at: plyoEntry.time || '99', html: `<article class="day-slide day-slide--photo" style="${photo ? `--day-photo:url('${photo}')` : ''}" aria-label="Pliometría de hoy"><div class="day-slide__body"><span class="day-kicker">Pliometría${plyoEntry.name ? ` · ${esc(plyoEntry.name)}` : ''}</span><h2>${esc(plyoRoutine.name)}</h2><p class="day-meta">${(plyoRoutine.items || []).length} ejercicios${when ? ` · ${esc(when)}` : ''}</p>${btn('#plyo', 'Iniciar sesión', plyoDone)}</div></article>` });
+    }
+    if (todaysPlan.length) {
+      slides.push({ at: '99', html: `<article class="day-slide day-slide--plain" aria-label="Gimnasio de hoy"><div class="day-slide__body"><span class="day-kicker">Gimnasio</span><h2>${todaysPlan.length} ejercicios planificados</h2><p class="day-desc">${esc(plannedExerciseNames.slice(0, 3).join(' · '))}</p>${btn('#gym', 'Iniciar', gymDone)}</div></article>` });
+    }
+    slides.sort((x, y) => String(x.at).localeCompare(String(y.at)));
+    if (!slides.length) {
+      slides.push({ at: '', html: `<article class="day-slide day-slide--rest" aria-label="Día de descanso"><div class="day-slide__body"><span class="day-kicker">Hoy</span><h2>Descansa, ${esc(userName)}</h2><p class="day-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p><a href="${ctx.modules.running ? '#running' : '#training'}" class="btn cal-btn-primary">Registrar entrenamiento</a></div></article>` });
+    }
+    return `<section class="card day-card" aria-label="Tu día"><div class="day-slides" id="day-slides">${slides.map((x) => x.html).join('')}</div>${slides.length > 1 ? `<div class="day-dots" id="day-dots">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>`;
+  };
+
   const todayStatus = todayCompleted ? `${todayCompleted} ${todayCompleted === 1 ? 'actividad completada' : 'actividades completadas'}` : 'sin actividades completadas';
   v.innerHTML = `<section class="home-greeting" aria-label="Resumen del día"><div class="home-greeting__title"><p>${greeting},</p><h1>${esc(userName)}</h1><span class="home-greeting__today">Hoy · ${esc(todayStatus)}${todaysPlan.length ? ` · ${todaysPlan.length} ejercicios planificados` : ''}</span></div><div class="home-compliance"><div><span>Plan semanal</span><b>${plannedDays.length ? `${completedPlannedDays} / ${plannedDays.length}` : '—'}</b></div><div class="home-compliance__track" role="progressbar" aria-label="Cumplimiento de rutinas semanales" aria-valuemin="0" aria-valuemax="${plannedDays.length || 1}" aria-valuenow="${completedPlannedDays}"><i style="width:${plannedDays.length ? completedPlannedDays / plannedDays.length * 100 : 0}%"></i></div><small>${esc(planSummary)}</small></div></section>
     ${buildUnifiedCalendar()}${statusNotice}${membershipNotice}
-    <section class="card rest-card">
-      <div class="cal-rest-halo"><div class="cal-halo-ring"><div class="cal-halo-core"></div></div></div>
-      <h2 class="cal-rest-title">Descansa, ${esc(userName)}</h2>
-      <p class="cal-rest-desc">La recuperación ayuda al éxito, ¡así que disfruta de tu descanso!</p>
-      <a href="${ctx.modules.running ? '#running' : '#training'}" class="btn cal-btn-primary"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:6px;"><path d="M8 5v14l11-7z"/></svg>Registrar entrenamiento</a>
-    </section>
+    ${daySlidesMarkup()}
     ${weeklyCards.length ? `<section class="home-weekly"><div class="home-section-heading"><div><span class="muted">Resumen</span><h2>Esta semana</h2></div><small>${weekActs.length + weekWorkouts.length} ${weekActs.length + weekWorkouts.length === 1 ? 'actividad' : 'actividades'}</small></div>${activityError ? '<p class="muted">Métricas semanales no disponibles.</p>' : `<div class="home-week-grid">${weeklyCards.join('')}</div>`}</section>` : ''}
     <section class="home-recent-section"><h2>Lo que ya hiciste</h2>${recentMarkup}</section>`;
 
+  const slidesBox = v.querySelector('#day-slides');
+  if (slidesBox) slidesBox.addEventListener('scroll', () => { const i = Math.round(slidesBox.scrollLeft / Math.max(1, slidesBox.clientWidth)); v.querySelectorAll('#day-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
   setupUnifiedCalendar(v, calendarEvents, { plan, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
   const eventBell=v.querySelector('#cal10-bell');
   if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}

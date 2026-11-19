@@ -1,4 +1,6 @@
 import { supabase, $, esc } from '../supabase.js';
+import { mountPlyoCoach } from './coach-ui.js';
+import { loadAthlete, saveAthlete, plyoWeekIndex, plyoItems } from './coach.js';
 import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
 import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart } from './common.js';
 
@@ -65,6 +67,7 @@ export async function renderPlyo(view, ctx) {
   if (exError) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(exError.message)}</p>`; return; }
   catalog = exData.map((e) => { localize(e); e._group = groupLabel(plyoGroup(e)); return e; }); weekPlan = planRow?.plan || {}; routines = routineRows; ensurePlans();
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
+  await syncCoachWeek(ctx);
   W = W || draft.get(userDraftKey());
 
   const sub = (section === 'plan' && !!planPage) || (section === 'train' && activeView === 'session' && !!W);
@@ -637,7 +640,7 @@ async function pasteDay(day, box, view, ctx) {
 async function openDayEditor(day, box, view, ctx) {
   const entry = dayEntry(day) || {};
   const r = entry.routineId ? routines.find((x) => x.id === entry.routineId) : null;
-  dayDraft = { day, planId: editId, name: entry.name || '', groups: [...(entry.groups || [])], items: (r?.items || []).map(normItem), routineId: r?.id || null };
+  dayDraft = { day, planId: editId, time: entry.time || '', after: entry.after || '', name: entry.name || '', groups: [...(entry.groups || [])], items: (r?.items || []).map(normItem), routineId: r?.id || null };
   dayActive = 0; dayNoteOpen = false; planPage = { day };
   await loadPrevSets().catch(() => { prevSets = {}; });
   drawDayEditor(box, view, ctx);
@@ -670,7 +673,7 @@ async function persistDay(ctx) {
       routines = [...routines, data]; routineId = data.id; d.routineId = routineId;
     }
   }
-  const entry = { ...(routineId ? { routineId } : {}), ...(d.name ? { name: d.name } : {}), ...(groups.length ? { groups } : {}) };
+  const entry = { ...(routineId ? { routineId } : {}), ...(d.name ? { name: d.name } : {}), ...(groups.length ? { groups } : {}), ...(d.time ? { time: d.time } : {}), ...(d.after ? { after: d.after.trim() } : {}) };
   await setDayPlan(ctx, d.day, Object.keys(entry).length ? entry : null, d.planId);
 }
 
@@ -685,6 +688,8 @@ function drawDayEditor(box, view, ctx) {
     <section class="card pd-card">
       <label for="pd-name">Nombre del día</label>
       <input id="pd-name" maxlength="60" placeholder="${d.items.length ? `Ej. ${esc(name(exById(d.items[0].exercise_id)))}…` : 'Ej. Potencia de piernas'}" value="${esc(d.name)}">
+      <label>Horario <span class="muted">· opcional</span></label>
+      <div class="cf-when cf-when--one"><input id="pd-time" type="time" value="${esc(d.time || '')}" aria-label="Hora"><input id="pd-after" type="text" maxlength="40" placeholder="o: después de… (trabajo, clases)" value="${esc(d.after || '')}" aria-label="Después de"></div>
       <label>Grupo que trabaja <span class="muted">· automático: ${esc(auto)}</span></label>
       <div class="pd-chips">${PLYO_GROUPS.map((g) => `<button type="button" class="pd-chip${d.groups.includes(g[0]) ? ' on' : ''}" data-group="${g[0]}">${g[1]}</button>`).join('')}</div>
     </section>
@@ -711,6 +716,8 @@ function drawDayEditor(box, view, ctx) {
   const redraw = () => drawDayEditor(box, view, ctx);
   $('#pd-back', box).onclick = async () => { await flushSave(ctx); planPage = planBase; dayDraft = null; renderPlyo(view, ctx); };
   $('#pd-name', box).oninput = (e) => { d.name = e.target.value.trim(); queueSave(ctx); };
+  $('#pd-time', box).oninput = (e) => { d.time = e.target.value; queueSave(ctx); };
+  $('#pd-after', box).oninput = (e) => { d.after = e.target.value; queueSave(ctx); };
   box.querySelectorAll('[data-group]').forEach((b) => (b.onclick = () => { const g = b.dataset.group; d.groups = d.groups.includes(g) ? d.groups.filter((x) => x !== g) : [...d.groups, g]; b.classList.toggle('on'); queueSave(ctx); }));
   const addPicker = () => picker(ctx, (ids) => {
     const firstNew = d.items.length;
@@ -788,6 +795,49 @@ async function setDayPlan(ctx, day, value, planId = editId) {
   await savePlans(ctx);
 }
 
+/* ------------------------- Plan guiado (cuestionario) ------------------------- */
+const groupIdOf = (label) => PLYO_GROUPS.find((g) => g[1] === label)?.[0];
+function coachHooks(view, ctx) {
+  return { catalog: () => catalog, applyPlan: (plan) => applyCoachPlan(ctx, plan), refresh: () => renderPlyo(view, ctx) };
+}
+async function applyCoachPlan(ctx, plan) {
+  try {
+    const w = plyoWeekIndex(plan);
+    const prev = (await loadAthlete(ctx.user.id)).plyoPlan;
+    const rows = plan.sessions.map((s) => ({ user_id: ctx.user.id, name: `Plan · ${s.name}`.slice(0, 80), focus: s.groups.join(', ').slice(0, 200), items: plyoItems(plan, s, w, catalog) }));
+    const { data: made, error } = await supabase.from('plyo_routines').insert(rows).select('*');
+    if (error) throw error;
+    const oldIds = (prev?.sessions || []).map((s) => s.routineId).filter(Boolean);
+    if (oldIds.length) await supabase.from('plyo_routines').delete().in('id', oldIds).eq('user_id', ctx.user.id);
+    routines = [...routines.filter((r) => !oldIds.includes(r.id)), ...made];
+    plan.sessions.forEach((s, i) => { s.routineId = made[i].id; });
+    const days = {};
+    plan.days.forEach((d, i) => {
+      const s = plan.sessions[i % plan.sessions.length]; const sc = plan.schedule?.[d] || {};
+      days[d] = { routineId: s.routineId, name: s.name, groups: s.groups.map(groupIdOf).filter(Boolean), ...(sc.time ? { time: sc.time } : {}), ...(sc.after ? { after: sc.after } : {}) };
+    });
+    const np = { id: newId(), name: 'Plan de pliometría (8 semanas)', notes: 'Plan guiado con progresión semanal.', days };
+    weekPlan = { ...weekPlan, _plans: [...plansList().filter((p) => p.name !== np.name), np], _activePlan: np.id }; mirrorActive(np);
+    plan.appliedWeek = w;
+    return await savePlans(ctx);
+  } catch (e) { notify('No se pudo crear el plan: ' + (e.message || e)); return false; }
+}
+// Ajusta series y repeticiones de las rutinas del plan guiado cuando cambia la semana.
+async function syncCoachWeek(ctx) {
+  try {
+    const a = await loadAthlete(ctx.user.id); const plan = a.plyoPlan; if (!plan?.weeks) return;
+    const w = plyoWeekIndex(plan); if (plan.appliedWeek === w) return;
+    for (const s of plan.sessions) {
+      const r = routines.find((x) => x.id === s.routineId); if (!r) continue;
+      if (r.items.map((i) => i.exercise_id).join() !== s.ids.join()) continue;     // el socio la modificó: no se toca
+      const items = plyoItems(plan, s, w, catalog);
+      const { error } = await supabase.from('plyo_routines').update({ items, updated_at: new Date().toISOString() }).eq('id', r.id);
+      if (!error) r.items = items;
+    }
+    plan.appliedWeek = w; await saveAthlete(ctx.user.id, { ...a, plyoPlan: plan });
+  } catch { /* sin plan o sin base de datos de planes */ }
+}
+
 /* ----------------------------------- Progreso ----------------------------------- */
 async function renderProgress(box, view, ctx) {
   const [{ data: ws = [], error }, { data: assess = [], error: assessError }] = await Promise.all([
@@ -820,6 +870,7 @@ async function renderProgress(box, view, ctx) {
   const maxWeek = Math.max(1, ...weekCounts);
 
   box.innerHTML = `
+    <div id="plyo-coach"></div>
     <div class="period-switch">${[['week', 'Semana'], ['month', 'Mes'], ['all', 'Todo']].map(([k, t]) => `<button data-period="${k}" class="${progressPeriod === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="grid"><div class="card stat"><b>${filtered.length}</b><span>Sesiones</span></div>
     <div class="card stat"><b>${days}</b><span>Días entrenados</span></div>
@@ -841,6 +892,7 @@ async function renderProgress(box, view, ctx) {
     <h2>Evaluaciones · CMJ, SJ y Drop Jump</h2>
     ${renderAssessmentsBlock(assess, assessError)}`;
 
+  mountPlyoCoach($('#plyo-coach', box), ctx, coachHooks(view, ctx));
   box.querySelectorAll('[data-period]').forEach((b) => (b.onclick = () => { progressPeriod = b.dataset.period; renderProgress(box, view, ctx); }));
   box.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
     if (!(await confirmDialog('¿Borrar esta sesión y sus series?', 'Borrar sesión'))) return;

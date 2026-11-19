@@ -374,3 +374,10 @@ Código hecho, **migración 0002 aún NO aplicada en Supabase** (usar PROMPT_CLA
 
 ## Desplegables propios
 - `src/app/dropdown.js` reemplaza visualmente todos los `<select>` de la app (se conserva el select oculto sincronizado): botón hundido neumórfico, lista flotante animada (escala + opciones escalonadas), opción elegida en negro con check, abre hacia arriba si no hay espacio, teclado (flechas/Enter/Esc). Excluir uno con clase `no-dd`.
+
+## Planes guiados (Running y Pliometría) + tarjeta del día
+- Migración `0022_athlete_plans.sql` (athlete_profiles, run_plans): **aplicar en Supabase**.
+- `src/app/coach.js` (motor: plan de Running por semanas con descarga y afinación, 80/20, run/walk para novatos; plan de Pliometría de 8 semanas por contactos según nivel) y `src/app/coach-ui.js` (asistentes por pasos, tarjetas de Progreso, editor de semana con hora o "después de").
+- Datos compartidos (edad, sexo, peso, estatura, salud) se piden una sola vez y se reutilizan.
+- Running > Progreso: tarjeta "Nueva carrera"; Pliometría > Progreso: tarjeta "Prepara tu plan". Pliometría: el día admite hora / "después de". Las series de las rutinas del plan se reajustan solas cada semana.
+- Inicio: la tarjeta "Descansa" ahora es la tarjeta del día con scroll horizontal (Running con `public/dia-correr.webp`, Pliometría con la 1.ª foto de la rutina, Gimnasio, o descanso con `/descanso.webp`).
