@@ -1,4 +1,5 @@
 import './app.css';
+import { autoEnhanceFileInputs } from './upload-field.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading } from './common.js';
 import baseCatalog from '../data/plyometrics.json';
@@ -627,3 +628,5 @@ async function init() {
 }
 void monthStart;
 init();
+
+autoEnhanceFileInputs();

@@ -9,6 +9,7 @@ import { renderTraining } from './training.js';
 import { renderCommunity } from './community.js';
 import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles } from './auth.js';
 import { computeLogros, logrosMarkup } from './share.js';
+import { autoEnhanceFileInputs } from './upload-field.js';
 
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 const view = $('#view');
@@ -818,3 +819,5 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY' && session) showNewPassword();
 });
 void today;
+
+autoEnhanceFileInputs();
