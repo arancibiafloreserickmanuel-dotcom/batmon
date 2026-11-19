@@ -27,6 +27,7 @@ function fieldsFor(exercise) {
   return ['reps', 'rest_sec'];
 }
 const blankSetFor = (exercise) => Object.fromEntries(fieldsFor(exercise).map((k) => [k, '']));
+const dateEs = (s) => { const [y, m, d] = String(s).split('-').map(Number); return y ? new Date(y, m - 1, d).toLocaleDateString('es-BO', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : String(s || ''); };
 const blankW = () => ({ date: today(), duration: '', rpe: '', notes: '', items: [], routineId: null, planDay: null, status: 'active' });
 
 let catalog = [];          // ejercicios activos de pliometría
@@ -232,7 +233,7 @@ function drawSession(box, view, ctx) {
   bindStripDrag(strip, (ids) => { const cur = W.items[W.cur]?.ex; W.items = ids.map((id) => W.items.find((x) => x.ex === id)); W.cur = Math.max(0, W.items.findIndex((x) => x.ex === cur)); sesSave(); redraw(); });
   if (it) {
     $('#ses-solo', box).onclick = () => { it.solo = !it.solo; sesSave(); redraw(); };
-    $('#ses-swap', box).onclick = () => picker(ctx, (ids) => { const id = ids.find((i) => !W.items.some((x) => x.ex === i)); if (!id) { notify('Ese ejercicio ya está en la sesión.'); return; } const e = catalog.find((c) => c.id === id) || { id }; it.ex = id; it.sets = blankSetsFor(e, it.sets.length); it.done = false; sesSave(); redraw(); });
+    $('#ses-swap', box).onclick = () => picker(ctx, (ids) => { const id = ids.find((i) => !W.items.some((x) => x.ex === i)); if (!id) { notify('Ese ejercicio ya está en la sesión.'); return; } const e = catalog.find((c) => c.id === id) || { id }; it.ex = id; it.sets = blankSetsFor(e, it.sets.length); it.done = false; sesSave(); redraw(); loadPrevSets().then(() => { if (box.isConnected && W && activeView === 'session') redraw(); }).catch(() => {}); });
     $('#ses-note', box).onclick = () => { sesNoteOpen = !sesNoteOpen; redraw(); };
     $('#ses-note-text', box)?.addEventListener('input', (e) => { it.note = e.target.value.trim(); sesSave(); });
     $('#ses-rest', box).onclick = () => restModal(it.restSec || 60, (v) => { it.restSec = v; sesSave(); redraw(); });
@@ -290,17 +291,17 @@ function sesTickFn(box) {
 
 function drawFinish(box, view, ctx) {
   const total = W.items.reduce((n, x) => n + x.sets.length, 0), done = W.items.reduce((n, x) => n + x.sets.filter((s) => s._ok).length, 0);
-  if (!W.duration) { W.duration = String(Math.max(1, Math.round((Date.now() - (W.startedAt || Date.now())) / 60000))); sesSave(); }
+  if (!W.endedAt) { W.endedAt = Date.now(); sesSave(); }
+  const durSec = Math.max(1, Math.round((W.endedAt - (W.startedAt || W.endedAt)) / 1000));
   box.innerHTML = `<div class="pd-head">${backBtn('fin-back')}<h2>Terminar</h2></div>
     <section class="card pd-card"><p><b>${done}</b> de ${total} series completadas · ${W.items.length} ejercicio${W.items.length === 1 ? '' : 's'}</p>
       <label for="wd">Fecha</label><input id="wd" type="date" max="${today()}" value="${W.date}">
-      <label for="wm">Duración (min)</label><input id="wm" type="number" min="1" inputmode="numeric" value="${W.duration}">
+      <label for="wm">Duración exacta (automática)</label><input id="wm" type="text" readonly value="${durSec >= 3600 ? `${Math.floor(durSec / 3600)}:${fmtClock(durSec % 3600)}` : fmtClock(durSec)}" aria-readonly="true">
       <label for="wr">Esfuerzo (RPE 1-10)</label><input id="wr" type="number" min="1" max="10" inputmode="numeric" value="${W.rpe}">
       <label for="wn">Notas</label><input id="wn" type="text" maxlength="300" value="${esc(W.notes)}">
       <button class="btn" id="savew" type="button">Finalizar y guardar</button><button class="link" id="clr" type="button">Descartar sesión</button><p class="msg" id="wm2"></p></section>`;
-  $('#fin-back', box).onclick = () => { sesFinishing = false; drawSession(box, view, ctx); };
+  $('#fin-back', box).onclick = () => { sesFinishing = false; delete W.endedAt; sesSave(); drawSession(box, view, ctx); };
   $('#wd', box).oninput = (e) => { W.date = e.target.value; sesSave(); };
-  $('#wm', box).oninput = (e) => { W.duration = e.target.value; sesSave(); };
   $('#wr', box).oninput = (e) => { W.rpe = e.target.value; sesSave(); };
   $('#wn', box).oninput = (e) => { W.notes = e.target.value; sesSave(); };
   $('#clr', box).onclick = () => confirmDialog('¿Descartar esta sesión sin guardarla?', 'Descartar sesión').then((ok) => { if (ok) { sesReset(true); W = null; draft.del(userDraftKey()); activeView = 'home'; renderPlyo(view, ctx); } });
@@ -314,7 +315,7 @@ async function finishSession(box, view, ctx) {
   if (!items.length) { msg.textContent = 'Completa al menos una serie.'; return; }
   const btn = $('#savew', box); btn.disabled = true;
   const { data: w, error } = await supabase.from('workouts').insert({
-    kind: 'plyometrics', performed_on: W.date, duration_min: num(W.duration), rpe: num(W.rpe), notes: W.notes.trim() || null,
+    kind: 'plyometrics', performed_on: W.date, duration_min: Math.min(999, Math.max(0.1, Math.round(((W.endedAt || Date.now()) - (W.startedAt || Date.now())) / 6000) / 10)), rpe: num(W.rpe), notes: W.notes.trim() || null,
     source_routine_id: W.routineId || null, plan_day: W.planDay || null,
   }).select('id').single();
   if (error) { msg.textContent = 'Error: ' + error.message; btn.disabled = false; return; }
@@ -833,7 +834,7 @@ async function renderProgress(box, view, ctx) {
     ${ws.length ? ws.map((w) => {
       const byEx = {};
       w.workout_sets.sort((a, b) => a.position - b.position || a.set_no - b.set_no).forEach((s) => (byEx[s.exercise_id] ||= { ex: s.exercises, sets: [] }).sets.push(s));
-      return `<details class="card"><summary><b>${w.performed_on}</b> · ${Object.keys(byEx).length} ejercicios · ${w.workout_sets.length} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''}${w.rpe ? ` · RPE ${w.rpe}` : ''}</summary>
+      return `<details class="card"><summary><b>${dateEs(w.performed_on)}</b> · ${Object.keys(byEx).length} ejercicios · ${w.workout_sets.length} series${w.duration_min ? ` · ${fmt(w.duration_min, 0)} min` : ''}${w.rpe ? ` · RPE ${w.rpe}` : ''}</summary>
         ${Object.values(byEx).map((g) => `<div class="exh">${thumb(g.ex)}<div><b>${name(g.ex)}</b><br><span class="muted">${g.sets.map((s) => [s.reps && s.reps + ' reps', s.contacts && s.contacts + ' contactos', s.height_cm && s.height_cm + ' cm', s.box_height_cm && 'cajón ' + s.box_height_cm, s.distance_m && s.distance_m + ' m', s.weight_kg && s.weight_kg + ' kg'].filter(Boolean).join(' · ')).join(' · ')}</span></div></div>`).join('')}
         ${w.notes ? `<p class="muted">${esc(w.notes)}</p>` : ''}<div class="quick-actions"><button class="link" data-edit-session="${w.id}">Editar datos</button><button class="link" data-del="${w.id}">Borrar sesión</button></div></details>`;
     }).join('') : '<p class="muted">Aún no registras sesiones.</p>'}
@@ -885,7 +886,7 @@ function renderAssessmentsBlock(rows, assessError) {
   <h3>Evaluaciones anteriores</h3><div class="activity-list">${rows.map((r) => {
     const h = r.jump_height_cm ?? estimatedHeight(r); const estimated = r.jump_height_cm == null && h != null;
     const rsi = r.rsi ?? estimatedRsi(r, h);
-    return `<article class="card"><b>${({ cmj: 'CMJ', sj: 'SJ', drop_jump: 'Drop Jump' })[r.test_type]}</b><span>${r.measured_on}</span><p>${h != null ? `Altura: ${fmt(h, 1)} cm${estimated ? ' (estimada)' : ''} · ` : ''}${r.flight_time_ms != null ? `Vuelo: ${fmt(r.flight_time_ms, 0)} ms · ` : ''}${r.contact_time_ms != null ? `Contacto: ${fmt(r.contact_time_ms, 0)} ms · ` : ''}${rsi != null ? `RSI: ${fmt(rsi, 3)}${r.rsi == null ? ' (calculado)' : ''}` : ''}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}<button type="button" class="link" data-assessment-delete="${r.id}">Borrar evaluación</button></article>`;
+    return `<article class="card"><b>${({ cmj: 'CMJ', sj: 'SJ', drop_jump: 'Drop Jump' })[r.test_type]}</b><span>${dateEs(r.measured_on)}</span><p>${h != null ? `Altura: ${fmt(h, 1)} cm${estimated ? ' (estimada)' : ''} · ` : ''}${r.flight_time_ms != null ? `Vuelo: ${fmt(r.flight_time_ms, 0)} ms · ` : ''}${r.contact_time_ms != null ? `Contacto: ${fmt(r.contact_time_ms, 0)} ms · ` : ''}${rsi != null ? `RSI: ${fmt(rsi, 3)}${r.rsi == null ? ' (calculado)' : ''}` : ''}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}<button type="button" class="link" data-assessment-delete="${r.id}">Borrar evaluación</button></article>`;
   }).join('') || '<p class="card muted">Aún no hay evaluaciones registradas.</p>'}</div>`;
 }
 
