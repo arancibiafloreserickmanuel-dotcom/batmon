@@ -1929,3 +1929,10 @@ button.community-avatar,button.act-avatar,button.profile-avatar{padding:0;border
 .rank-info__ladder span.on{opacity:1;box-shadow:var(--button-shadow-active)}
 .rank-info__ladder img{width:40px;height:40px;object-fit:contain}
 .rank-info__ladder em{font-style:normal;font-size:11px;color:var(--muted)}
+
+/* Rango y fotos de perfil: sin diseño de botón (sin relieve, fondo ni sombra) */
+body.appbody button.rank-mini,body.appbody button.rank-mini:active{background:none !important;box-shadow:none !important;border:0 !important;border-radius:0 !important;padding:0 !important;min-height:0 !important;width:26px !important;height:26px !important;transform:none !important;color:inherit !important}
+body.appbody button.profile-avatar,body.appbody button.community-avatar,body.appbody button.act-avatar,body.appbody button.profile-avatar:active,body.appbody button.community-avatar:active,body.appbody button.act-avatar:active{box-shadow:none !important;border:0 !important;padding:0 !important;transform:none !important}
+body.appbody button.profile-avatar:has(img),body.appbody button.community-avatar:has(img),body.appbody button.act-avatar:has(img){background:transparent !important}
+body.appbody button.profile-avatar,body.appbody button.community-avatar,body.appbody button.act-avatar{border-radius:50% !important}
+body.appbody button.profile-avatar:not(:has(img)){background:#111 !important;color:#fff !important}
