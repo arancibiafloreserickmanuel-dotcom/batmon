@@ -4,6 +4,8 @@ import { supabase, $, esc } from '../supabase.js';
 import { fmt, today, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
 
 import { createRunningTracker, distanceBetween } from './running-tracker.js';
+import { getPlannedRoute, setPlannedRoute, findRouteMatches, matchLiveRoute, coverage, activityRoute } from './route-tools.js';
+import { openRoutePicker, routeSummary } from './route-picker.js';
 import { mapToolsMarkup, mountMapTools } from './running-map-tools.js';
 import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros, renderSharedFeed } from './share.js';
 
@@ -130,7 +132,7 @@ function splitRuns(points) {
 
 
 
-async function mountMap(el, segments, { center = null, locate = null, zoomControl = false, interactive = true } = {}) {
+async function mountMap(el, segments, { center = null, locate = null, zoomControl = false, interactive = true, ghost = null } = {}) {
 
   if (!el) return { map: null, recenter() {} };
 
@@ -158,6 +160,9 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
     map.on('tileerror', () => { const msg = el.parentElement?.querySelector('.run-map__error'); if (msg) msg.hidden = false; });
 
     const routeLayer=L.featureGroup().addTo(map);
+    const ghostLayer=L.featureGroup().addTo(map);
+    const setGhost=(pts)=>{ghostLayer.clearLayers();if(!pts||pts.length<2)return;const gi=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#151515';L.polyline(pts,{color:'#fff',weight:9,opacity:.5}).addTo(ghostLayer);L.polyline(pts,{color:gi,weight:5,opacity:.4,dashArray:'10 10',lineCap:'round'}).addTo(ghostLayer);L.circleMarker(pts[0],{radius:6,color:'#fff',weight:2,fillColor:'#24553a',fillOpacity:1}).bindTooltip('Inicio de la ruta').addTo(ghostLayer);L.circleMarker(pts.at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#171717',fillOpacity:1}).bindTooltip('Destino').addTo(ghostLayer);if(!segments.flat().length)map.fitBounds(ghostLayer.getBounds(),{padding:[36,36],maxZoom:16});};
+    setGhost(ghost);
 
     const drawSegments=(allSegments)=>{routeLayer.clearLayers();const ink=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#151515';const valid=allSegments.filter((s)=>s.length).map((s)=>({est:!!s[0]?.est,pts:s.map((p)=>[+p.lat,+p.lon]).filter((p)=>p.every(Number.isFinite))})).filter((s)=>s.pts.length);valid.forEach(({pts,est})=>{if(pts.length>1)L.polyline(pts,est?{color:ink,weight:4,opacity:.6,dashArray:'2 10',lineCap:'round'}:{color:ink,weight:5,opacity:.9,lineCap:'round'}).addTo(routeLayer);});const real=valid.filter((s)=>!s.est);if(real.length){L.circleMarker(real[0].pts[0],{radius:7,color:'#fff',weight:3,fillColor:'#24553a',fillOpacity:1}).bindTooltip('Inicio').addTo(routeLayer);const last=real.at(-1).pts;if(last.length>1)L.circleMarker(last.at(-1),{radius:7,color:'#fff',weight:3,fillColor:'#171717',fillOpacity:1}).bindTooltip('Última posición').addTo(routeLayer);}};
 
@@ -179,7 +184,7 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
 
     requestAnimationFrame(() => map.invalidateSize());
 
-    return { map, L, setBase, update:drawSegments, recenter: () => { const latest=routeLayer.getBounds();if(latest.isValid())map.fitBounds(latest,{padding:[36,36],maxZoom:16});else {const point=segments.flat().at(-1);if(point)map.setView([point.lat,point.lon],16);else if(center)map.setView(center,16);} } };
+    return { map, L, setBase, setGhost, update:drawSegments, recenter: () => { const latest=routeLayer.getBounds();if(latest.isValid())map.fitBounds(latest,{padding:[36,36],maxZoom:16});else {const point=segments.flat().at(-1);if(point)map.setView([point.lat,point.lon],16);else if(center)map.setView(center,16);} } };
 
   } catch (error) {
 
@@ -222,6 +227,10 @@ async function renderRun(view, ctx) {
   let historyCount = PER_PAGE, historyFilter = 'all', historyPeriod = 'all', sortAsc = false, period = 'week', selectedWeek = '';
 
   let mapController = null, saving = false;
+  const planned = () => { const r = getPlannedRoute(userId); return r && Date.now() - (r.set_at || 0) < 36 * 3600 * 1000 ? r : null; };
+  const ghostPts = () => planned()?.points || null;
+  const knownRuns = activities.filter((a) => activityRoute(a).length >= 5);
+  let shownStatus = null, lastMatchAt = 0, shownMatchId = null;
 
   const setPage = (next) => { page = next; localStorage.setItem(`batmon_running_page_${userId}`, next); render(); };
 
@@ -430,11 +439,15 @@ async function renderRun(view, ctx) {
             </div>
           </div>
         </div>
+        <div class="run-plan-route"><div><b>Ruta de hoy</b><small id="run-plan-info">${esc(routeSummary(planned()))}${planned() ? '' : ' · opcional'}</small></div><span><button type="button" class="btn sm ghost" id="run-plan-route">${planned() ? 'Cambiar' : 'Marcar de dónde a dónde'}</button>${planned() ? '<button type="button" class="btn sm ghost" id="run-plan-clear">Quitar</button>' : ''}</span></div>
         <details class="card run-manual-card"><summary>Registrar manualmente</summary><form id="run-manual-form">${manualFormMarkup()}</form></details>
         <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
 
-      mapController = mountMap($('#run-map-live', box), [], { zoomControl: false, interactive: false });
+      shownStatus = null;
+      mapController = mountMap($('#run-map-live', box), [], { zoomControl: false, interactive: false, ghost: ghostPts() });
+      $('#run-plan-route', box).onclick = async () => { const out = await openRoutePicker({ route: planned(), title: 'Ruta de hoy (opcional)', allowRemove: true }); if (!out) return; setPlannedRoute(userId, out.route ? { ...out.route, set_at: Date.now() } : null); renderRunScreen(box); };
+      const clearPlan = $('#run-plan-clear', box); if (clearPlan) clearPlan.onclick = () => { setPlannedRoute(userId, null); renderRunScreen(box); };
 
       $('#run-start', box).onclick = () => { runCountdown(() => { const ok = tracker.start(paint, (message) => { const m = $('#run-live-msg', view); if (m) m.textContent = message; }); if (ok) { page = 'run'; render(); } }); };
 
@@ -469,7 +482,8 @@ async function renderRun(view, ctx) {
         <p class="msg" id="run-live-msg" aria-live="polite">Consejo: deja la pantalla encendida. Si la bloqueas, el GPS se pausa y ese tramo se estima.</p>
       </section>`;
 
-      if (prefs.showMap) mapController = mountMap($('#run-map-live', box), state.segments || []);
+      shownStatus = state.status;
+      if (prefs.showMap) mapController = mountMap($('#run-map-live', box), state.segments || [], { ghost: ghostPts() });
 
       $('#run-resume', box).onclick = () => { tracker.resume(paint, showGpsError); applyWakeLock(); render(); };
       $('#run-discard', box).onclick = async () => { if (await confirmDialog('Se eliminará el borrador local de esta carrera.', 'Descartar actividad')) { applyWakeLock(); tracker.discard(); page = 'run'; render(); } };
@@ -523,7 +537,8 @@ async function renderRun(view, ctx) {
     </div>`;
 
     bindSettingsToggleFields(box, 'cfg');
-    mapController = mountMap($('#run-map-live', box), state.segments || []);
+    shownStatus = state.status;
+    mapController = mountMap($('#run-map-live', box), state.segments || [], { ghost: ghostPts() });
     mountMapTools($('.run-maptools', box), { mapPromise: mapController, supabase, userId, userName: (ctx.profile?.full_name || ctx.user?.user_metadata?.full_name || '').trim(), isAdmin: !!ctx.isAdmin, notify });
 
     const swipe = $('#run-swipe', box);
@@ -633,6 +648,9 @@ async function renderRun(view, ctx) {
 
     const state=tracker.state;if(!state)return;
 
+    if(state.auto_notice){notify(state.auto_notice,'info');delete state.auto_notice;}
+    if(shownStatus&&state.status!==shownStatus&&page==='run'&&(state.status==='running'||state.status==='paused')){applyWakeLock();render();return;}
+
     const seconds=tracker.elapsedSeconds(),km=tracker.distanceKm(),flat=tracker.points();
 
     const write=(id,value)=>{const node=$(`#${id}`,view);if(node)node.textContent=value;};
@@ -650,6 +668,7 @@ async function renderRun(view, ctx) {
     const threshold=Math.floor(km);if(threshold>announcedKm){announcedKm=threshold;if(prefs.announce)notify(`Kilómetro ${threshold} · ritmo medio ${kmPace(km,seconds/60)}`);if(prefs.voice)speak(`Kilómetro ${threshold}. Ritmo medio ${kmPace(km,seconds/60).replace(':',' con ')} minutos por kilómetro.`);}
 
     if(mapController?.then) mapController.then(({update})=>update?.(state.segments||[]));
+    if(state.status==='running'&&!planned()&&Date.now()-lastMatchAt>8000){lastMatchAt=Date.now();const m=matchLiveRoute(state.segments||[],knownRuns);if(m&&m.activity.id!==shownMatchId){shownMatchId=m.activity.id;const times=findRouteMatches(activityRoute(m.activity),activities,m.activity.id).length+1;mapController?.then(c=>c.setGhost?.(m.pts.map(q=>[q.lat,q.lon])));notify(`Ruta conocida: ${m.activity.activity_name||'carrera anterior'} · ya la corriste ${times} ${times===1?'vez':'veces'}. Se marca en el mapa.`,'info');}}
 
   }
 
@@ -681,10 +700,11 @@ async function renderRun(view, ctx) {
 
     const fastestSplit=metrics.splits.filter(s=>s.km!=='Final').sort((a,b)=>a.seconds-b.seconds)[0];const elevation=elevationGain(result.route_segments),tooShort=km<.01;
 
-    box.innerHTML=`<section class="run-review"><div class="run-review__intro"><span class="run-live__label">REVISIÓN · GPS</span><p>Comprueba los resultados y añade los detalles que quieras antes de guardar.</p>${tooShort?'<p class="card warn">La distancia válida aún no alcanza 0,01 km. Vuelve a Correr y reanuda para registrar más recorrido.</p>':''}<p>${esc(localDate(result.started_at))} · ${new Intl.DateTimeFormat('es-BO',{hour:'2-digit',minute:'2-digit'}).format(new Date(result.started_at))} · GPS</p></div><div class="run-map-wrap"><div id="run-map-review" class="run-map run-map--review" aria-label="Recorrido GPS de la carrera"></div><button type="button" class="run-map__locate" id="review-center">Centrar recorrido</button></div><div class="run-review-stats"><article class="card"><b>${fmt(km,2)} km</b><span>Distancia</span></article><article class="card"><b>${durationLabel(result.duration_sec)}</b><span>Tiempo total</span></article><article class="card"><b>${durationLabel(metrics.moving_sec)}</b><span>En movimiento*</span></article><article class="card"><b>${kmPace(km,result.duration_sec/60)}</b><span>Ritmo medio</span></article><article class="card"><b>${fastestSplit?`${durationLabel(fastestSplit.seconds)}`:'—'}</b><span>Mejor parcial de 1 km</span></article><article class="card"><b>${elevation??'—'}${elevation===null?'':' m'}</b><span>Desnivel positivo GPS</span></article></div>${metrics.splits.length?`<details class="card run-splits"><summary>Parciales (${metrics.splits.length})</summary>${metrics.splits.map(s=>`<div><span>${s.km==='Final'?'Tramo final':`Km ${s.km}`}</span><b>${durationLabel(s.seconds)}</b><small>${kmPace(s.distance_m/1000,s.seconds/60)} min/km</small></div>`).join('')}</details>`:''}<form id="run-review-form" class="card run-review-form"><label>Nombre de actividad<input name="activity_name" maxlength="100" placeholder="Carrera matutina" value=""></label><div class="row"><label>Tipo<select name="run_type"><option value="">Sin especificar</option>${RUN_TYPES.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join('')}</select></label><label>Esfuerzo (1–10)<input name="rpe" type="number" min="1" max="10" placeholder="Opcional"></label></div><label>Superficie · opcional<select name="surface"><option value="">Sin especificar</option>${['Asfalto','Tierra','Pista','Montaña','Otra'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>Notas personales<textarea name="notes" rows="3" maxlength="1000" placeholder="¿Cómo te sentiste?"></textarea></label><label>Fotografías · opcional, hasta 3<input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>${shareSectionMarkup({titlePlaceholder:'Carrera de mañana'})}<p class="muted">* Tiempo en movimiento estimado a partir de los intervalos GPS. Privada por defecto.</p><p class="msg" id="review-msg" aria-live="polite"></p><div class="run-review-actions"><button class="btn" type="submit" id="review-save" ${tooShort?'disabled':''}>Guardar actividad</button><button class="btn ghost" type="button" id="review-back">Volver a revisar</button><button class="link" type="button" id="review-discard">Descartar carrera</button></div></form></section>`;
+    box.innerHTML=`<section class="run-review"><div class="run-review__intro"><span class="run-live__label">REVISIÓN · GPS</span><p>Comprueba los resultados y añade los detalles que quieras antes de guardar.</p>${tooShort?'<p class="card warn">La distancia válida aún no alcanza 0,01 km. Vuelve a Correr y reanuda para registrar más recorrido.</p>':''}<p>${esc(localDate(result.started_at))} · ${new Intl.DateTimeFormat('es-BO',{hour:'2-digit',minute:'2-digit'}).format(new Date(result.started_at))} · GPS</p></div><div id="run-review-extra"></div><div class="run-map-wrap"><div id="run-map-review" class="run-map run-map--review" aria-label="Recorrido GPS de la carrera"></div><button type="button" class="run-map__locate" id="review-center">Centrar recorrido</button></div><div class="run-review-stats"><article class="card"><b>${fmt(km,2)} km</b><span>Distancia</span></article><article class="card"><b>${durationLabel(result.duration_sec)}</b><span>Tiempo total</span></article><article class="card"><b>${durationLabel(metrics.moving_sec)}</b><span>En movimiento*</span></article><article class="card"><b>${kmPace(km,result.duration_sec/60)}</b><span>Ritmo medio</span></article><article class="card"><b>${fastestSplit?`${durationLabel(fastestSplit.seconds)}`:'—'}</b><span>Mejor parcial de 1 km</span></article><article class="card"><b>${elevation??'—'}${elevation===null?'':' m'}</b><span>Desnivel positivo GPS</span></article></div>${metrics.splits.length?`<details class="card run-splits"><summary>Parciales (${metrics.splits.length})</summary>${metrics.splits.map(s=>`<div><span>${s.km==='Final'?'Tramo final':`Km ${s.km}`}</span><b>${durationLabel(s.seconds)}</b><small>${kmPace(s.distance_m/1000,s.seconds/60)} min/km</small></div>`).join('')}</details>`:''}<form id="run-review-form" class="card run-review-form"><label>Nombre de actividad<input name="activity_name" maxlength="100" placeholder="Carrera matutina" value=""></label><div class="row"><label>Tipo<select name="run_type"><option value="">Sin especificar</option>${RUN_TYPES.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join('')}</select></label><label>Esfuerzo (1–10)<input name="rpe" type="number" min="1" max="10" placeholder="Opcional"></label></div><label>Superficie · opcional<select name="surface"><option value="">Sin especificar</option>${['Asfalto','Tierra','Pista','Montaña','Otra'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>Notas personales<textarea name="notes" rows="3" maxlength="1000" placeholder="¿Cómo te sentiste?"></textarea></label><label>Fotografías · opcional, hasta 3<input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>${shareSectionMarkup({titlePlaceholder:'Carrera de mañana'})}<p class="muted">* Tiempo en movimiento estimado a partir de los intervalos GPS. Privada por defecto.</p><p class="msg" id="review-msg" aria-live="polite"></p><div class="run-review-actions"><button class="btn" type="submit" id="review-save" ${tooShort?'disabled':''}>Guardar actividad</button><button class="btn ghost" type="button" id="review-back">Volver a revisar</button><button class="link" type="button" id="review-discard">Descartar carrera</button></div></form></section>`;
 
     bindShareSection($('#run-review-form',box),{route:result.route_segments});
-    mapController=mountMap($('#run-map-review',box),result.route_segments);
+    mapController=mountMap($('#run-map-review',box),result.route_segments,{ghost:ghostPts()});
+    {const parts=[];if(result.trimmed_sec>=60)parts.push(`<p class="card warn">Parece que olvidaste pausar: se recortaron ${durationLabel(result.trimmed_sec)} finales sin movimiento y el tiempo total se ajustó.</p>`);const matches=findRouteMatches(result.route_segments,activities);if(matches.length){const best=[...matches].sort((a,b)=>durationOf(a)-durationOf(b))[0],bestT=durationOf(best),diff=result.duration_sec-bestT;parts.push(`<p class="card route-match"><b>Ruta repetida · ${matches.length+1}.ª vez</b><span>Mejor tiempo en esta ruta: ${durationLabel(bestT)} (${esc(best.performed_on)}). ${diff<=0?'¡Nuevo récord en esta ruta!':'Hoy +'+durationLabel(diff)+'.'}</span></p>`);}const pl=planned();if(pl)parts.push(`<p class="card route-match"><b>Ruta marcada</b><span>Cubriste el ${Math.round(coverage(pl,result.route_segments)*100)}% de la ruta de ${pl.distance_km} km.</span></p>`);const ex=$('#run-review-extra',box);if(ex)ex.innerHTML=parts.join('');}
 
     $('#review-center',box).onclick=()=>mapController?.then(({recenter})=>recenter());
 

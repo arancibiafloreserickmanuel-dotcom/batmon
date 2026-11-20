@@ -1953,3 +1953,27 @@ body.appbody button.rank-stat,body.appbody button.rank-stat:active{background:no
 .reto-filters{flex-wrap:wrap !important;overflow:visible !important;padding:4px 2px 12px}
 .reto-filters button{padding:7px 13px;font-size:13px}
 @media(max-width:420px){.reto-grid{gap:10px}.reto-card{padding:12px}.reto-card h2{font-size:15px}.reto-badge{width:54px;height:60px;font-size:15px}}
+
+/* ===== Rutas: selector A→B, tarjeta de ruta, ruta de hoy en Running ===== */
+.route-picker{align-items:stretch;justify-content:center;padding:0}
+.route-picker__sheet{width:min(760px,100%);height:100%;max-height:100dvh;border-radius:0;display:flex;flex-direction:column;gap:8px;padding:12px;overflow:hidden}
+.route-picker__bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.route-picker__modes{display:flex;gap:6px}
+.route-picker__modes button{border:0;border-radius:99px;padding:7px 14px;font-weight:700;cursor:pointer;background:var(--button-face);color:var(--button-ink);box-shadow:var(--button-shadow)}
+.route-picker__modes button.on{box-shadow:var(--button-shadow-active)}
+.route-picker__search{display:flex;gap:6px;flex:1;min-width:180px}.route-picker__search input{flex:1;min-width:0}
+.route-picker__map{flex:1;min-height:240px;border-radius:16px;overflow:hidden;background:var(--line)}
+.route-picker__hint{margin:0;font-size:12px;color:var(--muted)}
+.route-picker__foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.route-picker__foot b{margin-right:auto;font-family:Anton,sans-serif;font-size:20px;font-weight:400}
+.rp-pin-wrap{background:none;border:0}
+.rp-pin{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font:700 13px Inter,sans-serif;color:#fff;background:#111;border:3px solid #fff;box-shadow:0 2px 6px #0006}
+.rp-pin--a{background:#24553a}.rp-pin--b{background:#111}.rp-pin--mid{background:#6b6b6b;width:24px;height:24px;font-size:11px}
+.route-map{height:240px;border-radius:16px;overflow:hidden;background:var(--line);margin:8px 0}
+.route-card{display:grid;gap:8px}
+.route-field{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 10px}
+.route-field--full{grid-column:1/-1}
+.run-plan-route{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;margin:10px 0}
+.run-plan-route div{display:grid}.run-plan-route small{color:var(--muted)}
+.run-plan-route span{display:flex;gap:6px}
+.route-match{display:grid;gap:2px;margin:8px 0}.route-match span{color:var(--muted);font-size:13px}

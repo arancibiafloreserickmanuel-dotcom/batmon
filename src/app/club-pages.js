@@ -2,6 +2,8 @@
 import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog } from './common.js';
 import { avatarSrc, avatarImg, initialsOf } from './avatar.js';
+import { mountRouteMap, routeSummary } from './route-picker.js';
+import { setPlannedRoute } from './route-tools.js';
 
 const DISC = { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación', plyo: 'Pliometría', training: 'Entrenamiento' };
 const ICON = {
@@ -11,6 +13,12 @@ const ICON = {
   trophy: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0V3zM4 4h3v2H5a1 1 0 0 0 0 2h2.2A7 7 0 0 0 7.700 10H5a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2zm16 0a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-2.700a7 7 0 0 0 .5-2H19a1 1 0 0 0 0-2h-2V4h3zM11 14h2v3h3v2H8v-2h3z"/></svg>',
 };
 
+const routeCardMarkup = (route, id, canRun) => `<section class="card route-card"><div class="profile-section-head"><div><span class="muted">${esc(routeSummary(route))}</span><h2>Ruta</h2></div></div><div class="route-map" id="${id}-map"></div>${canRun ? `<button type="button" class="btn" id="${id}-run">Usar esta ruta en Running</button>` : ''}</section>`;
+function bindRouteCard(root, route, id, ctx) {
+  mountRouteMap(root.querySelector(`#${id}-map`), route);
+  const run = root.querySelector(`#${id}-run`);
+  if (run) run.onclick = () => { setPlannedRoute(ctx.user.id, { ...route, set_at: Date.now() }); try { localStorage.setItem(`batmon_running_page_${ctx.user.id}`, 'run'); } catch { /* sin almacenamiento */ } notify('Ruta lista en Running.', 'success'); location.hash = '#running'; };
+}
 const fullDate = (d) => new Date(d).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' });
 const goBack = () => { if (history.length > 1) history.back(); else location.hash = '#club'; };
 
@@ -74,12 +82,14 @@ export async function renderEventPage(view, ctx, eventId) {
       ${desc ? `<p class="event-page__desc ${longDesc ? 'is-clamped' : ''}" id="ev-desc">${esc(desc)}</p>` : ''}
       ${hasMore ? '<button type="button" class="btn ghost event-page__more" id="ev-more">Más información</button>' : ''}
       <div class="event-detail-meta"><div class="event-detail-info-card"><small>HORA</small><b>${timeLabel}</b></div><div class="event-detail-info-card"><small>LUGAR</small><b>${esc(event.location || 'Por confirmar')}</b></div></div>
+      ${event.route ? routeCardMarkup(event.route, 'ev-route', !!ctx.modules?.running) : ''}
       ${facts.length ? `<div class="event-facts">${facts.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
       <div class="event-detail-actions"><button class="btn ${rsvp?.status === 'confirmed' ? 'is-confirmed' : ''}" data-confirm>${rsvp?.status === 'confirmed' ? 'Voy ✓' : 'Voy'}</button><button class="btn ghost" data-cancel>No voy</button></div>
       <section class="event-attendees" aria-label="Personas confirmadas"><p><b>${people.length} confirmados</b></p><div class="event-attendee-list">${people.length ? people.map((p) => `<div class="event-attendee">${p.avatar ? avatarImg(p.avatar) : `<span class="event-attendee-initials">${esc(initialsOf(p.name))}</span>`}<small>${esc(p.name)}</small></div>`).join('') : '<span class="muted">Aún no hay confirmaciones.</span>'}</div></section>
     </div></article>`;
 
   $('#ev-back', view).onclick = goBack;
+  if (event.route) bindRouteCard(view, event.route, 'ev-route', ctx);
   $('#ev-share', view).onclick = async () => {
     const url = `${location.origin}/app.html#evento/${eventId}`;
     try { if (navigator.share) await navigator.share({ title: event.title, url }); else { await navigator.clipboard.writeText(url); notify('Enlace copiado.', 'success'); } } catch { /* cancelado */ }
@@ -129,7 +139,7 @@ export async function renderChallenges(box, ctx) {
     const list = challenges.filter((c) => discFilter === 'all' || c.discipline === discFilter);
     box.innerHTML = `<div class="reto-filters" role="group" aria-label="Filtrar retos">${[['all', 'Todos'], ...Object.entries(DISC)].map(([k, l]) => `<button type="button" class="${discFilter === k ? 'on' : ''}" data-filter="${k}">${l}</button>`).join('')}</div>
       ${list.length ? `<div class="reto-grid">${list.map((c) => { const st = status(c), mine = joinedIds.has(c.id);
-        return `<article class="card reto-card" data-reto="${c.id}" tabindex="0">${badgeMarkup(c)}<h2>${esc(c.title)}</h2><p class="reto-meta"><span>${esc(DISC[c.discipline] || c.discipline)}</span><span>${st}</span>${c.reward_logros ? `<span class="reto-reward">${ICON.trophy}+${c.reward_logros}</span>` : ''}</p>${c.description ? `<p class="reto-desc">${esc(c.description)}</p>` : ''}<p class="reto-dates">${esc(fullDate(c.starts_on + 'T12:00:00'))} – ${esc(fullDate(c.ends_on + 'T12:00:00'))} · Meta ${c.goal_value} ${unitOf(c)}</p><span class="reto-count">${counts.get(c.id) || 0} participantes</span>${mine ? '<span class="reto-joined">Ya participas</span>' : st === 'Finalizado' ? '<span class="reto-joined">Reto finalizado</span>' : `<button type="button" class="btn sm" data-join="${c.id}">Unirse</button>`}</article>`; }).join('')}</div>` : '<div class="card profile-empty">No hay retos en esta categoría.</div>'}`;
+        return `<article class="card reto-card" data-reto="${c.id}" tabindex="0">${badgeMarkup(c)}<h2>${esc(c.title)}</h2><p class="reto-meta"><span>${esc(DISC[c.discipline] || c.discipline)}</span><span>${st}</span>${c.route ? '<span>Con ruta</span>' : ''}${c.reward_logros ? `<span class="reto-reward">${ICON.trophy}+${c.reward_logros}</span>` : ''}</p>${c.description ? `<p class="reto-desc">${esc(c.description)}</p>` : ''}<p class="reto-dates">${esc(fullDate(c.starts_on + 'T12:00:00'))} – ${esc(fullDate(c.ends_on + 'T12:00:00'))} · Meta ${c.goal_value} ${unitOf(c)}</p><span class="reto-count">${counts.get(c.id) || 0} participantes</span>${mine ? '<span class="reto-joined">Ya participas</span>' : st === 'Finalizado' ? '<span class="reto-joined">Reto finalizado</span>' : `<button type="button" class="btn sm" data-join="${c.id}">Unirse</button>`}</article>`; }).join('')}</div>` : '<div class="card profile-empty">No hay retos en esta categoría.</div>'}`;
     box.querySelectorAll('[data-filter]').forEach((b) => { b.onclick = () => { discFilter = b.dataset.filter; draw(); }; });
     box.querySelectorAll('[data-reto]').forEach((card) => {
       const open = () => { location.hash = challengeHref(card.dataset.reto); };
@@ -159,12 +169,14 @@ export async function renderChallengePage(view, ctx, id) {
   view.innerHTML = `<article class="reto-page"><div class="reto-page__top"><button type="button" class="event-page__round" id="rp-back" aria-label="Volver">${ICON.back}</button></div>
     <div class="reto-page__head">${badgeMarkup(c)}<span class="ev-chip">${esc(DISC[c.discipline] || c.discipline)} · ${st}</span><h1 class="event-page__title">${esc(c.title)}</h1></div>
     <div class="event-facts"><div><small>Meta</small><b>${goal} ${unitOf(c)}</b></div><div><small>Recompensa</small><b>+${c.reward_logros ?? 0} logros</b></div><div><small>Participantes</small><b>${ranking.length}</b></div></div>
+    ${c.route ? routeCardMarkup(c.route, 'rp-route', !!ctx.modules?.running && c.discipline === 'running') : ''}
     ${c.description ? `<p class="event-page__desc">${esc(c.description)}</p>` : ''}
     <p class="muted">${esc(fullDate(c.starts_on + 'T12:00:00'))} – ${esc(fullDate(c.ends_on + 'T12:00:00'))}. Los logros ganados cuentan para subir de rango.</p>
     ${mine ? `<section class="card reto-progress"><b>Tu progreso</b><span>${fmtNum(score)} / ${goal} ${unitOf(c)}${me?.completed ? ' · ¡Completado!' : ''}</span><i class="rank-card__bar"><u style="width:${pct}%"></u></i></section>` : ''}
     <div class="event-detail-actions">${mine ? (st !== 'Finalizado' ? '<button class="btn ghost" id="rp-leave" type="button">Salir del reto</button>' : '') : st === 'Finalizado' ? '' : '<button class="btn" id="rp-join" type="button">Unirse al reto</button>'}</div>
     <section class="card"><h2>Clasificación</h2>${ranking.length ? `<ol class="reto-rank">${[...ranking].sort((a, b) => b.score - a.score).map((r) => `<li><b>${esc(r.full_name || 'Socio')}</b><span>${fmtNum(r.score)} ${unitOf(c)}${r.completed ? ' · Meta cumplida' : ''}</span></li>`).join('')}</ol>` : '<p class="muted">Aún no hay participantes.</p>'}</section></article>`;
   $('#rp-back', view).onclick = goBack;
+  if (c.route) bindRouteCard(view, c.route, 'rp-route', ctx);
   const join = $('#rp-join', view);
   if (join) join.onclick = async () => { join.disabled = true; const { error: e } = await supabase.from('challenge_participants').insert({ challenge_id: id, user_id: ctx.user.id }); if (e) { join.disabled = false; notify('No se pudo unir: ' + e.message); return; } notify('Ya participas en el reto.', 'success'); renderChallengePage(view, ctx, id); };
   const leave = $('#rp-leave', view);

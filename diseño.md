@@ -193,3 +193,8 @@ Orden vertical con 14–16 px entre bloques:
 - Feed de Club → Eventos: tarjetas con foto 16:10, próximos primero y luego anteriores (en gris).
 - Retos: rejilla de 2 columnas, insignia hexagonal monocroma, chips de filtro por disciplina, botón "Unirse"; clic abre `#reto/<id>`.
 - Rango: tarjeta con icono de `public/ranks`, barra de progreso en negro. Ver `rangos.md`.
+
+## Rutas (mapa)
+- Selector A→B: modal a pantalla completa con mapa, pines A (verde) / B (negro) / intermedios (gris), línea negra con borde blanco, chips A pie · Bici, buscador y "Usar esta ruta". Arrastrar un pin recalcula.
+- Ruta de referencia ("fantasma") en el mapa de Running: línea punteada gris tenue; la ruta real va en línea sólida.
+- Tarjeta de ruta en eventos y retos: mapa de 240 px + botón "Usar esta ruta en Running".
