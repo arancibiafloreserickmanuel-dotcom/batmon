@@ -11,6 +11,7 @@ import { renderEventPage, renderChallengePage } from './club-pages.js';
 import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles } from './auth.js';
 import { computeLogros, logrosMarkup, logrosPoints } from './share.js';
 import { rankFor, openRankInfo } from './ranks.js';
+import { reportProgress, openProfileCard, mountBestFriends } from './social.js';
 import { autoEnhanceFileInputs } from './upload-field.js';
 import { avatarSrc, avatarImg, syncGoogleAvatar, openPhotoViewer, initialsOf } from './avatar.js';
 
@@ -473,8 +474,23 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   };
 
   pullBtn.onclick = toggleCollapse;
-  if (bellBtn) bellBtn.onclick = () => {
-    if (isCollapsed) toggleCollapse();
+  if (bellBtn) bellBtn.onclick = async () => {
+    bellBtn.classList.remove('ringing'); void bellBtn.offsetWidth; bellBtn.classList.add('ringing');
+    let target = null;
+    try {
+      const { data: unread = [] } = await supabase.from('event_notifications').select('id,event_id').eq('user_id', ctx.user.id).eq('is_read', false);
+      const ids = new Set(unread.map((row) => row.event_id)), pool = clubEvents.filter((ev) => ids.has(ev.id)), nowIso = today();
+      const upcoming = (pool.length ? pool : clubEvents).filter((ev) => eventDateIso(ev) >= nowIso).sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+      target = upcoming[0] || pool[0] || null;
+      if (unread.length) { supabase.from('event_notifications').update({ is_read: true }).eq('user_id', ctx.user.id).eq('is_read', false).then(() => {}, () => {}); bellBtn.querySelector('.cal10__bell-badge')?.remove(); bellBtn.classList.remove('has-unread'); }
+    } catch { /* sin conexión */ }
+    if (target) {
+      selectedIso = eventDateIso(target);
+      const [cy, cm] = selectedIso.split('-').map(Number);
+      viewDate = new Date(cy, cm - 1, 1);
+      if (isCollapsed) { isCollapsed = false; root.classList.remove('is-collapsed'); drawerEl.style.display = 'block'; pullBtn.setAttribute('aria-expanded', 'true'); bellBtn.setAttribute('aria-expanded', 'true'); }
+      renderGrid(); renderEvents();
+    } else if (isCollapsed) toggleCollapse();
     root.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -525,6 +541,7 @@ async function renderHome(v) {
   ]);
   const acts = activityResult.data || [];
   const ws = workoutResult.data || [];
+  reportProgress(ctx, acts, ws);
   const mems = membershipResult.data || [];
   const plan = planResult.data?.plan || {};
   const plyoPlan = plyoPlanResult.data?.plan || {};
@@ -550,17 +567,25 @@ async function renderHome(v) {
   const todaysWorkouts = weekWorkouts.filter((item) => item.performed_on === todayIso);
   const todayCompleted = weekActs.filter((item) => item.performed_on === todayIso).length + todaysWorkouts.length;
   const weekDays = Array.from({ length: 7 }, (_, index) => { const date = new Date(`${ws0}T12:00:00`); date.setDate(date.getDate() + index); return date; });
-  const plannedDays = weekDays.filter((date) => ctx.modules.training && (plan[dayLabels[date.getDay()]] || []).length > 0);
-  const completedTrainingDates = new Set(weekWorkouts.filter((item) => item.kind === 'training').map((item) => item.performed_on));
-  const completedPlannedDays = plannedDays.filter((date) => completedTrainingDates.has(iso(date))).length;
+  const weekRunPlan = runPlanResult.data?.plan || null;
+  const slotDone = { gym: (d) => weekWorkouts.some((w) => w.kind === 'training' && w.performed_on === d), plyo: (d) => weekWorkouts.some((w) => w.kind === 'plyometrics' && w.performed_on === d), run: (d) => weekActs.some((a) => a.discipline === 'running' && a.performed_on === d) };
+  const plannedSlots = weekDays.flatMap((date) => {
+    const out = [], name = dayLabels[date.getDay()], d = iso(date);
+    if (ctx.modules.training && (plan[name] || []).length > 0) out.push({ d, done: slotDone.gym(d) });
+    if (ctx.modules.plyo && plyoPlan[name]?.routineId) out.push({ d, done: slotDone.plyo(d) });
+    if (ctx.modules.running && runSessionOn(weekRunPlan, date)) out.push({ d, done: slotDone.run(d) });
+    return out;
+  });
+  const plannedDays = plannedSlots;
+  const completedPlannedDays = plannedSlots.filter((slot) => slot.done).length;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const userName = (ctx.profile?.full_name || ctx.user?.user_metadata?.full_name || ctx.user?.email || 'Atleta').trim().split(/[ @]/)[0];
   const plannedExerciseNames = todaysPlan.map((item) => exercisesById.get(String(item.exercise_id))?.name_es || exercisesById.get(String(item.exercise_id))?.name).filter(Boolean);
   const hasWeeklyPlan = Object.values(plan).some((rows) => Array.isArray(rows) && rows.length > 0);
-  const planSummary = !ctx.modules.training ? 'Gimnasio no está activo para tu cuenta' : planResult.error ? 'No se pudo cargar la planificación semanal' : plannedDays.length
-    ? `${completedPlannedDays} de ${plannedDays.length} días de rutina completados esta semana`
-    : hasWeeklyPlan ? 'No hay rutinas configuradas para esta semana' : 'Aún no tienes rutinas semanales configuradas';
+  const planSummary = plannedDays.length
+    ? `${completedPlannedDays} de ${plannedDays.length} ${plannedDays.length === 1 ? 'sesión planificada completada' : 'sesiones planificadas completadas'} esta semana`
+    : 'Aún no tienes sesiones planificadas esta semana';
   const planError = planResult.error ? 'No se pudo cargar tu planificación semanal.' : '';
   const activityError = activityResult.error || workoutResult.error ? 'No se pudo cargar toda la actividad deportiva.' : '';
   const eventError = eventResult.error ? 'No se pudieron cargar los eventos del Club.' : '';
@@ -628,8 +653,9 @@ async function renderHome(v) {
     return `<section class="card day-card" aria-label="Tu día"><div class="day-slides" id="day-slides">${slides.map((x) => x.html).join('')}</div>${slides.length > 1 ? `<div class="day-dots" id="day-dots">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>`;
   };
 
-  const todayStatus = todayCompleted ? `${todayCompleted} ${todayCompleted === 1 ? 'actividad completada' : 'actividades completadas'}` : 'sin actividades completadas';
-  v.innerHTML = `<section class="home-greeting" aria-label="Resumen del día"><div class="home-greeting__title"><p>${greeting},</p><h1>${esc(userName)}</h1><span class="home-greeting__today">Hoy · ${esc(todayStatus)}${todaysPlan.length ? ` · ${todaysPlan.length} ejercicios planificados` : ''}</span></div><div class="home-compliance"><div><span>Plan semanal</span><b>${plannedDays.length ? `${completedPlannedDays} / ${plannedDays.length}` : '—'}</b></div><div class="home-compliance__track" role="progressbar" aria-label="Cumplimiento de rutinas semanales" aria-valuemin="0" aria-valuemax="${plannedDays.length || 1}" aria-valuenow="${completedPlannedDays}"><i style="width:${plannedDays.length ? completedPlannedDays / plannedDays.length * 100 : 0}%"></i></div><small>${esc(planSummary)}</small></div></section>
+  const todayLine = [todayCompleted ? `${todayCompleted} ${todayCompleted === 1 ? 'actividad completada' : 'actividades completadas'}` : '', todaysPlan.length ? `${todaysPlan.length} ejercicios de gimnasio planificados` : ''].filter(Boolean).join(' · ');
+  const todayLineFull = todayLine ? `Hoy · ${todayLine}` : '';
+  v.innerHTML = `<section class="home-greeting" aria-label="Resumen del día"><div class="home-greeting__title"><p>${greeting},</p><h1>${esc(userName)}</h1>${todayLineFull ? `<span class="home-greeting__today">${esc(todayLineFull)}</span>` : ''}</div><div class="home-compliance"><div><span>Plan semanal</span><b>${plannedDays.length ? `${completedPlannedDays} / ${plannedDays.length}` : '—'}</b></div><div class="home-compliance__track" role="progressbar" aria-label="Cumplimiento de rutinas semanales" aria-valuemin="0" aria-valuemax="${plannedDays.length || 1}" aria-valuenow="${completedPlannedDays}"><i style="width:${plannedDays.length ? completedPlannedDays / plannedDays.length * 100 : 0}%"></i></div><small>${esc(planSummary)}</small></div></section>
     ${buildUnifiedCalendar()}${statusNotice}${membershipNotice}
     ${daySlidesMarkup()}
     ${weeklyCards.length ? `<section class="home-weekly"><div class="home-section-heading"><div><span class="muted">Resumen</span><h2>Esta semana</h2></div><small>${weekActs.length + weekWorkouts.length} ${weekActs.length + weekWorkouts.length === 1 ? 'actividad' : 'actividades'}</small></div>${activityError ? '<p class="muted">Métricas semanales no disponibles.</p>' : `<div class="home-week-grid">${weeklyCards.join('')}</div>`}</section>` : ''}
@@ -640,7 +666,7 @@ async function renderHome(v) {
   if (slidesBox) slidesBox.addEventListener('scroll', () => { const i = Math.round(slidesBox.scrollLeft / Math.max(1, slidesBox.clientWidth)); v.querySelectorAll('#day-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
   setupUnifiedCalendar(v, calendarEvents, { plan, runPlan: runPlanResult.data?.plan || null, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
   const eventBell=v.querySelector('#cal10-bell');
-  if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
+  if(eventBell){if(unreadNotifications)eventBell.classList.add('has-unread');eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);
   const nextMidnight = new Date();
   nextMidnight.setHours(24, 0, 5, 0);
@@ -699,13 +725,15 @@ async function renderMembership(v) {
 }
 
 async function renderProfile(v) {
-  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, { data: avatarData }, sharedRes, challengeRes] = await Promise.all([
+  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, { data: avatarData }, sharedRes, challengeRes, notifCountRes, evCountRes] = await Promise.all([
     supabase.from('activities').select('discipline,distance_km,duration_min,performed_on').order('performed_on', { ascending: false }).limit(300),
     supabase.from('workouts').select('kind,performed_on,duration_min,workout_sets(id)').order('performed_on', { ascending: false }).limit(200),
     supabase.from('friendships').select('id,status,requester,addressee').or(`requester.eq.${ctx.user.id},addressee.eq.${ctx.user.id}`),
     ctx.profile?.avatar_path ? supabase.storage.from('profile-media').createSignedUrl(ctx.profile.avatar_path,3600) : Promise.resolve({data:null}),
     supabase.from('shared_activities').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id),
     supabase.rpc('my_challenge_logros'),
+    supabase.from('user_notifications').select('id',{count:'exact',head:true}).eq('is_read',false),
+    supabase.from('event_notifications').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id).eq('is_read',false),
   ]);
   const sharedCount = sharedRes?.count || 0;
   const challengeRows = (challengeRes?.data || []);
@@ -732,7 +760,8 @@ async function renderProfile(v) {
   const counts = selectedModule==='all'?{workouts:activities.length+workouts.length,km}:{workouts:workouts.filter(w=>selectedModule==='plyo'?w.kind==='plyometrics':selectedModule==='training'?w.kind==='training':false).length+activities.filter(a=>a.discipline===selectedModule).length,km:activities.filter(a=>a.discipline===selectedModule).reduce((s,a)=>s+Number(a.distance_km),0)};
   const friends = friendships.filter(f=>f.status==='accepted').length;
   const moduleData = [['running','Running','running.png'],['cycling','Ciclismo','cycling.png'],['plyo','Pliometría','plyo.png'],['training','Gym','training.png'],['swimming','Natación','swimming.png']];
-  const pendingRequests = friendships.filter(f=>f.status==='pending'&&f.addressee===ctx.user.id).length;
+  const pendingRequests = Math.max(friendships.filter(f=>f.status==='pending'&&f.addressee===ctx.user.id).length, (notifCountRes?.count||0)+(evCountRes?.count||0));
+  reportProgress(ctx, activities, workouts);
   v.innerHTML = `<section class="profile-page"><header class="profile-hero"><button type="button" class="profile-avatar" id="avatar-view" aria-label="Ver foto de perfil">${avatarUrl?avatarImg(avatarUrl,'Foto de perfil'):initials}</button><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>${esc(ctx.profile?.contact_email || '')}</span></div><div class="profile-tools"><button id="notifications-open" class="notifications-open" aria-label="Abrir notificaciones" title="Notificaciones"><svg viewBox="0 0 448 512" class="bell" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200c0-75.8-55.5-138.6-128-150.1V32c0-17.7-14.3-32-32-32zm0 96h8c57.4 0 104 46.6 104 104v33.4c0 47.9 13.9 94.6 39.7 134.6H72.3C98.1 328 112 281.3 112 233.4V200c0-57.4 46.6-104 104-104h8zm64 352H224 160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7s18.7-28.3 18.7-45.3z"/></svg>${pendingRequests?`<span class="notification-badge">${pendingRequests}</span>`:''}</button><button id="settings-open" class="settings-hamburger" aria-label="Abrir configuración"><span class="line1"></span><span class="line2"></span><span class="line3"></span></button></div></header>
     <div class="profile-counts"><div><b>${counts.workouts}</b><span>Entrenos</span></div><div><b>${fmt(counts.km,0)}</b><span>Km</span></div><div><b>${friends}</b><span>Amigos</span></div><button type="button" class="rank-stat" id="rank-open" aria-label="Rango ${esc(myRank.name)}. Ver información"><b><img src="${myRank.icon}" alt="" width="24" height="24">${esc(myRank.name)}</b><span>Rango</span></button></div>
     <div class="profile-actions"><button id="edit-profile" class="btn ghost">Editar perfil</button><button id="membership-open" class="btn ghost">Membresía</button></div>
@@ -747,7 +776,8 @@ async function renderProfile(v) {
   v.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{localStorage.setItem(key,b.dataset.period);renderProfile(v);});
   $('#membership-open',v).onclick=()=>renderMembership(v);
   $('#rank-open',v).onclick=()=>openRankInfo(myRank,accountPts,challengeExtra.points);
-  $('#edit-profile',v).onclick=()=>{v.innerHTML=`<button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1><form id="profile-form" class="card"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form>`;
+  $('#edit-profile',v).onclick=()=>{v.innerHTML=`<button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1><form id="profile-form" class="card"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form><section class="card" id="best-friends-box"><p class="muted">Cargando mejores amigos…</p></section>`;
+    mountBestFriends($('#best-friends-box',v),ctx);
     $('#edit-back',v).onclick=()=>renderProfile(v);
     $('#profile-form',v).onsubmit=async e=>{e.preventDefault();const msg=$('#profile-msg',v),btn=e.currentTarget.querySelector('.btn');const name=$('#profile-name',v).value.trim(),file=$('#profile-photo',v).files[0];btn.disabled=true;const patch={full_name:name};
       if(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type)){msg.textContent='Usa una imagen JPG, PNG o WebP.';btn.disabled=false;return;}if(file.size>8*1024*1024){msg.textContent='La foto debe pesar menos de 8 MB.';btn.disabled=false;return;}
@@ -770,9 +800,38 @@ async function renderNotifications(v) {
   const friendIds=friendships.filter(f=>f.status==='accepted').map(f=>f.requester===ctx.user.id?f.addressee:f.requester);
   let posts=[];
   if(friendIds.length){const result=await supabase.from('profile_posts').select('id,user_id,module_key,media_type,caption,created_at').in('user_id',friendIds).order('created_at',{ascending:false}).limit(30);posts=result.data||[];}
-  const requestCards=requests.map(f=>`<article class="card notification-card"><span class="notification-kind">Solicitud de amistad</span><b>${esc(people.get(f.requester)||'Un socio')}</b><p>Quiere conectar contigo en la comunidad.</p><button class="btn sm" type="button" data-accept-request="${f.id}">Aceptar solicitud</button></article>`);
+  const requestCards=requests.map(f=>`<article class="card notification-card"><span class="notification-kind">Nuevo seguidor</span><b>${esc(people.get(f.requester)||'Un socio')}</b><p>Quiere seguirte.</p><button class="btn sm" type="button" data-accept-request="${f.id}">Aceptar solicitud</button></article>`);
   const postCards=posts.map(p=>`<article class="card notification-card"><span class="notification-kind">${p.media_type==='video'?'Nuevo video':'Nueva foto'} · ${esc(p.module_key)}</span><b>${esc(people.get(p.user_id)||'Un socio')}</b><p>${esc(p.caption||'Compartió una publicación con la comunidad.')}</p><small>${new Date(p.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'long'})}</small></article>`);
-  list.innerHTML=requestCards.concat(postCards).join('')||'<div class="card profile-empty">Aún no hay novedades de tu comunidad.</div>';
+  const [unRes,evRes]=await Promise.all([
+    supabase.from('user_notifications').select('id,actor_id,kind,ref_id,payload,is_read,created_at').order('created_at',{ascending:false}).limit(60),
+    supabase.from('event_notifications').select('id,event_id,message,is_read,created_at,events(id,title,event_date)').eq('user_id',ctx.user.id).order('created_at',{ascending:false}).limit(30),
+  ]);
+  const unRows=unRes.data||[],evRows=evRes.data||[];
+  const actorAvatar=new Map(await Promise.all([...new Set(unRows.map(n=>n.actor_id).filter(Boolean))].map(async id=>[id,await avatarSrc(directory.find(x=>x.id===id),1800)])));
+  const when=d=>new Date(d).toLocaleDateString('es-BO',{day:'numeric',month:'short'});
+  const pendingFrom=new Map(requests.map(f=>[f.requester,f.id]));
+  const face=id=>`<span class="community-avatar notif-avatar">${actorAvatar.get(id)?avatarImg(actorAvatar.get(id)):esc(initialsOf(people.get(id)||'BC'))}</span>`;
+  const socialCards=[
+    ...unRows.map(n=>{
+      const who=esc(people.get(n.actor_id)||'Un socio');
+      const kinds={
+        follow:['Nuevo seguidor',`<b>${who}</b> te comenzó a seguir`,(pendingFrom.has(n.actor_id)?`<button class="btn sm" type="button" data-accept-request="${pendingFrom.get(n.actor_id)}">Aceptar</button>`:'')+`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
+        profile_view:['Visita a tu perfil',`<b>${who}</b> vio tu perfil`,`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
+        rank_up:['Mejor amigo · rango',`<b>${who}</b> subió a <b>${esc(n.payload?.rank||'un nuevo rango')}</b>`,`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
+        challenge_done:['Mejor amigo · reto',`<b>${who}</b> completó el reto <b>${esc(n.payload?.title||'')}</b>`,`<button class="btn sm" type="button" data-open-hash="#reto/${n.ref_id}">Hacer el reto</button><button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
+      }[n.kind];
+      if(!kinds)return null;
+      return {t:n.created_at,html:`<article class="card notification-card notif-card ${n.is_read?'':'is-unread'}">${face(n.actor_id)}<div class="notif-body"><span class="notification-kind">${kinds[0]}</span><p>${kinds[1]}</p><small>${when(n.created_at)}</small><div class="notif-actions">${kinds[2]}</div></div></article>`};
+    }).filter(Boolean),
+    ...evRows.filter(e=>e.events).map(e=>({t:e.created_at,html:`<article class="card notification-card notif-card ${e.is_read?'':'is-unread'}"><span class="community-avatar notif-avatar notif-avatar--event">BC</span><div class="notif-body"><span class="notification-kind">Nuevo evento</span><p><b>${esc(e.events.title)}</b> · ${when(e.events.event_date)}</p><small>${when(e.created_at)}</small><div class="notif-actions"><button class="btn sm" type="button" data-open-hash="#evento/${e.events.id}">Ver evento</button></div></div></article>`})),
+  ].sort((a,b)=>String(b.t).localeCompare(String(a.t))).map(x=>x.html);
+  const followActors=new Set(unRows.filter(n=>n.kind==='follow').map(n=>n.actor_id));
+  const requestOnly=requests.filter(f=>!followActors.has(f.requester)).map(f=>`<article class="card notification-card"><span class="notification-kind">Nuevo seguidor</span><b>${esc(people.get(f.requester)||'Un socio')}</b><p>Te comenzó a seguir.</p><div class="notif-actions"><button class="btn sm" type="button" data-accept-request="${f.id}">Aceptar</button><button class="btn sm ghost" type="button" data-view-profile="${f.requester}">Ver perfil</button></div></article>`);
+  list.innerHTML=socialCards.concat(requestOnly,postCards).join('')||'<div class="card profile-empty">Aún no hay novedades de tu comunidad.</div>';
+  list.querySelectorAll('[data-view-profile]').forEach(b=>b.onclick=()=>openProfileCard(ctx,b.dataset.viewProfile));
+  list.querySelectorAll('[data-open-hash]').forEach(b=>b.onclick=()=>{sessionStorage.setItem('batmon_event_from','perfil');location.hash=b.dataset.openHash;});
+  if(unRows.some(n=>!n.is_read))supabase.from('user_notifications').update({is_read:true}).eq('is_read',false).then(()=>{},()=>{});
+  if(evRows.some(n=>!n.is_read))supabase.from('event_notifications').update({is_read:true}).eq('user_id',ctx.user.id).eq('is_read',false).then(()=>{},()=>{});
   list.querySelectorAll('[data-accept-request]').forEach(button=>button.onclick=async()=>{button.disabled=true;const {error}=await supabase.from('friendships').update({status:'accepted'}).eq('id',button.dataset.acceptRequest).eq('addressee',ctx.user.id);if(error){button.disabled=false;notify('No se pudo aceptar la solicitud: '+error.message);return;}notify('Solicitud aceptada.');await renderNotifications(v);});
 }
 

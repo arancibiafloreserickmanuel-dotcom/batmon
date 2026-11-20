@@ -2,6 +2,7 @@ import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
+import { openProfileCard } from './social.js';
 
 let section = 'activity';
 const MODULES = [['running','Running'],['cycling','Ciclismo'],['plyo','Pliometría'],['training','Entrenamiento'],['swimming','Natación']];
@@ -111,7 +112,7 @@ function bindShareButton(box, ctx) {
         <button class="btn" type="submit">Publicar</button><p class="msg" role="status"></p></form></section>`;
     document.body.append(modal);
     const form = $('#community-publish', modal), note = $('[data-audience-note]', modal);
-    const paint = () => { note.textContent = form.elements.visibility.value === 'close' ? (closeRows.length ? `Solo lo verán tus ${closeRows.length} mejores amigos. Gestiónalos en Miembros.` : 'Aún no tienes mejores amigos: márcalos con ★ en Miembros.') : 'Lo verán todos tus amigos aceptados.'; };
+    const paint = () => { note.textContent = form.elements.visibility.value === 'close' ? (closeRows.length ? `Solo lo verán tus ${closeRows.length} mejores amigos. Elígelos en Editar perfil.` : 'Aún no tienes mejores amigos: elígelos en Editar perfil.') : 'Lo verán todos tus amigos aceptados.'; };
     form.querySelectorAll('[name=visibility]').forEach(r => r.onchange = paint); paint();
     const close = () => modal.remove();
     modal.onclick = e => { if (e.target === modal) close(); };
@@ -148,10 +149,11 @@ async function renderMembers(box, ctx) {
   const closeSet=new Set(closeRows.map(row=>row.friend));
   const avatars=await Promise.all(people.map(async person=>[person.id,await avatarSrc(person,1800)]));
   const avatarMap=new Map(avatars);
-  box.innerHTML=`<p class="muted">Las publicaciones solo se muestran entre amigos aceptados. Marca con ★ a tus mejores amigos para compartir cosas solo con ellos.</p><div class="community-members">${people.map(person=>{
+  box.innerHTML=`<p class="muted">Sigue a los socios del club. Las publicaciones solo se ven entre quienes se siguen y aceptan. Elige a tus mejores amigos en Editar perfil.</p><div class="community-members">${people.map(person=>{
     const relation=edgeByPerson.get(person.id), incoming=relation?.status==='pending'&&relation.addressee===ctx.user.id, outgoing=relation?.status==='pending'&&relation.requester===ctx.user.id, accepted=relation?.status==='accepted';
     const avatar=avatarMap.get(person.id), initials=(person.full_name||'BC').split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase();
-    const action=incoming?`<button class="btn sm" data-accept-friend="${relation.id}">Aceptar</button>`:accepted?`<span class="member-actions"><button type="button" class="btn sm member-close ${closeSet.has(person.id)?'on':''}" data-close-friend="${person.id}" aria-pressed="${closeSet.has(person.id)}">${closeSet.has(person.id)?'★ Mejor amigo':'☆ Mejor amigo'}</button><button class="link" data-remove-friend="${relation.id}">Quitar</button></span>`:outgoing?'<span class="muted">Solicitud enviada</span>':`<button class="btn sm" data-add-friend="${person.id}">Agregar amigo</button>`;
+    const view=`<button type="button" class="btn sm ghost" data-view-profile="${person.id}">Ver perfil</button>`;
+    const action=incoming?`<span class="member-actions"><button class="btn sm" data-accept-friend="${relation.id}">Aceptar</button>${view}</span>`:accepted?`<span class="member-actions">${view}<button class="link" data-remove-friend="${relation.id}">Dejar de seguir</button></span>`:outgoing?`<span class="member-actions"><span class="muted">Solicitud enviada</span>${view}</span>`:`<span class="member-actions"><button class="btn sm" data-add-friend="${person.id}">Seguir</button>${view}</span>`;
     return `<article class="card community-member"><button type="button" class="community-avatar" data-avatar="${person.id}" aria-label="Ver foto">${avatar?avatarImg(avatar):esc(initials)}</button><b>${esc(person.full_name||'Socio Batmon')}</b>${action}</article>`;
   }).join('')||'<p class="card muted">No hay otros miembros disponibles.</p>'}</div>`;
   box.querySelectorAll('[data-avatar]').forEach(b=>b.onclick=()=>openPhotoViewer(avatarMap.get(b.dataset.avatar),people.find(x=>x.id===b.dataset.avatar)?.full_name||''));
@@ -161,9 +163,10 @@ async function renderMembers(box, ctx) {
     if(error){button.disabled=false;notify(`No se pudo actualizar: ${error.message}`);return;}
     notify(on?'Quitado de mejores amigos.':'Añadido a mejores amigos.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
   });
+  box.querySelectorAll('[data-view-profile]').forEach(b=>b.onclick=()=>openProfileCard(ctx,b.dataset.viewProfile));
   box.querySelectorAll('[data-add-friend]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;const {error}=await supabase.from('friendships').insert({requester:ctx.user.id,addressee:button.dataset.addFriend,status:'pending'});
-    if(error){button.disabled=false;notify('No se pudo enviar la solicitud: '+error.message);return;}notify('Solicitud de amistad enviada.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
+    if(error){button.disabled=false;notify('No se pudo enviar la solicitud: '+error.message);return;}notify('Ahora sigues a esta persona.','success');renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
   });
   box.querySelectorAll('[data-accept-friend]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;const {error}=await supabase.from('friendships').update({status:'accepted'}).eq('id',button.dataset.acceptFriend).eq('addressee',ctx.user.id);
