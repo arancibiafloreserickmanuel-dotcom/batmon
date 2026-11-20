@@ -27,11 +27,12 @@ async function renderActivity(box, ctx) {
   if (friendError) { box.innerHTML = `<div class="card warn">No se cargó la actividad: ${esc(friendError.message)}</div>`; return; }
   const friendIds = edges.map(row => row.requester === ctx.user.id ? row.addressee : row.requester);
   const ownerIds = [ctx.user.id, ...friendIds];
-  const [{ data: posts = [], error }, { data: directory = [] }] = await Promise.all([
+  const [{ data: allPosts = [], error }, { data: directory = [] }] = await Promise.all([
     supabase.from('profile_posts').select('*').in('user_id', ownerIds).order('created_at',{ascending:false}).limit(50),
     supabase.rpc('profile_directory'),
   ]);
   if (error) { box.innerHTML = `<div class="card warn">No se pudo cargar el muro: ${esc(error.message)}</div>`; return; }
+  const posts = allPosts.filter((post) => post.published !== false);
   if (!posts.length) {
     box.innerHTML = `${shareButton()}<div class="card profile-empty">Aún no hay publicaciones tuyas ni de tus amigos. Comparte una foto o video de entrenamiento para iniciar el muro.</div>`;
     bindShareButton(box, ctx); return;
@@ -61,7 +62,7 @@ async function renderActivity(box, ctx) {
     const src = urls.get(post.id);
     const content = src ? post.media_type === 'video'
       ? `<video class="community-media" src="${esc(src)}" controls playsinline preload="metadata"></video>`
-      : `<img class="community-media" src="${esc(src)}" alt="Publicación de ${esc(people.get(post.user_id)||'un socio')}" loading="lazy">`
+      : `<img class="community-media look-${post.look||'orig'}" src="${esc(src)}" alt="Publicación de ${esc(people.get(post.user_id)||'un socio')}" loading="lazy">`
       : '<div class="card warn">El archivo ya no está disponible.</div>';
     return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`<button type="button" class="link" data-like-post="${post.id}" aria-pressed="${ownLike}">${ownLike?'♥':'♡'} ${likes.length} Me gusta</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}">Eliminar</button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
   }).join('');
@@ -89,7 +90,7 @@ async function renderActivity(box, ctx) {
     const postId=button.dataset.deletePost, path=button.dataset.mediaPath;
     const {error: deleteError}=await supabase.from('profile_posts').delete().eq('id',postId).eq('user_id',ctx.user.id);
     if(deleteError){notify(deleteError.message);return;}
-    const {error:storageError}=await supabase.storage.from('profile-media').remove([path]);
+    const {error:storageError}=/\/(posts|session)\//.test(path)?await supabase.storage.from('profile-media').remove([path]):{error:null};
     if(storageError)notify(`Publicación eliminada, pero no se pudo borrar el archivo: ${storageError.message}`);
     renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
   });

@@ -198,3 +198,11 @@ Orden vertical con 14–16 px entre bloques:
 - Selector A→B: modal a pantalla completa con mapa, pines A (verde) / B (negro) / intermedios (gris), línea negra con borde blanco, chips A pie · Bici, buscador y "Usar esta ruta". Arrastrar un pin recalcula.
 - Ruta de referencia ("fantasma") en el mapa de Running: línea punteada gris tenue; la ruta real va en línea sólida.
 - Tarjeta de ruta en eventos y retos: mapa de 240 px + botón "Usar esta ruta en Running".
+
+## Perfil (rediseño)
+- Perfil propio: cabecera mínima (foto, nombre + icono de rango pequeño, campana, ajustes), botones Editar perfil / Membresía y 4 pestañas con icono: Fotos, Videos, Progreso, Logros. Sin fila de estadísticas.
+- Progreso: periodo (Semana/Mes/Año), 3 mosaicos Soft UI tocables (Sesiones, Distancia, Tiempo) con variación vs periodo anterior, gráfica de barras tocable, racha y reparto por disciplina (filtra al tocar).
+- Galería tipo Instagram: rejilla de 3 columnas con 2-3 px de separación; mantener presionado = gestionar (publicar/ocultar, categoría, filtro, formato 1:1 o 4:5, a quién, descripción). Lo oculto se ve atenuado solo para el dueño.
+- Editar perfil: acordeones (Foto y nombre, Mis fotos y videos, Qué pueden ver de mí, Mejores amigos).
+- Perfil de otro socio (#perfil/<id>): cabecera estilo Instagram (Publicaciones, Amigos), botón Seguir y solo las pestañas que el dueño permitió. Nunca muestra membresía, edición, campana ni ajustes.
+- Al terminar Running o Pliometría: bloque "Foto o video de la sesión" con interruptor Publicar en mi perfil y categoría.

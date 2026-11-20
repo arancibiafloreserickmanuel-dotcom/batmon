@@ -12,6 +12,7 @@ import { showLogin, showProfileSetup, hasMemberIdentity, enablePasswordToggles }
 import { computeLogros, logrosMarkup, logrosPoints } from './share.js';
 import { rankFor, openRankInfo } from './ranks.js';
 import { reportProgress, openProfileCard, mountBestFriends } from './social.js';
+import { mountProgress, mountMediaGrid, mountMediaManager, mountPrivacy, renderPublicProfile } from './profile-ui.js';
 import { autoEnhanceFileInputs } from './upload-field.js';
 import { avatarSrc, avatarImg, syncGoogleAvatar, openPhotoViewer, initialsOf } from './avatar.js';
 
@@ -112,13 +113,13 @@ function route() {
   if (location.hash.slice(1) !== 'running') document.body.classList.remove('run-takeover');
   moduleBack = null;
   const rawHash = (location.hash.slice(1) || 'inicio');
-  const pageMatch = rawHash.match(/^(evento|reto)\/([\w-]+)$/);
+  const pageMatch = rawHash.match(/^(evento|reto|perfil)\/([\w-]+)$/);
   if (pageMatch) {
-    const origin = pageMatch[1] === 'reto' ? 'club' : (sessionStorage.getItem('batmon_event_from') || 'club');
+    const origin = pageMatch[1] === 'reto' ? 'club' : pageMatch[1] === 'perfil' ? (sessionStorage.getItem('batmon_profile_from') || 'club') : (sessionStorage.getItem('batmon_event_from') || 'club');
     document.querySelectorAll('#tabs a').forEach((a) => { const on = a.getAttribute('href') === '#' + origin; a.classList.toggle('on', on); a.setAttribute('aria-current', on ? 'page' : 'false'); });
     const stop = showDelayedLoading(view);
     window.scrollTo(0, 0);
-    Promise.resolve().then(() => (pageMatch[1] === 'evento' ? renderEventPage : renderChallengePage)(view, ctx, pageMatch[2])).then(stop);
+    Promise.resolve().then(() => (pageMatch[1] === 'evento' ? renderEventPage : pageMatch[1] === 'perfil' ? renderPublicProfile : renderChallengePage)(view, ctx, pageMatch[2])).then(stop);
     return;
   }
   const tab = rawHash;
@@ -725,64 +726,69 @@ async function renderMembership(v) {
 }
 
 async function renderProfile(v) {
-  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, { data: avatarData }, sharedRes, challengeRes, notifCountRes, evCountRes] = await Promise.all([
-    supabase.from('activities').select('discipline,distance_km,duration_min,performed_on').order('performed_on', { ascending: false }).limit(300),
-    supabase.from('workouts').select('kind,performed_on,duration_min,workout_sets(id)').order('performed_on', { ascending: false }).limit(200),
+  const [{ data: activities = [] }, { data: workouts = [] }, { data: friendships = [] }, sharedRes, challengeRes, notifCountRes, evCountRes, postsRes] = await Promise.all([
+    supabase.from('activities').select('discipline,distance_km,duration_min,performed_on').order('performed_on', { ascending: false }).limit(400),
+    supabase.from('workouts').select('kind,performed_on,duration_min').order('performed_on', { ascending: false }).limit(300),
     supabase.from('friendships').select('id,status,requester,addressee').or(`requester.eq.${ctx.user.id},addressee.eq.${ctx.user.id}`),
-    ctx.profile?.avatar_path ? supabase.storage.from('profile-media').createSignedUrl(ctx.profile.avatar_path,3600) : Promise.resolve({data:null}),
     supabase.from('shared_activities').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id),
     supabase.rpc('my_challenge_logros'),
     supabase.from('user_notifications').select('id',{count:'exact',head:true}).eq('is_read',false),
     supabase.from('event_notifications').select('id',{count:'exact',head:true}).eq('user_id',ctx.user.id).eq('is_read',false),
+    supabase.from('profile_posts').select('*').eq('user_id',ctx.user.id).order('created_at',{ascending:false}).limit(150),
   ]);
   const sharedCount = sharedRes?.count || 0;
   const challengeRows = (challengeRes?.data || []);
   const challengeExtra = { points: challengeRows.reduce((n, r) => n + (r.reward || 0), 0), items: challengeRows };
-  const todayDate = new Date();
-  const key = `profile_period_${ctx.user.id}`;
-  const period = localStorage.getItem(key) || 'week';
-  const mediaKey = `profile_view_${ctx.user.id}`;
-  const mediaView = localStorage.getItem(mediaKey) || 'posts';
-  const moduleKey = `profile_module_${ctx.user.id}`;
-  const selectedModule = localStorage.getItem(moduleKey) || 'all';
-  const moduleActivities = activities.filter(a=>selectedModule==='all'||a.discipline===selectedModule);
-  const moduleWorkouts = workouts.filter(w=>selectedModule==='all'||(selectedModule==='plyo'&&w.kind==='plyometrics')||(selectedModule==='training'&&w.kind==='training'));
-  const range = period === 'day' ? 1 : period === 'month' ? 30 : 7;
-  const from = new Date(todayDate); from.setDate(from.getDate() - range + 1);
-  const dateKey = d => new Date(d).toISOString().slice(0,10);
-  const days = Array.from({length: period === 'week' ? 7 : period === 'day' ? 1 : 30}, (_, i) => { const d = new Date(from); d.setDate(d.getDate()+i); return dateKey(d); });
-  const values = days.map(d => moduleActivities.filter(a => a.performed_on === d).length + moduleWorkouts.filter(w => w.performed_on === d).length);
-  const max = Math.max(1, ...values);
-  const km = activities.reduce((s,a)=>s+Number(a.distance_km||0),0);
+  const mediaKey = `profile_view_${ctx.user.id}`, catKey = `profile_cat_${ctx.user.id}`;
+  const saved = localStorage.getItem(mediaKey);
+  const tab = ['posts','videos','progress','logros'].includes(saved) ? saved : 'posts';
   const initials = (ctx.profile?.full_name || 'BC').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
   const avatarUrl = await avatarSrc(ctx.profile);
   const logroList = computeLogros({activities,workouts,shared:sharedCount}), accountPts = logrosPoints(logroList,0), myRank = rankFor(accountPts + challengeExtra.points);
-  const counts = selectedModule==='all'?{workouts:activities.length+workouts.length,km}:{workouts:workouts.filter(w=>selectedModule==='plyo'?w.kind==='plyometrics':selectedModule==='training'?w.kind==='training':false).length+activities.filter(a=>a.discipline===selectedModule).length,km:activities.filter(a=>a.discipline===selectedModule).reduce((s,a)=>s+Number(a.distance_km),0)};
-  const friends = friendships.filter(f=>f.status==='accepted').length;
-  const moduleData = [['running','Running','running.png'],['cycling','Ciclismo','cycling.png'],['plyo','Pliometría','plyo.png'],['training','Gym','training.png'],['swimming','Natación','swimming.png']];
   const pendingRequests = Math.max(friendships.filter(f=>f.status==='pending'&&f.addressee===ctx.user.id).length, (notifCountRes?.count||0)+(evCountRes?.count||0));
   reportProgress(ctx, activities, workouts);
-  v.innerHTML = `<section class="profile-page"><header class="profile-hero"><button type="button" class="profile-avatar" id="avatar-view" aria-label="Ver foto de perfil">${avatarUrl?avatarImg(avatarUrl,'Foto de perfil'):initials}</button><div class="profile-identity"><h1>${esc(ctx.profile?.full_name || 'Socio Batmon')}</h1><span>${esc(ctx.profile?.contact_email || '')}</span></div><div class="profile-tools"><button id="notifications-open" class="notifications-open" aria-label="Abrir notificaciones" title="Notificaciones"><svg viewBox="0 0 448 512" class="bell" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200c0-75.8-55.5-138.6-128-150.1V32c0-17.7-14.3-32-32-32zm0 96h8c57.4 0 104 46.6 104 104v33.4c0 47.9 13.9 94.6 39.7 134.6H72.3C98.1 328 112 281.3 112 233.4V200c0-57.4 46.6-104 104-104h8zm64 352H224 160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7s18.7-28.3 18.7-45.3z"/></svg>${pendingRequests?`<span class="notification-badge">${pendingRequests}</span>`:''}</button><button id="settings-open" class="settings-hamburger" aria-label="Abrir configuración"><span class="line1"></span><span class="line2"></span><span class="line3"></span></button></div></header>
-    <div class="profile-counts"><div><b>${counts.workouts}</b><span>Entrenos</span></div><div><b>${fmt(counts.km,0)}</b><span>Km</span></div><div><b>${friends}</b><span>Amigos</span></div><button type="button" class="rank-stat" id="rank-open" aria-label="Rango ${esc(myRank.name)}. Ver información"><b><img src="${myRank.icon}" alt="" width="24" height="24">${esc(myRank.name)}</b><span>Rango</span></button></div>
+  const tabs = [['posts','▦','Fotos'],['videos','▷','Videos'],['progress','▥','Progreso'],['logros','★','Logros']];
+  v.innerHTML = `<section class="profile-page"><header class="profile-hero"><button type="button" class="profile-avatar" id="avatar-view" aria-label="Ver foto de perfil">${avatarUrl?avatarImg(avatarUrl,'Foto de perfil'):initials}</button><div class="profile-identity"><h1><span class="profile-name">${esc(ctx.profile?.full_name || 'Socio Batmon')}</span><button type="button" class="rank-mini" id="rank-open" aria-label="Rango ${esc(myRank.name)}. Ver información"><img src="${myRank.icon}" alt="" width="22" height="22"></button></h1><span>${esc(ctx.profile?.contact_email || '')}</span></div><div class="profile-tools"><button id="notifications-open" class="notifications-open" aria-label="Abrir notificaciones" title="Notificaciones"><svg viewBox="0 0 448 512" class="bell" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200c0-75.8-55.5-138.6-128-150.1V32c0-17.7-14.3-32-32-32zm0 96h8c57.4 0 104 46.6 104 104v33.4c0 47.9 13.9 94.6 39.7 134.6H72.3C98.1 328 112 281.3 112 233.4V200c0-57.4 46.6-104 104-104h8zm64 352H224 160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7s18.7-28.3 18.7-45.3z"/></svg>${pendingRequests?`<span class="notification-badge">${pendingRequests}</span>`:''}</button><button id="settings-open" class="settings-hamburger" aria-label="Abrir configuración"><span class="line1"></span><span class="line2"></span><span class="line3"></span></button></div></header>
     <div class="profile-actions"><button id="edit-profile" class="btn ghost">Editar perfil</button><button id="membership-open" class="btn ghost">Membresía</button></div>
-    <nav class="profile-highlights" aria-label="Accesos a entrenamientos">${moduleData.map(([id,title,img])=>`<button data-module="${id}" class="module-highlight module-${id} ${selectedModule===id?'selected':''}"><span><img src="/profile-modules/${img}" alt=""></span><small>${title}</small></button>`).join('')}</nav>
-    <nav class="profile-media-tabs" aria-label="Fotos, videos y progreso"><button data-media="posts" class="${mediaView==='posts'?'on':''}">▦ <span>Fotos</span></button><button data-media="videos" class="${mediaView==='videos'?'on':''}">▷ <span>Videos</span></button><button data-media="progress" class="${mediaView==='progress'?'on':''}">▥ <span>Progreso</span></button><button data-media="logros" class="${mediaView==='logros'?'on':''}">★ <span>Logros</span></button></nav>
-    ${mediaView==='logros'?logrosMarkup(logroList,challengeExtra):mediaView==='progress'?`<section class="card profile-chart"><div class="profile-section-head"><div><span class="muted">${selectedModule==='all'?'Todos tus módulos':DISC[selectedModule]|| (selectedModule==='plyo'?'Pliometría':'Entrenamiento')}</span><h2>Actividad</h2></div><div class="period-switch">${[['day','Día'],['week','Semana'],['month','Mes']].map(([k,t])=>`<button data-period="${k}" class="${period===k?'on':''}">${t}</button>`).join('')}</div></div><div class="profile-bars">${values.map((n,i)=>`<div><i style="height:${Math.max(4,n/max*100)}%"></i><small>${period==='month'?(i+1):days[i].slice(8)}</small></div>`).join('')}</div><p class="muted">Sesiones registradas por día</p><button id="measurement-open" class="btn ghost">Añadir medidas corporales</button></section>`:mediaView==='videos'?'<div class="profile-empty">Aún no hay videos de entrenamiento.</div>':`<div class="profile-post-grid">${[...moduleActivities.map(a=>({date:a.performed_on,title:DISC[a.discipline],detail:`${fmt(a.distance_km)} km`})),...moduleWorkouts.map(w=>({date:w.performed_on,title:w.kind==='training'?'Entrenamiento':'Pliometría',detail:`${w.workout_sets.length} series`}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,18).map(a=>`<article><b>${esc(a.title)}</b><span>${a.detail}</span><small>${a.date}</small></article>`).join('')||'<div class="profile-empty">Tus entrenamientos aparecerán aquí.</div>'}</div>`}</section>`;
+    <nav class="profile-media-tabs" aria-label="Fotos, videos, progreso y logros">${tabs.map(([k,ic,t])=>`<button data-media="${k}" class="${tab===k?'on':''}" aria-label="${t}">${ic} <span>${t}</span></button>`).join('')}</nav>
+    <div id="pf-body"></div></section>`;
+  const body = $('#pf-body',v);
+  if (tab === 'progress') mountProgress(body,{activities,workouts});
+  else if (tab === 'logros') body.innerHTML = logrosMarkup(logroList,challengeExtra);
+  else {
+    const isVideo = tab === 'videos', list = (postsRes.data||[]).filter(p=>(p.media_type==='video')===isVideo);
+    const cats = [...new Set(list.map(p=>p.module_key).filter(Boolean))];
+    const cat = cats.includes(localStorage.getItem(catKey)) ? localStorage.getItem(catKey) : 'all';
+    body.innerHTML = `${cats.length>1?`<div class="pf-chips pf-chips--scroll"><button type="button" class="${cat==='all'?'on':''}" data-cat="all">Todo</button>${cats.map(k=>`<button type="button" class="${cat===k?'on':''}" data-cat="${k}">${esc(({running:'Running',cycling:'Ciclismo',swimming:'Natación',plyo:'Pliometría',training:'Gym'})[k]||k)}</button>`).join('')}</div>`:''}<div id="pf-grid"></div>`;
+    body.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{localStorage.setItem(catKey,b.dataset.cat);renderProfile(v);});
+    mountMediaGrid($('#pf-grid',body),ctx,{posts:list.filter(p=>cat==='all'||p.module_key===cat),own:true,onChange:()=>renderProfile(v),emptyText:isVideo?'Aún no tienes videos. Grábalos al terminar una sesión o súbelos desde Editar perfil.':'Aún no tienes fotos. Toma una al terminar una sesión o súbela desde Editar perfil.'});
+  }
   $('#avatar-view',v).onclick=()=>avatarUrl?openPhotoViewer(avatarUrl,ctx.profile?.full_name||''):notify('Aún no tienes foto. Súbela en Editar perfil.','info');
   $('#settings-open',v).onclick=e=>{const button=e.currentTarget;button.classList.add('is-opening');button.disabled=true;setTimeout(()=>renderProfileSettings(v),320);};
   $('#notifications-open',v).onclick=()=>renderNotifications(v);
-  v.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{localStorage.setItem(moduleKey,b.dataset.module);renderProfile(v);});
   v.querySelectorAll('[data-media]').forEach(b=>b.onclick=()=>{localStorage.setItem(mediaKey,b.dataset.media);renderProfile(v);});
-  v.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{localStorage.setItem(key,b.dataset.period);renderProfile(v);});
   $('#membership-open',v).onclick=()=>renderMembership(v);
   $('#rank-open',v).onclick=()=>openRankInfo(myRank,accountPts,challengeExtra.points);
-  $('#edit-profile',v).onclick=()=>{v.innerHTML=`<button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1><form id="profile-form" class="card"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form><section class="card" id="best-friends-box"><p class="muted">Cargando mejores amigos…</p></section>`;
-    mountBestFriends($('#best-friends-box',v),ctx);
-    $('#edit-back',v).onclick=()=>renderProfile(v);
-    $('#profile-form',v).onsubmit=async e=>{e.preventDefault();const msg=$('#profile-msg',v),btn=e.currentTarget.querySelector('.btn');const name=$('#profile-name',v).value.trim(),file=$('#profile-photo',v).files[0];btn.disabled=true;const patch={full_name:name};
-      if(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type)){msg.textContent='Usa una imagen JPG, PNG o WebP.';btn.disabled=false;return;}if(file.size>8*1024*1024){msg.textContent='La foto debe pesar menos de 8 MB.';btn.disabled=false;return;}
-        const path=`${ctx.user.id}/avatar-${Date.now()}.${file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}`;const up=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type});if(up.error){msg.textContent=up.error.message;btn.disabled=false;return;}patch.avatar_path=path;}
-      const {error}=await supabase.from('profiles').update(patch).eq('id',ctx.user.id);if(error){msg.textContent=error.message;btn.disabled=false;return;}Object.assign(ctx.profile,patch);notify('Perfil actualizado.','success');renderProfile(v);};};
+  $('#edit-profile',v).onclick=()=>renderEditProfile(v,avatarUrl,initials);
+}
+
+function renderEditProfile(v, avatarUrl, initials) {
+  v.innerHTML=`<button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1>
+    <div class="pf-accs">
+    <details class="card pf-acc" open><summary><b>Foto y nombre</b><small>Cómo te ven los demás</small></summary><form id="profile-form"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form></details>
+    <details class="card pf-acc" id="acc-media"><summary><b>Mis fotos y videos</b><small>Publica, oculta y elige categoría</small></summary><div class="pf-acc__body" data-body></div></details>
+    <details class="card pf-acc" id="acc-privacy"><summary><b>Qué pueden ver de mí</b><small>Fotos, videos, progreso y logros</small></summary><div class="pf-acc__body" data-body></div></details>
+    <details class="card pf-acc" id="acc-bf"><summary><b>Mejores amigos</b><small>Tu círculo cercano</small></summary><div class="pf-acc__body" data-body></div></details>
+    </div>`;
+  const lazy=(id,mount)=>{const d=$(id,v);let done=false;d.addEventListener('toggle',()=>{if(d.open&&!done){done=true;mount($('[data-body]',d));}});};
+  lazy('#acc-media',box=>mountMediaManager(box,ctx));
+  lazy('#acc-privacy',box=>mountPrivacy(box,ctx));
+  lazy('#acc-bf',box=>mountBestFriends(box,ctx));
+  $('#edit-back',v).onclick=()=>renderProfile(v);
+  $('#profile-form',v).onsubmit=async e=>{e.preventDefault();const msg=$('#profile-msg',v),btn=e.currentTarget.querySelector('.btn');const name=$('#profile-name',v).value.trim(),file=$('#profile-photo',v).files[0];btn.disabled=true;const patch={full_name:name};
+    if(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type)){msg.textContent='Usa una imagen JPG, PNG o WebP.';btn.disabled=false;return;}if(file.size>8*1024*1024){msg.textContent='La foto debe pesar menos de 8 MB.';btn.disabled=false;return;}
+      const path=`${ctx.user.id}/avatar-${Date.now()}.${file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}`;const up=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type});if(up.error){msg.textContent=up.error.message;btn.disabled=false;return;}patch.avatar_path=path;}
+    const {error}=await supabase.from('profiles').update(patch).eq('id',ctx.user.id);if(error){msg.textContent=error.message;btn.disabled=false;return;}Object.assign(ctx.profile,patch);notify('Perfil actualizado.','success');renderProfile(v);};
 }
 
 async function renderNotifications(v) {

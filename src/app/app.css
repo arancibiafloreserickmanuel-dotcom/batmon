@@ -2046,3 +2046,95 @@ body.appbody button.pc-avatar{width:84px;height:84px}
 .home-greeting__title>p{margin:0 0 -2px !important;font:600 11px Inter,sans-serif !important;color:var(--muted) !important}
 .home-greeting__title h1{line-height:1 !important;margin:0 !important}
 .home-compliance>div:first-child{align-self:end;padding-bottom:3px}
+
+/* ───── Perfil rediseñado: progreso interactivo, galería tipo Instagram, acordeones, perfil público ───── */
+.profile-identity h1{display:flex;align-items:center;gap:8px;font-size:22px;line-height:1.1}
+.profile-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.appbody .rank-mini{all:unset;box-sizing:border-box;display:inline-grid!important;place-items:center;width:26px!important;height:26px!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;cursor:pointer;flex:none}
+body.appbody .rank-mini img{width:22px;height:22px;display:block}
+
+/* Botones segmentados / chips / mosaicos del progreso */
+body.appbody .pf-seg{display:flex;gap:4px;padding:4px;border-radius:99px;background:var(--card-surface);box-shadow:inset 2px 2px 5px rgba(0,0,0,.14),inset -2px -2px 5px rgba(255,255,255,.7)}
+body.appbody .pf-seg button{flex:1;appearance:none;min-height:34px!important;margin:0!important;padding:6px 10px!important;border:0!important;border-radius:99px!important;background:transparent!important;box-shadow:none!important;color:var(--muted)!important;font:600 12px Inter,sans-serif;cursor:pointer}
+body.appbody .pf-seg button.on{background:var(--button-face)!important;color:var(--button-ink)!important;box-shadow:var(--button-shadow)!important}
+.pf-seg--sm{padding:3px}
+body.appbody .pf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pf-chips--scroll{flex-wrap:nowrap;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+body.appbody .pf-chips button{flex:none;appearance:none;min-height:30px!important;margin:0!important;padding:5px 12px!important;border:1px solid var(--line)!important;border-radius:99px!important;background:transparent!important;box-shadow:none!important;color:var(--muted)!important;font:600 12px Inter,sans-serif;cursor:pointer}
+body.appbody .pf-chips button.on{background:var(--ink)!important;color:var(--surface)!important;border-color:var(--ink)!important}
+.pf-progress{display:grid;gap:14px}
+.pf-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+body.appbody .pf-tile{appearance:none;display:grid;gap:2px;justify-items:start;text-align:left;margin:0!important;padding:12px!important;border:0!important;border-radius:16px!important;background:var(--button-face)!important;color:var(--button-ink)!important;box-shadow:var(--button-shadow)!important;cursor:pointer;min-height:0!important}
+body.appbody .pf-tile.on{box-shadow:var(--button-shadow-active)!important}
+.pf-tile b{font:26px/1 Anton,sans-serif}.pf-tile b i{font:600 11px Inter,sans-serif;font-style:normal;margin-left:2px;color:var(--muted)}
+.pf-tile span{font:600 11px Inter,sans-serif;color:var(--muted)}.pf-tile small{font-size:10px;color:var(--muted)}
+.pf-chart{display:flex;align-items:flex-end;gap:3px;height:170px;padding:14px 10px 6px;border-radius:18px;background:var(--card-surface);box-shadow:inset 3px 3px 7px rgba(0,0,0,.12),inset -3px -3px 7px rgba(255,255,255,.65)}
+body.appbody .pf-bar{appearance:none;flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;cursor:pointer;min-height:0!important}
+.pf-bar i{width:78%;max-width:26px;border-radius:6px 6px 2px 2px;background:var(--muted);opacity:.55;transition:height .35s ease,opacity .2s,background .2s}
+.pf-bar.on i,.pf-bar:hover i{background:var(--ink);opacity:1}
+.pf-bar small{font-size:9px;color:var(--muted);height:11px;white-space:nowrap}
+.pf-read{margin:0;font-size:13px;color:var(--muted);text-align:center}.pf-read b{color:var(--ink)}
+.pf-streak{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pf-streak>div{padding:12px;border-radius:16px;background:var(--card-surface);box-shadow:inset 2px 2px 5px rgba(0,0,0,.1),inset -2px -2px 5px rgba(255,255,255,.6);text-align:center}
+.pf-streak b{display:block;font:28px/1 Anton,sans-serif}.pf-streak span{font-size:11px;color:var(--muted)}
+.pf-dist h3,.pf-sub{margin:4px 0 8px;font:14px Anton,sans-serif;letter-spacing:.04em}
+body.appbody .pf-dist__row{appearance:none;display:grid;grid-template-columns:86px 1fr 28px;align-items:center;gap:10px;width:100%;margin:0 0 6px!important;padding:6px 4px!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--ink)!important;font-size:12px;text-align:left;cursor:pointer;min-height:0!important}
+.pf-dist__row i{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.pf-dist__row u{display:block;height:100%;background:var(--ink);border-radius:inherit}.pf-dist__row b{text-align:right}
+.pf-empty{text-align:center}
+
+/* Galería tipo Instagram */
+.ig-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+body.appbody .ig-tile{appearance:none;position:relative;display:block;width:100%;aspect-ratio:1;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:var(--card-surface)!important;box-shadow:none!important;overflow:hidden;cursor:pointer;min-height:0!important;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+body.appbody .ig-tile--port{aspect-ratio:4/5}
+.ig-tile img,.ig-tile video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.ig-tile.is-hidden img,.ig-tile.is-hidden video{opacity:.35;filter:grayscale(1)}
+.ig-tile__badge{position:absolute;top:6px;right:6px;font-style:normal;color:#fff;font-size:13px;text-shadow:0 1px 3px #000a}
+.ig-tile__hid{position:absolute;left:6px;top:6px;padding:2px 7px;border-radius:99px;background:#000a;color:#fff;font:600 10px Inter,sans-serif;font-style:normal}
+.ig-tile__cat{position:absolute;left:6px;bottom:5px;padding:1px 7px;border-radius:99px;background:#000a;color:#fff;font:600 9px Inter,sans-serif}
+.ig-tile__miss{display:grid;place-items:center;height:100%;color:var(--muted)}
+.ig-hint{font-size:11px;text-align:center;margin:8px 0 0}
+.look-bn{filter:grayscale(1) contrast(1.05)}.look-calido{filter:sepia(.35) saturate(1.25) brightness(1.03)}.look-suave{filter:brightness(1.07) contrast(.9) saturate(.9)}.look-contraste{filter:contrast(1.25) saturate(1.1)}
+.ig-tile.is-hidden .look-bn,.ig-tile.is-hidden .look-calido,.ig-tile.is-hidden .look-suave,.ig-tile.is-hidden .look-contraste{filter:grayscale(1)}
+
+/* Hoja para gestionar una publicación */
+.pf-sheet .sheet{max-height:92vh;overflow:auto;display:grid;gap:12px}
+.pf-preview{border-radius:16px;overflow:hidden;background:#000;display:grid;place-items:center;max-height:44vh}
+.pf-preview img,.pf-preview video{width:100%;height:100%;object-fit:cover;display:block}
+.pf-preview--sq{aspect-ratio:1}.pf-preview--port{aspect-ratio:4/5}
+.pf-opt{display:grid;gap:6px}.pf-opt>span{font:600 11px Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pf-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pf-actions .btn{margin:0}
+.pf-viewer video{width:100%;max-height:70vh;border-radius:14px;background:#000}
+.pf-upload{display:block;margin:10px 0}
+
+/* Acordeones de Editar perfil */
+.pf-accs{display:grid;gap:12px}
+.pf-acc{padding:0!important;overflow:hidden}
+.pf-acc>summary{list-style:none;display:grid;gap:2px;padding:16px 44px 16px 16px;cursor:pointer;position:relative}
+.pf-acc>summary::-webkit-details-marker{display:none}
+.pf-acc>summary::after{content:'';position:absolute;right:18px;top:50%;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .25s}
+.pf-acc[open]>summary::after{transform:translateY(-30%) rotate(-135deg)}
+.pf-acc>summary small{color:var(--muted);font-size:12px}
+.pf-acc>form,.pf-acc__body{padding:0 16px 16px}
+.pf-priv{margin:0}
+
+/* Foto/video al terminar una sesión */
+.sess-media{display:grid;gap:10px;margin:12px 0;padding:12px;border:1px dashed var(--line);border-radius:14px}
+.sess-media legend{font:600 12px Inter,sans-serif;padding:0 6px}
+.sess-media__row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0}
+
+/* Perfil de otro socio, estilo Instagram */
+.ig{display:grid;gap:14px}
+.ig-top{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;text-align:center}
+.ig-top b{font:18px Anton,sans-serif;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ig-top .link{font-size:22px;text-align:left}
+.ig-head{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:22px}
+body.appbody .ig-avatar{appearance:none;width:84px!important;height:84px!important;min-height:0!important;margin:0!important;padding:0!important;border-radius:50%!important;border:3px solid var(--card-surface)!important;background:#111!important;color:#fff!important;box-shadow:var(--button-shadow)!important;display:grid;place-items:center;overflow:hidden;font:28px Anton,sans-serif;cursor:pointer}
+.ig-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.ig-counts{display:grid;grid-template-columns:1fr 1fr;text-align:center}
+.ig-counts b{display:block;font:24px Anton,sans-serif}.ig-counts span{font-size:12px;color:var(--muted)}
+.ig-bio{display:grid;gap:3px}.ig-bio b{font-size:15px}
+.ig-rank{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.ig-actions .btn{width:100%;margin:0;min-height:38px;padding:8px 12px;font-size:12px}
+.ig-tabs{display:flex;border-block:1px solid var(--line)}
+body.appbody .ig-tabs button{appearance:none;flex:1;min-height:46px!important;margin:0!important;padding:0!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--muted)!important;font-size:20px;cursor:pointer}
+body.appbody .ig-tabs button.on{color:var(--ink)!important;border-bottom-color:var(--ink)!important}
