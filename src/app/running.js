@@ -223,7 +223,7 @@ async function renderRun(view, ctx) {
 
   const savedPage = localStorage.getItem(`batmon_running_page_${userId}`);
 
-  let page = tracker.state?.status === 'finished' ? 'review' : tracker.state?.status === 'running' || tracker.state?.status === 'paused' ? 'run' : (['run','progress','history','feed'].includes(savedPage) ? savedPage : 'run');
+  let page = tracker.state?.status === 'finished' ? 'review' : tracker.state?.status === 'running' || tracker.state?.status === 'paused' ? 'run' : 'run';
 
   let historyCount = PER_PAGE, historyFilter = 'all', historyPeriod = 'all', sortAsc = false, period = 'week', selectedWeek = '';
 

@@ -2138,3 +2138,8 @@ body.appbody .ig-avatar{appearance:none;width:84px!important;height:84px!importa
 .ig-tabs{display:flex;border-block:1px solid var(--line)}
 body.appbody .ig-tabs button{appearance:none;flex:1;min-height:46px!important;margin:0!important;padding:0!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--muted)!important;font-size:20px;cursor:pointer}
 body.appbody .ig-tabs button.on{color:var(--ink)!important;border-bottom-color:var(--ink)!important}
+
+.route-picker__results{display:grid;gap:4px;margin-top:6px;max-height:160px;overflow:auto}
+.route-picker__results[hidden]{display:none}
+body.appbody .route-picker__results button{appearance:none;text-align:left;margin:0!important;padding:8px 12px!important;min-height:0!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--card-surface)!important;box-shadow:none!important;color:var(--ink)!important;font-size:12px;cursor:pointer}
+.rp-hit{cursor:pointer}
