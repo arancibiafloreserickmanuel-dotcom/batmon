@@ -764,7 +764,7 @@ async function renderRun(view, ctx) {
 
     $('#detail-close',dialog).onclick=()=>dialog.close();dialog.showModal();if(route.length)mountMap($('#run-map-detail',dialog),route);
 
-    $('#detail-share',dialog).onclick=async()=>{const text=`${activity.activity_name||'Running'} · ${fmt(activity.distance_km)} km · ${durationLabel(durationOf(activity))} · ${activity.performed_on}`;if(navigator.share){try{await navigator.share({title:'Mi entrenamiento Running',text});}catch(error){if(error.name!=='AbortError')notify('No se pudo compartir el resumen.');}}else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);notify('Resumen copiado.','success');}else notify('Este navegador no ofrece opciones para compartir.');};
+    $('#detail-share',dialog).onclick=async()=>{const text=`${activity.activity_name||'Running'} · ${fmt(activity.distance_km)} km · ${durationLabel(durationOf(activity))} · ${activity.performed_on}`;if(navigator.share){try{await navigator.share({title:'Mi entrenamiento Running',text});}catch(error){if(error.name!=='AbortError')notify('No se pudo compartir el resumen.');}}else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);notify('Resumen listo para pegar.','success');}else notify('Este navegador no ofrece opciones para compartir.');};
 
     $('#detail-edit',dialog).onclick=()=>{const form=document.createElement('form');form.className='run-detail-sheet';form.id='manual-edit';form.innerHTML=manualFormMarkup(activity);content.replaceChildren(form);bindManual(form,activity);};
 

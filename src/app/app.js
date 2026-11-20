@@ -239,6 +239,8 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   const plyoPlan = agenda.plyoPlan || {};
   const plyoRoutinesById = agenda.plyoRoutinesById || new Map();
   const exercisesById = agenda.exercisesById || new Map();
+  const runPlan = agenda.runPlan || null;
+  const exercisePhoto = (id) => { const img = exercisesById.get(String(id))?.images?.[0]; return img ? `/exercises/${encodeURI(img)}` : ''; };
   const activities = (agenda.activities || []).filter((item) => agenda.modules?.[item.discipline]);
   const workouts = (agenda.workouts || []).filter((item) => item.kind === 'training' ? agenda.modules?.training : item.kind === 'plyometrics' ? agenda.modules?.plyo : true);
   const challenges = agenda.challenges || [];
@@ -257,9 +259,17 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
       const names = rows.map((row) => exercisesById.get(String(row.exercise_id))?.name_es || exercisesById.get(String(row.exercise_id))?.name).filter(Boolean);
       const sessions = workouts.filter((workout) => workout.performed_on === iso(dateObj) && workout.kind === 'training');
       entries.push({
-        kind: 'routine', title: 'Gimnasio · Rutina programada', date: iso(dateObj), route: '#gym',
+        kind: 'routine', title: 'Gimnasio · Rutina programada', date: iso(dateObj), route: '#gym', photo: exercisePhoto(rows[0]?.exercise_id) || '/disciplinas/training.webp',
         detail: names.length ? `${names.length} ejercicios · ${names.join(', ')}` : `${rows.length} ejercicios en tu plan`,
         done: sessions.length > 0, duration: sessions.reduce((sum, item) => sum + Number(item.duration_min || 0), 0),
+      });
+    }
+    const runSession = agenda.modules?.running ? runSessionOn(runPlan, dateObj) : null;
+    if (runSession) {
+      entries.push({
+        kind: 'routine', title: `Running · ${runSession.title}`, date: iso(dateObj), route: '#running', photo: '/disciplinas/running.webp',
+        detail: sessionLine(runSession) || 'Sesión programada',
+        done: activities.some((item) => item.discipline === 'running' && item.performed_on === iso(dateObj)), duration: 0,
       });
     }
     const dayName = dayLabelsFull[dateObj.getDay()];
@@ -268,7 +278,7 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
       const routine = plyoRoutinesById.get(plyoEntry.routineId);
       const sessions = workouts.filter((workout) => workout.performed_on === iso(dateObj) && workout.kind === 'plyometrics');
       entries.push({
-        kind: 'routine', title: `Pliometría · ${routine?.name || 'Rutina programada'}`, date: iso(dateObj), route: '#plyo',
+        kind: 'routine', title: `Pliometría · ${routine?.name || 'Rutina programada'}`, date: iso(dateObj), route: '#plyo', photo: exercisePhoto((routine?.items || [])[0]?.exercise_id) || '/disciplinas/plyo.webp',
         detail: routine ? `${(routine.items || []).length} ejercicios` : 'Rutina programada',
         done: sessions.length > 0, duration: sessions.reduce((sum, item) => sum + Number(item.duration_min || 0), 0),
       });
@@ -437,7 +447,7 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
     }
     eventsList.innerHTML = sections.map(([heading, entries, warnings]) => `<section class="cal10__agenda-section"><h3>${esc(heading)}</h3>${warnings.map((warning) => `<p class="cal10__agenda-warning">${esc(warning)}</p>`).join('')}${entries.map((item) => {
       if (item.kind === 'event') return `<button type="button" class="cal10__ev" data-event-id="${esc(item.id)}">${item.image_url ? `<img class="cal10__ev-img" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="cal10__agenda-symbol" aria-hidden="true">BC</span>'}<span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)}${item.location ? ` · ${esc(item.location)}` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></button>`;
-      return `<a class="cal10__ev cal10__agenda-link cal10__agenda-${esc(item.kind)}" href="${esc(item.route || '#training')}"><span class="cal10__agenda-symbol" aria-hidden="true">${item.kind === 'routine' ? 'R' : item.kind === 'challenge' ? 'C' : '✓'}</span><span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)} · ${esc(item.detail)}${item.kind === 'routine' && item.duration ? ` · ${fmt(item.duration, 0)} min` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></a>`;
+      return `<a class="cal10__ev cal10__agenda-link cal10__agenda-${esc(item.kind)}" href="${esc(item.route || '#training')}"><span class="cal10__agenda-symbol${item.photo ? ' has-photo' : ''}" aria-hidden="true">${item.photo ? `<img src="${esc(item.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}${item.photo ? '' : item.kind === 'routine' ? 'R' : item.kind === 'challenge' ? 'C' : '✓'}</span><span class="cal10__ev-body"><span class="cal10__ev-name">${esc(item.title)}</span><span class="cal10__ev-time">${esc(item.dateLabel)} · ${esc(item.detail)}${item.kind === 'routine' && item.duration ? ` · ${fmt(item.duration, 0)} min` : ''}</span></span><span class="cal10__ev-pill">${esc(item.tag)}</span></a>`;
     }).join('')}</section>`).join('');
     eventsList.querySelectorAll('[data-event-id]').forEach((button)=>button.onclick=()=>{sessionStorage.setItem('batmon_event_from','inicio');location.hash='#evento/'+button.dataset.eventId;});
   }
@@ -518,7 +528,7 @@ async function renderHome(v) {
   const mems = membershipResult.data || [];
   const plan = planResult.data?.plan || {};
   const plyoPlan = plyoPlanResult.data?.plan || {};
-  const plyoRoutinesById = new Map((plyoRoutineResult.data || []).map((routine) => [routine.id, routine]));
+  const plyoRoutinesById = new Map((plyoRoutineResult.data || []).map((routine) => [routine.id, { ...routine, name: String(routine.name || '').replace(/\s*\((copia|copiado)\)\s*$/i, '') }]));
   const clubEvents = eventResult.data || [];
   const challenges = challengeResult.data || [];
   const exercisesById = new Map((exerciseResult.data || []).map((exercise) => [String(exercise.id), exercise]));
@@ -628,7 +638,7 @@ async function renderHome(v) {
   v.querySelectorAll('#day-slides a[href="#running"]').forEach((link) => link.addEventListener('click', () => { try { localStorage.setItem(`batmon_running_page_${ctx.user.id}`, 'run'); } catch { /* sin almacenamiento */ } }));
   const slidesBox = v.querySelector('#day-slides');
   if (slidesBox) slidesBox.addEventListener('scroll', () => { const i = Math.round(slidesBox.scrollLeft / Math.max(1, slidesBox.clientWidth)); v.querySelectorAll('#day-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
-  setupUnifiedCalendar(v, calendarEvents, { plan, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
+  setupUnifiedCalendar(v, calendarEvents, { plan, runPlan: runPlanResult.data?.plan || null, plyoPlan, plyoRoutinesById, exercisesById, activities: acts, workouts: ws, challenges, modules: ctx.modules, errors: { plan: planError, exercises: exerciseError, activities: activityError, events: eventError, challenges: challengeError } });
   const eventBell=v.querySelector('#cal10-bell');
   if(eventBell){eventBell.setAttribute('aria-label',`Abrir calendario completo${unreadNotifications?`; ${unreadNotifications} notificaciones sin leer`:''}`);eventBell.insertAdjacentHTML('beforeend',`<span class="cal10__bell-badge">${unreadNotifications||0}</span>`);}
   clearTimeout(homeDayTimer);

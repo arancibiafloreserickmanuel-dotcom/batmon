@@ -66,7 +66,7 @@ export async function renderPlyo(view, ctx) {
     supabase.from('plyo_routines').select('*').eq('user_id', ctx.user.id).order('created_at'),
   ]);
   if (exError) { view.innerHTML = `<p class="msg">No se pudo cargar el catálogo: ${esc(exError.message)}</p>`; return; }
-  catalog = exData.map((e) => { localize(e); e._group = groupLabel(plyoGroup(e)); return e; }); weekPlan = planRow?.plan || {}; routines = routineRows; ensurePlans();
+  catalog = exData.map((e) => { localize(e); e._group = groupLabel(plyoGroup(e)); return e; }); weekPlan = planRow?.plan || {}; routines = routineRows.map((r) => ({ ...r, name: String(r.name || '').replace(/\s*\((copia|copiado)\)\s*$/i, '') })); ensurePlans();
   if (routineError) notify('No se pudieron cargar tus rutinas guardadas: ' + routineError.message);
   await syncCoachWeek(ctx);
   W = W || draft.get(userDraftKey());
@@ -380,7 +380,7 @@ function weekDates() {
 let editId = null;          // plan que se está viendo/editando
 let draftPlan = null;       // plan nuevo que aún no se creó
 let planBase = 'days';      // a dónde vuelve el editor de un día: 'days' | 'create'
-const plansList = () => weekPlan._plans || [];
+const plansList = () => (weekPlan._plans || []).map((p) => (/\((copia|copiado)\)\s*$/i.test(p.name || '') ? { ...p, name: String(p.name).replace(/\s*\((copia|copiado)\)\s*$/i, '') } : p));
 const planOf = (id) => (draftPlan && draftPlan.id === id ? draftPlan : plansList().find((p) => p.id === id));
 const dayEntry = (d) => planOf(editId)?.days?.[d];
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -468,7 +468,7 @@ function renderPlan(box, view, ctx) {
   box.querySelectorAll('[data-plan-open]').forEach((el) => (el.onclick = (e) => { if (e.target.closest('.link')) return; openPlan(el.dataset.planOpen, view, ctx); }));
   box.querySelectorAll('[data-plan-dup]').forEach((b) => (b.onclick = async () => {
     const p = plansList().find((x) => x.id === b.dataset.planDup); if (!p) return;
-    try { const copy = await clonePlan(ctx, p, `${p.name} (copia)`.slice(0, 80)); weekPlan = { ...weekPlan, _plans: [...plansList(), copy] }; await savePlans(ctx); notify('Rutina duplicada.', 'success'); renderPlyo(view, ctx); } catch (err) { notify(err.message || 'No se pudo duplicar.'); }
+    try { const copy = await clonePlan(ctx, p, `${p.name} (2)`.slice(0, 80)); weekPlan = { ...weekPlan, _plans: [...plansList(), copy] }; await savePlans(ctx); notify('Rutina duplicada.', 'success'); renderPlyo(view, ctx); } catch (err) { notify(err.message || 'No se pudo duplicar.'); }
   }));
   box.querySelectorAll('[data-plan-del]').forEach((b) => (b.onclick = async () => {
     const p = plansList().find((x) => x.id === b.dataset.planDel); if (!p) return;
@@ -586,7 +586,7 @@ function drawDays(box, view, ctx) {
           <span class="pd-day__text"><b>${d}</b><small>${dates[i].getDate()}/${dates[i].getMonth() + 1} · ${daySubtitle(entry)}</small></span>
         </button>
         <div class="pd-day__tools">
-          <button type="button" class="plyo-icon-btn" data-copy="${d}" aria-label="Copiar ${d}">${ICON.copy}</button>
+          <button type="button" class="plyo-icon-btn" data-copy="${d}" aria-label="Tomar ${d} para repetir">${ICON.copy}</button>
           <button type="button" class="plyo-icon-btn" data-paste="${d}" aria-label="Pegar en ${d}" ${copiedDay ? '' : 'disabled'}>${ICON.paste}</button>
           <button type="button" class="plyo-icon-btn${entry?.rest ? ' is-on' : ''}" data-rest="${d}" aria-label="Descanso ${d}">${ICON.moon}</button>
         </div></article>`;
@@ -619,7 +619,7 @@ function drawDays(box, view, ctx) {
     $('#np-use', box)?.addEventListener('click', async () => { await selectPlan(ctx, plan.id); notify('Rutina activa.', 'success'); drawDays(box, view, ctx); });
   }
   box.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => { if (plan.days?.[b.dataset.open]?.rest) { notify('Es día de descanso: quita la luna para configurarlo.'); return; } openDayEditor(b.dataset.open, box, view, ctx); }));
-  box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = plan.days?.[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} copiado.`, 'success'); drawDays(box, view, ctx); }));
+  box.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => { const e = plan.days?.[b.dataset.copy]; copiedDay = e ? JSON.parse(JSON.stringify(e)) : { empty: true }; notify(`${b.dataset.copy} listo para pegar.`, 'success'); drawDays(box, view, ctx); }));
   box.querySelectorAll('[data-paste]').forEach((b) => (b.onclick = () => pasteDay(b.dataset.paste, box, view, ctx)));
   box.querySelectorAll('[data-rest]').forEach((b) => (b.onclick = async () => {
     const d = b.dataset.rest, e = plan.days?.[d];
@@ -631,14 +631,14 @@ function drawDays(box, view, ctx) {
 
 async function pasteDay(day, box, view, ctx) {
   if (!copiedDay) return;
-  if (dayEntry(day) && !(await confirmDialog(`${day} ya tiene una planificación. ¿Reemplazarla con la copiada?`, 'Reemplazar'))) return;
+  if (dayEntry(day) && !(await confirmDialog(`${day} ya tiene una planificación. ¿Reemplazarla con el día elegido?`, 'Reemplazar'))) return;
   if (copiedDay.empty) await setDayPlan(ctx, day, null);
   else if (copiedDay.rest) await setDayPlan(ctx, day, { rest: true });
   else {
     const src = routines.find((r) => r.id === copiedDay.routineId);
     let routineId = null;
     if (src) { // la rutina pegada es independiente de la original
-      const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, name: `${src.name} (copia)`.slice(0, 80), focus: src.focus, items: JSON.parse(JSON.stringify(src.items)) }).select('*').single();
+      const { data, error } = await supabase.from('plyo_routines').insert({ user_id: ctx.user.id, name: String(src.name).slice(0, 80), focus: src.focus, items: JSON.parse(JSON.stringify(src.items)) }).select('*').single();
       if (error) { notify(error.message); return; }
       routines = [...routines, data]; routineId = data.id;
     }
@@ -851,6 +851,7 @@ async function syncCoachWeek(ctx) {
 
 /* ----------------------------------- Progreso ----------------------------------- */
 async function renderProgress(box, view, ctx) {
+  const athlete = await loadAthlete(ctx.user.id).catch(() => ({}));
   const [{ data: ws = [], error }, { data: assess = [], error: assessError }] = await Promise.all([
     supabase.from('workouts').select('*, workout_sets(*, exercises(name,name_es,images))').eq('kind', 'plyometrics').order('performed_on', { ascending: false }).order('created_at', { ascending: false }).limit(200),
     supabase.from('plyo_assessments').select('*').eq('user_id', ctx.user.id).order('measured_on', { ascending: false }).limit(100),
@@ -901,7 +902,7 @@ async function renderProgress(box, view, ctx) {
         ${w.notes ? `<p class="muted">${esc(w.notes)}</p>` : ''}<div class="quick-actions"><button class="link" data-edit-session="${w.id}">Editar datos</button><button class="link" data-del="${w.id}">Borrar sesión</button></div></details>`;
     }).join('') : '<p class="muted">Aún no registras sesiones.</p>'}
     <h2>Evaluaciones · CMJ, SJ y Drop Jump</h2>
-    ${renderAssessmentsBlock(assess, assessError)}`;
+    ${renderAssessmentsBlock(assess, assessError, Number(athlete?.weight_kg) || null)}`;
 
   mountPlyoCoach($('#plyo-coach', box), ctx, coachHooks(view, ctx));
   box.querySelectorAll('[data-period]').forEach((b) => (b.onclick = () => { progressPeriod = b.dataset.period; renderProgress(box, view, ctx); }));
@@ -930,7 +931,7 @@ function editSessionMeta(w, box, view, ctx) {
   };
 }
 
-function renderAssessmentsBlock(rows, assessError) {
+function renderAssessmentsBlock(rows, assessError, bodyKg = null) {
   if (assessError) return `<div class="card warn">No se pudieron cargar las evaluaciones: ${esc(assessError.message)}. Si aparece que la tabla no existe, aplica la migración 0013.</div>`;
   const byType = { cmj: [], sj: [], drop_jump: [] };
   rows.forEach((r) => byType[r.test_type]?.push(r));
@@ -945,11 +946,11 @@ function renderAssessmentsBlock(rows, assessError) {
     return `<p><b>${label}:</b> ${h != null ? fmt(h, 1) + ' cm' : '—'}${d != null ? ` <span class="muted">(${d >= 0 ? '+' : ''}${fmt(d, 1)} cm vs. anterior)</span>` : ''}</p>`;
   };
   return `<div class="card"><h3>Comparación</h3>${compareLine('cmj', 'CMJ')}${compareLine('sj', 'SJ')}${compareLine('drop_jump', 'Drop Jump')}${!rows.length ? '<p class="muted">Registra al menos dos evaluaciones del mismo tipo para comparar.</p>' : ''}</div>
-  <div class="card"><h3>Registrar evaluación</h3><p class="muted">Ingresa resultados medidos con una plataforma de contacto, alfombra de salto u otra herramienta. La altura se calcula sola a partir del tiempo de vuelo si no la mides directamente; el RSI se calcula solo si faltan ambos datos.</p><form id="plyo-assessment-form"><label for="assessment-type">Prueba</label><select id="assessment-type"><option value="cmj">CMJ · Countermovement Jump</option><option value="sj">SJ · Squat Jump</option><option value="drop_jump">Drop Jump</option></select><label for="assessment-date">Fecha</label><input id="assessment-date" type="date" value="${today()}" max="${today()}" required><div class="row"><div><label for="assessment-height">Altura medida (cm)</label><input id="assessment-height" type="number" min="0" max="250" step="0.1" inputmode="decimal"></div><div><label for="assessment-flight">Vuelo (ms)</label><input id="assessment-flight" type="number" min="0" max="3000" step="1" inputmode="decimal"></div></div><div class="row"><div><label for="assessment-contact">Contacto (ms)</label><input id="assessment-contact" type="number" min="0" max="3000" step="1" inputmode="decimal"></div><div><label for="assessment-rsi">RSI medido (opcional)</label><input id="assessment-rsi" type="number" min="0" max="20" step="0.001" inputmode="decimal"></div></div><label for="assessment-notes">Notas</label><textarea id="assessment-notes" maxlength="500" rows="2"></textarea><button class="btn" type="submit">Guardar evaluación</button><p class="msg" id="assessment-msg"></p></form></div>
+  <div class="card"><h3>Registrar evaluación</h3><p class="muted">¿Sin equipo? Usa el <b>test de pared</b>: marca hasta dónde llegas con el brazo estirado parado y hasta dónde llegas en tu mejor salto; la diferencia es tu altura de salto. Con una plataforma, alfombra o app de video, ingresa la altura o el tiempo de vuelo. El RSI y la potencia son estimados.</p><form id="plyo-assessment-form"><label for="assessment-type">Prueba</label><select id="assessment-type"><option value="cmj">CMJ · Countermovement Jump</option><option value="sj">SJ · Squat Jump</option><option value="drop_jump">Drop Jump</option></select><label for="assessment-date">Fecha</label><input id="assessment-date" type="date" value="${today()}" max="${today()}" required><div class="row"><div><label for="assessment-reach-stand">Alcance de pie (cm)</label><input id="assessment-reach-stand" type="number" min="100" max="350" step="0.5" inputmode="decimal" placeholder="Test de pared"></div><div><label for="assessment-reach-jump">Alcance saltando (cm)</label><input id="assessment-reach-jump" type="number" min="100" max="350" step="0.5" inputmode="decimal" placeholder="Test de pared"></div></div><div class="row"><div><label for="assessment-height">Altura medida (cm)</label><input id="assessment-height" type="number" min="0" max="250" step="0.1" inputmode="decimal"></div><div><label for="assessment-flight">Vuelo (ms)</label><input id="assessment-flight" type="number" min="0" max="3000" step="1" inputmode="decimal"></div></div><div class="row"><div><label for="assessment-contact">Contacto (ms)</label><input id="assessment-contact" type="number" min="0" max="3000" step="1" inputmode="decimal"></div><div><label for="assessment-rsi">RSI medido (opcional)</label><input id="assessment-rsi" type="number" min="0" max="20" step="0.001" inputmode="decimal"></div></div><label for="assessment-notes">Notas</label><textarea id="assessment-notes" maxlength="500" rows="2"></textarea><button class="btn" type="submit">Guardar evaluación</button><p class="msg" id="assessment-msg"></p></form></div>
   <h3>Evaluaciones anteriores</h3><div class="activity-list">${rows.map((r) => {
     const h = r.jump_height_cm ?? estimatedHeight(r); const estimated = r.jump_height_cm == null && h != null;
     const rsi = r.rsi ?? estimatedRsi(r, h);
-    return `<article class="card"><b>${({ cmj: 'CMJ', sj: 'SJ', drop_jump: 'Drop Jump' })[r.test_type]}</b><span>${dateEs(r.measured_on)}</span><p>${h != null ? `Altura: ${fmt(h, 1)} cm${estimated ? ' (estimada)' : ''} · ` : ''}${r.flight_time_ms != null ? `Vuelo: ${fmt(r.flight_time_ms, 0)} ms · ` : ''}${r.contact_time_ms != null ? `Contacto: ${fmt(r.contact_time_ms, 0)} ms · ` : ''}${rsi != null ? `RSI: ${fmt(rsi, 3)}${r.rsi == null ? ' (calculado)' : ''}` : ''}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}<button type="button" class="link" data-assessment-delete="${r.id}">Borrar evaluación</button></article>`;
+    return `<article class="card"><b>${({ cmj: 'CMJ', sj: 'SJ', drop_jump: 'Drop Jump' })[r.test_type]}</b><span>${dateEs(r.measured_on)}</span><p>${h != null ? `Altura: ${fmt(h, 1)} cm${estimated ? ' (estimada)' : ''} · ` : ''}${r.flight_time_ms != null ? `Vuelo: ${fmt(r.flight_time_ms, 0)} ms · ` : ''}${r.contact_time_ms != null ? `Contacto: ${fmt(r.contact_time_ms, 0)} ms · ` : ''}${rsi != null ? `RSI: ${fmt(rsi, 3)}${r.rsi == null ? ' (calculado)' : ''} · ` : ''}${(() => { const pw = (r.test_type === 'cmj' || r.test_type === 'sj') && h != null && bodyKg ? Math.max(0, 60.7 * h + 45.3 * bodyKg - 2055) : null; return pw ? `Potencia pico estimada: ${fmt(pw, 0)} W (${fmt(pw / bodyKg, 1)} W/kg)` : ''; })()}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}<button type="button" class="link" data-assessment-delete="${r.id}">Borrar evaluación</button></article>`;
   }).join('') || '<p class="card muted">Aún no hay evaluaciones registradas.</p>'}</div>`;
 }
 
@@ -977,7 +978,8 @@ function bindAssessmentForm(box, view, ctx) {
     e.preventDefault();
     const button = e.currentTarget.querySelector('[type=submit]'), msg = $('#assessment-msg', box); button.disabled = true;
     const val = (id) => $('#' + id, box).value;
-    const row = { test_type: val('assessment-type'), measured_on: val('assessment-date'), jump_height_cm: num(val('assessment-height')), flight_time_ms: num(val('assessment-flight')), contact_time_ms: num(val('assessment-contact')), rsi: num(val('assessment-rsi')), notes: val('assessment-notes').trim() || null };
+    const reachStand = num(val('assessment-reach-stand')), reachJump = num(val('assessment-reach-jump')), wall = reachStand > 0 && reachJump > reachStand && !(num(val('assessment-height')) > 0) ? Number((reachJump - reachStand).toFixed(1)) : null;
+    const row = { test_type: val('assessment-type'), measured_on: val('assessment-date'), jump_height_cm: wall ?? num(val('assessment-height')), flight_time_ms: num(val('assessment-flight')), contact_time_ms: num(val('assessment-contact')), rsi: num(val('assessment-rsi')), notes: val('assessment-notes').trim() || null };
     if (!Object.entries(row).some(([k, value]) => ['jump_height_cm', 'flight_time_ms', 'contact_time_ms', 'rsi'].includes(k) && typeof value === 'number' && value > 0)) { msg.textContent = 'Registra al menos una medición real.'; button.disabled = false; return; }
     const { error: saveError } = await supabase.from('plyo_assessments').insert(row);
     if (saveError) { msg.textContent = 'No se pudo guardar: ' + saveError.message; button.disabled = false; return; }

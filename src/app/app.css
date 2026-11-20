@@ -1977,3 +1977,7 @@ body.appbody button.rank-stat,body.appbody button.rank-stat:active{background:no
 .run-plan-route div{display:grid}.run-plan-route small{color:var(--muted)}
 .run-plan-route span{display:flex;gap:6px}
 .route-match{display:grid;gap:2px;margin:8px 0}.route-match span{color:var(--muted);font-size:13px}
+
+/* Calendario: foto del primer ejercicio / disciplina en el icono de la rutina */
+.cal10__agenda-symbol.has-photo{padding:0;overflow:hidden;position:relative}
+.cal10__agenda-symbol.has-photo img{width:100%;height:100%;object-fit:cover;display:block}

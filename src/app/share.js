@@ -294,7 +294,7 @@ export async function renderSharedFeed(box, ctx) {
     foot.querySelector('[data-comments]').onclick = () => { const b = foot.querySelector('[data-comment-box]'); b.hidden = !b.hidden; if (!b.hidden) b.querySelector('input').focus(); };
     foot.querySelector('[data-native]').onclick = async () => {
       const text = `${a.title} · ${nameOf(a.user_id)} en Batmon Crowd`;
-      try { if (navigator.share) await navigator.share({ title: a.title, text, url: location.origin }); else { await navigator.clipboard.writeText(`${text} ${location.origin}`); notify('Enlace copiado.', 'success'); } } catch { /* cancelado */ }
+      try { if (navigator.share) await navigator.share({ title: a.title, text, url: location.origin }); else { await navigator.clipboard.writeText(`${text} ${location.origin}`); notify('Enlace listo para pegar.', 'success'); } } catch { /* cancelado */ }
     };
     foot.querySelector('.act-comment-form').onsubmit = async (e) => {
       e.preventDefault(); const input = e.currentTarget.querySelector('input'), body = input.value.trim(); if (!body) return;

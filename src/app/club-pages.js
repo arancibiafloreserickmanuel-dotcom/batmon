@@ -92,7 +92,7 @@ export async function renderEventPage(view, ctx, eventId) {
   if (event.route) bindRouteCard(view, event.route, 'ev-route', ctx);
   $('#ev-share', view).onclick = async () => {
     const url = `${location.origin}/app.html#evento/${eventId}`;
-    try { if (navigator.share) await navigator.share({ title: event.title, url }); else { await navigator.clipboard.writeText(url); notify('Enlace copiado.', 'success'); } } catch { /* cancelado */ }
+    try { if (navigator.share) await navigator.share({ title: event.title, url }); else { await navigator.clipboard.writeText(url); notify('Enlace listo para pegar.', 'success'); } } catch { /* cancelado */ }
   };
   const more = $('#ev-more', view);
   if (more) more.onclick = () => {
