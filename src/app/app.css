@@ -2039,3 +2039,10 @@ body.appbody button.pc-avatar{width:84px;height:84px}
 .cal10__head{margin-bottom:8px !important}
 .cal10__month{font-size:22px !important}
 .cal10__nav-btn,.cal10__bell-btn{width:32px !important;height:32px !important}
+
+/* Saludo arriba (pequeño) y nombre debajo, alineados a la izquierda; el avance del plan a la derecha, a la altura del nombre */
+.home-greeting{grid-template-areas:"title count" "bar bar" "meta meta";align-items:end !important}
+.home-greeting__title{display:grid !important;grid-template-columns:1fr !important;gap:0 !important;justify-items:start}
+.home-greeting__title>p{margin:0 0 -2px !important;font:600 11px Inter,sans-serif !important;color:var(--muted) !important}
+.home-greeting__title h1{line-height:1 !important;margin:0 !important}
+.home-compliance>div:first-child{align-self:end;padding-bottom:3px}
