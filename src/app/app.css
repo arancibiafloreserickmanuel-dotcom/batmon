@@ -2003,3 +2003,23 @@ body.appbody button.pc-avatar{width:84px;height:84px}
 .bf-list{display:grid;gap:8px;margin-top:8px}
 .bf-row{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;margin:0;cursor:pointer}
 .bf-avatar{width:40px;height:40px}
+
+/* ===== Inicio: encabezado ordenado (saludo · plan semanal · calendario) ===== */
+.home-greeting{display:grid !important;grid-template-columns:1fr !important;gap:14px !important;margin:2px 2px 16px !important}
+.home-greeting__title{display:grid !important;grid-template-columns:1fr !important;gap:2px !important;align-items:start !important}
+.home-greeting__title>p{margin:0 !important;font:600 12px Inter,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;color:var(--muted) !important}
+.home-greeting__title h1{margin:0 !important;font-family:Anton,sans-serif !important;font-weight:400 !important;font-size:clamp(32px,9vw,42px) !important;line-height:1.05 !important;letter-spacing:.01em;text-transform:none}
+.home-greeting__today{justify-self:start;margin-top:6px !important;padding:4px 12px;border-radius:99px;font-size:12px !important;line-height:1.3 !important;color:var(--ink) !important;background:var(--card-surface,var(--surface));box-shadow:var(--button-shadow)}
+.home-compliance{display:grid !important;grid-template-columns:1fr !important;gap:8px !important;padding:14px 16px;border-radius:18px;background:var(--card-surface,var(--surface));box-shadow:var(--button-shadow)}
+.home-compliance>div:first-child{display:flex !important;align-items:baseline;justify-content:space-between;gap:8px}
+.home-compliance>div:first-child span{font:700 11px Inter,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:var(--muted) !important}
+.home-compliance>div:first-child b{font:22px Anton,sans-serif;letter-spacing:.02em}
+.home-compliance__track{height:8px !important}
+.home-compliance small{font-size:12px !important;color:var(--muted) !important}
+.cal10__head{padding:0 4px !important;margin-bottom:12px !important;align-items:flex-end !important}
+.cal10__month-wrap{display:flex;align-items:baseline;gap:8px}
+.cal10__month{font-size:26px !important}
+.cal10__year{margin:0 !important;font-size:13px !important}
+.cal10__actions{gap:10px !important}
+.cal10__nav{gap:8px !important}
+.cal10__nav-btn,.cal10__bell-btn{width:36px !important;height:36px !important}
