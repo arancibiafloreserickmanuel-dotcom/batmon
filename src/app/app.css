@@ -2143,3 +2143,14 @@ body.appbody .ig-tabs button.on{color:var(--ink)!important;border-bottom-color:v
 .route-picker__results[hidden]{display:none}
 body.appbody .route-picker__results button{appearance:none;text-align:left;margin:0!important;padding:8px 12px!important;min-height:0!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--card-surface)!important;box-shadow:none!important;color:var(--ink)!important;font-size:12px;cursor:pointer}
 .rp-hit{cursor:pointer}
+
+.pf-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pf-top__id{min-width:0;display:grid;gap:2px}
+.pf-fullname{margin:0;font:26px/1.05 Anton,sans-serif;letter-spacing:.01em;overflow-wrap:anywhere}
+.pf-user{font-size:13px;color:var(--muted)}
+.pf-top .profile-tools{display:flex;align-items:center;gap:10px;flex:none}
+body.appbody .pf-top .rank-mini{width:32px!important;height:32px!important}
+body.appbody .pf-top .rank-mini img{width:30px;height:30px}
+.pf-stats{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:20px}
+.pf-counts{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.pf-counts b{display:block;font:24px Anton,sans-serif}.pf-counts span{font-size:11px;color:var(--muted)}
