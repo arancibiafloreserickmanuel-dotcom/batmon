@@ -845,7 +845,7 @@ function renderMyData(v) {
     const row={p_full_name:$('#ad-name',v).value,p_username:$('#ad-user',v).value,p_carnet_number:$('#ad-carnet',v).value,p_recovery_phone:$('#ad-phone',v).value,p_contact_email:$('#ad-mail',v).value};
     const {error}=await supabase.rpc('update_my_account',row);
     button.disabled=false;
-    if(error){msg.textContent=error.message;return;}
+    if(error){msg.textContent=/profiles_username_unique|duplicate key/i.test(error.message)?'Ese nombre de usuario ya existe. Elige otro.':error.message;return;}
     const {data:fresh}=await supabase.from('profiles').select('*').eq('id',ctx.user.id).single();if(fresh)ctx.profile=fresh;
     msg.className='msg ok';msg.textContent='Datos guardados.';
   };

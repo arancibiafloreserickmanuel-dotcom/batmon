@@ -57,6 +57,22 @@ export function showLogin(view, signup = false) {
     <section class="auth-social" aria-label="Otras formas de acceso"><p>${signup ? 'O regístrate con' : 'O inicia sesión con'}</p><ul class="example-2"><li class="icon-content"><button id="google-login" class="social-button" type="button" aria-label="${signup ? 'Registrarse' : 'Iniciar sesión'} con Google" data-social="google"><span class="filled"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.35 5.35 0 0 1-2.2 3.31v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.15v2.84A11 11 0 0 0 12 23z"/><path fill="#fbbc05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.15a11 11 0 0 0 0 9.88l3.69-2.84z"/><path fill="#ea4335" d="M12 4.37c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.55 10.55 0 0 0 12 0 11 11 0 0 0 2.15 7.06l3.69 2.84C6.71 7.3 9.14 4.37 12 4.37z"/></svg></button><span class="tooltip">Google</span></li></ul></section></section>`;
 
   $('#tg').onclick = () => showLogin(view, !signup);
+  let nameTaken = false;
+  if (signup) {
+    const userInput = $('#username', view), lm = $('#lm', view);
+    let timer = 0;
+    const check = async () => {
+      const value = userInput.value.trim().toLowerCase();
+      if (value.length < 3) { nameTaken = false; return; }
+      const { data, error } = await supabase.rpc('username_available', { p_username: value });
+      if (error) return;                                         // sin la migración 0028 el servidor igual lo valida
+      nameTaken = data === false;
+      userInput.setCustomValidity(nameTaken ? 'Ese nombre de usuario ya existe.' : '');
+      if (nameTaken) lm.textContent = 'Ese nombre de usuario ya existe. Elige otro.'; else if (lm.textContent.startsWith('Ese nombre')) lm.textContent = '';
+    };
+    userInput.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(check, 450); });
+    userInput.addEventListener('blur', check);
+  }
   const forgot = $('#forgot');
   if (forgot) forgot.onclick = () => showRecovery(view);
 
@@ -76,6 +92,7 @@ export function showLogin(view, signup = false) {
           contact_email: $('#em', view).value.trim(),
           password: $('#pw', view).value,
         };
+        if (nameTaken) throw new Error('Ese nombre de usuario ya existe. Elige otro.');
         if (!/^\d{8}$/.test(payload.recovery_phone)) throw new Error('Escribe tu número de teléfono de 8 dígitos.');
         const { data, error } = await supabase.functions.invoke('username-signup', { body: payload });
         if (error) throw new Error(await edgeFunctionError(error, 'No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.'));
@@ -175,7 +192,7 @@ export function showProfileSetup(view, user, profile = {}, onDone = () => {}) {
       p_full_name: $('#su-name', view).value, p_username: $('#su-user', view).value, p_carnet_number: $('#su-carnet', view).value,
       p_recovery_phone: $('#su-phone', view).value, p_contact_email: $('#su-mail', view).value,
     });
-    if (error) { msg.textContent = /update_my_account/i.test(error.message) && /function|schema/i.test(error.message) ? 'Falta aplicar la migración 0011 en Supabase.' : error.message; button.disabled = false; return; }
+    if (error) { msg.textContent = /profiles_username_unique|duplicate key/i.test(error.message) ? 'Ese nombre de usuario ya existe. Elige otro.' : /update_my_account/i.test(error.message) && /function|schema/i.test(error.message) ? 'Falta aplicar la migración 0011 en Supabase.' : error.message; button.disabled = false; return; }
     const { error: pwError } = await supabase.auth.updateUser({ password: $('#su-pass', view).value });
     if (pwError) { msg.textContent = 'Datos guardados, pero la contraseña no se pudo guardar: ' + pwError.message + ' Puedes crearla luego en Perfil → Configuración.'; await new Promise((r) => setTimeout(r, 2500)); }
     onDone();
