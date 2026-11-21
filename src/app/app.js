@@ -779,7 +779,7 @@ async function renderProfile(v) {
 function renderEditProfile(v, avatarUrl, initials) {
   v.innerHTML=`<div class="pf-edit-head"><button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1></div>
     <div class="pf-accs">
-    <details class="card pf-acc"><summary><b>Foto y nombre</b><small>Cómo te ven los demás</small></summary><form id="profile-form"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form></details>
+    <details class="card pf-acc"><summary><b>Foto y nombre</b><small>Cómo te ven los demás</small></summary><form id="profile-form"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><label for="profile-username">Nombre de usuario</label><input id="profile-username" value="${esc(ctx.profile?.username||'')}" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_.\-]{3,24}" autocapitalize="none" autocomplete="off" spellcheck="false"><small class="muted" id="username-note">Único en el club. Letras, números, punto, guion y guion bajo.</small><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form></details>
     <details class="card pf-acc" id="acc-media"><summary><b>Mis fotos y videos</b><small>Publica, oculta y elige categoría</small></summary><div class="pf-acc__body" data-body></div></details>
     <details class="card pf-acc" id="acc-privacy"><summary><b>Qué pueden ver de mí</b><small>Fotos, videos, progreso y logros</small></summary><div class="pf-acc__body" data-body></div></details>
     <details class="card pf-acc" id="acc-bf"><summary><b>Mejores amigos</b><small>Tu círculo cercano</small></summary><div class="pf-acc__body" data-body></div></details>
@@ -791,9 +791,21 @@ function renderEditProfile(v, avatarUrl, initials) {
   decorateBackButton($('#edit-back',v));
   $('#edit-back',v).onclick=()=>renderProfile(v);
   $('#profile-form',v).onsubmit=async e=>{e.preventDefault();const msg=$('#profile-msg',v),btn=e.currentTarget.querySelector('.btn');const name=$('#profile-name',v).value.trim(),file=$('#profile-photo',v).files[0];btn.disabled=true;const patch={full_name:name};
+    const uname=$('#profile-username',v).value.trim().toLowerCase();let newUser=null;
+    if(uname&&uname!==(ctx.profile?.username||'').toLowerCase()){
+      if(!/^[a-z0-9_.-]{3,24}$/.test(uname)){msg.textContent='El usuario debe tener de 3 a 24 caracteres: letras, números, punto, guion o guion bajo.';btn.disabled=false;return;}
+      const {data:free,error:ue}=await supabase.rpc('username_available',{p_username:uname});
+      if(ue){msg.textContent='No se pudo comprobar el usuario: '+ue.message;btn.disabled=false;return;}
+      if(free===false){msg.textContent='Ese nombre de usuario ya existe. Elige otro.';btn.disabled=false;return;}
+      const {error:se}=await supabase.rpc('set_my_username',{p_username:uname});
+      if(se){msg.textContent=/Could not find|does not exist|schema/i.test(se.message)?'Aplica la migración 0030 para cambiar el usuario.':se.message;btn.disabled=false;return;}
+      newUser=uname;
+    }
     if(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type)){msg.textContent='Usa una imagen JPG, PNG o WebP.';btn.disabled=false;return;}if(file.size>8*1024*1024){msg.textContent='La foto debe pesar menos de 8 MB.';btn.disabled=false;return;}
       const path=`${ctx.user.id}/avatar-${Date.now()}.${file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}`;const up=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type});if(up.error){msg.textContent=up.error.message;btn.disabled=false;return;}patch.avatar_path=path;}
-    const {error}=await supabase.from('profiles').update(patch).eq('id',ctx.user.id);if(error){msg.textContent=error.message;btn.disabled=false;return;}Object.assign(ctx.profile,patch);notify('Perfil actualizado.','success');renderProfile(v);};
+    const {error}=await supabase.from('profiles').update(patch).eq('id',ctx.user.id);if(error){msg.textContent=error.message;btn.disabled=false;return;}Object.assign(ctx.profile,patch);if(newUser)ctx.profile.username=newUser;notify('Perfil actualizado.','success');renderProfile(v);};
+  let unTimer=null;const unInput=$('#profile-username',v),unNote=$('#username-note',v);
+  unInput.oninput=()=>{clearTimeout(unTimer);const val=unInput.value.trim().toLowerCase();if(!val||val===(ctx.profile?.username||'').toLowerCase()){unNote.textContent='Único en el club. Letras, números, punto, guion y guion bajo.';return;}if(!/^[a-z0-9_.-]{3,24}$/.test(val)){unNote.textContent='De 3 a 24 caracteres: letras, números, punto, guion o guion bajo.';return;}unNote.textContent='Comprobando…';unTimer=setTimeout(async()=>{const {data:free}=await supabase.rpc('username_available',{p_username:val});if(unInput.value.trim().toLowerCase()!==val)return;unNote.textContent=free===false?'Ese nombre de usuario ya existe.':'Disponible.';},350);};
 }
 
 async function renderNotifications(v) {
