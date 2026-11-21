@@ -777,9 +777,9 @@ async function renderProfile(v) {
 }
 
 function renderEditProfile(v, avatarUrl, initials) {
-  v.innerHTML=`<button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1>
+  v.innerHTML=`<div class="pf-edit-head"><button class="link" id="edit-back" type="button">← Volver al perfil</button><h1>Editar perfil</h1></div>
     <div class="pf-accs">
-    <details class="card pf-acc" open><summary><b>Foto y nombre</b><small>Cómo te ven los demás</small></summary><form id="profile-form"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form></details>
+    <details class="card pf-acc"><summary><b>Foto y nombre</b><small>Cómo te ven los demás</small></summary><form id="profile-form"><div class="edit-avatar"><span class="community-avatar edit-avatar__img">${avatarUrl?avatarImg(avatarUrl,'Foto actual'):esc(initials)}</span><div><b>Foto de perfil</b><small class="muted">Si entraste con Google se usa tu foto de Google hasta que subas otra.</small></div></div><label>Cambiar foto<input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><label for="profile-name">Nombre</label><input id="profile-name" value="${esc(ctx.profile?.full_name||'')}" required><button class="btn">Guardar</button><p class="msg" id="profile-msg"></p></form></details>
     <details class="card pf-acc" id="acc-media"><summary><b>Mis fotos y videos</b><small>Publica, oculta y elige categoría</small></summary><div class="pf-acc__body" data-body></div></details>
     <details class="card pf-acc" id="acc-privacy"><summary><b>Qué pueden ver de mí</b><small>Fotos, videos, progreso y logros</small></summary><div class="pf-acc__body" data-body></div></details>
     <details class="card pf-acc" id="acc-bf"><summary><b>Mejores amigos</b><small>Tu círculo cercano</small></summary><div class="pf-acc__body" data-body></div></details>
@@ -788,6 +788,7 @@ function renderEditProfile(v, avatarUrl, initials) {
   lazy('#acc-media',box=>mountMediaManager(box,ctx));
   lazy('#acc-privacy',box=>mountPrivacy(box,ctx));
   lazy('#acc-bf',box=>mountBestFriends(box,ctx));
+  decorateBackButton($('#edit-back',v));
   $('#edit-back',v).onclick=()=>renderProfile(v);
   $('#profile-form',v).onsubmit=async e=>{e.preventDefault();const msg=$('#profile-msg',v),btn=e.currentTarget.querySelector('.btn');const name=$('#profile-name',v).value.trim(),file=$('#profile-photo',v).files[0];btn.disabled=true;const patch={full_name:name};
     if(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type)){msg.textContent='Usa una imagen JPG, PNG o WebP.';btn.disabled=false;return;}if(file.size>8*1024*1024){msg.textContent='La foto debe pesar menos de 8 MB.';btn.disabled=false;return;}

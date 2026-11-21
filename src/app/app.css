@@ -1791,9 +1791,10 @@ body.appbody[data-theme="dark"] .cw-nav [data-next]{border-color:#fff!important}
 .share-box{display:grid;gap:10px;border:1px solid var(--line);border-radius:var(--card-radius,14px);padding:12px}
 .share-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;cursor:pointer}
 .share-toggle span{display:grid;gap:3px}.share-toggle small{color:var(--muted);font-size:11px;font-weight:400;line-height:1.35}
-.share-switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:46px!important;min-height:0!important;height:26px;border-radius:99px;background:color-mix(in srgb,var(--ink) 22%,var(--surface))!important;border:0!important;position:relative;padding:0!important;margin:0;transition:background .2s}
-.share-switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0004;transition:transform .2s}
-.share-switch:checked{background:#fc4c02!important}.share-switch:checked::after{transform:translateX(20px)}
+.share-switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:46px!important;min-height:0!important;height:26px;border-radius:99px;background:var(--card-surface)!important;border:0!important;position:relative;padding:0!important;margin:0;cursor:pointer;box-shadow:inset 2px 2px 5px rgba(0,0,0,.16),inset -2px -2px 5px rgba(255,255,255,.65)!important;transition:box-shadow .3s ease}
+.share-switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--card-surface);box-shadow:2px 2px 4px rgba(0,0,0,.22),-1px -1px 3px rgba(255,255,255,.65);transition:left .35s cubic-bezier(.34,1.56,.64,1),background .35s ease,box-shadow .35s ease}
+.share-switch:checked{box-shadow:inset 2px 2px 5px rgba(0,0,0,.3),inset -2px -2px 5px rgba(255,255,255,.4)!important}
+.share-switch:checked::after{left:23px;background:var(--ink);box-shadow:0 0 7px color-mix(in srgb,var(--ink) 55%,transparent),1px 1px 3px rgba(0,0,0,.3)}
 .share-fields{display:grid;gap:10px}.share-fields[hidden]{display:none}.share-fields label{margin:0}
 
 .act-list{display:grid;gap:12px}
@@ -2222,3 +2223,5 @@ body.appbody .pf-avatar-wrap .rank-mini img{width:34px;height:34px;filter:drop-s
 /* Regla de color: solo blanco, negro y grises; cualquier otro tono va oscuro */
 .act-logro--gold span,.logro--gold .logro__icon{color:#6b5416}.act-logro--silver span,.logro--silver .logro__icon{color:#565e68}.act-logro--bronze span,.logro--bronze .logro__icon{color:#6b3f22}
 .logro.is-earned em{color:var(--ink)}
+.pf-edit-head{display:grid;gap:10px;margin-bottom:4px}
+.pf-edit-head h1{margin:4px 0 0}
