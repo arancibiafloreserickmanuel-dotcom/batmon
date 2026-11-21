@@ -206,3 +206,9 @@ Orden vertical con 14–16 px entre bloques:
 - Editar perfil: acordeones (Foto y nombre, Mis fotos y videos, Qué pueden ver de mí, Mejores amigos).
 - Perfil de otro socio (#perfil/<id>): cabecera estilo Instagram (Publicaciones, Amigos), botón Seguir y solo las pestañas que el dueño permitió. Nunca muestra membresía, edición, campana ni ajustes.
 - Al terminar Running o Pliometría: bloque "Foto o video de la sesión" con interruptor Publicar en mi perfil y categoría.
+
+## Regla de color (obligatoria)
+- Solo se usan **blanco, negro y grises**. Cualquier otro color (rojo, verde, azul, dorado, etc.) debe ir **oscuro y apagado**: nunca saturado ni brillante (p. ej. rojo → vino oscuro, dorado → ocre oscuro, verde → verde bosque oscuro).
+- Para colores de rango u otros acentos se mezcla con negro, por ejemplo `color-mix(in srgb, <color> 52%, #000)`.
+- Los estados "conseguido/correcto" se muestran en tinta (negro/blanco), no en verde brillante.
+- Logros: sin tarjetas, filas con línea fina; cada logro muestra la moneda de logro (`/logro-coin.webp`) junto a sus puntos; la barra del rango usa el color oscuro del rango y las barras de progreso de cada logro usan el tono oscuro de su nivel (bronce, plata, oro).

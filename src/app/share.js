@@ -168,9 +168,17 @@ export const logrosPoints = (list, challengePoints = 0) => list.filter((l) => l.
 
 export function logrosMarkup(list, extra = { points: 0, items: [] }, { whose = '' } = {}) {
   const done = list.filter((l) => l.earned).length, account = logrosPoints(list, 0), total = account + extra.points, rank = rankFor(total);
-  const rankCard = `<section class="card rank-card coin-card"><img class="rank-card__icon" src="/logro-coin.webp" alt="" width="84" height="84"><div class="rank-card__body"><span class="muted">${whose ? `Logros de ${esc(whose)}` : 'Tus logros'}</span><h2><b>${total}</b> ${total === 1 ? 'moneda' : 'monedas'}</h2><i class="rank-card__bar"><u style="width:${Math.round(rank.progress * 100)}%"></u></i><p>${rank.next ? `Rango <b>${esc(rank.name)}</b> · ${whose ? 'faltan' : 'te faltan'} <b>${rank.missing}</b> para ${esc(rank.nextName)}` : `Rango <b>${esc(rank.name)}</b> · rango máximo`}</p><small class="muted">Cuenta: ${account} · Retos: ${extra.points}</small></div></section>`;
-  return `${rankCard}<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">${done} de ${list.length} conseguidos</span><h2>Logros</h2></div></div>
-    <div class="logros-grid">${list.map((l) => `<article class="logro logro--${l.tier} ${l.earned ? 'is-earned' : ''}" title="${esc(l.desc)}"><span class="logro__icon">${ICON.trophy}</span><b>${esc(l.title)}</b><small>${esc(l.desc)}</small><span class="logro__pts">+${TIER_POINTS[l.tier]}</span>${l.earned ? '<em>Conseguido</em>' : `<i class="logro__bar"><u style="width:${Math.round(l.have / l.need * 100)}%"></u></i><em>${fmt(l.have, l.unit ? 1 : 0)} / ${l.need}${l.unit ? ' ' + l.unit : ''}</em>`}</article>`).join('')}</div></section>${extra.items.length ? `<section class="card logros-card"><div class="profile-section-head"><div><span class="muted">Retos completados</span><h2>Logros de retos</h2></div></div>${extra.items.map((r) => `<p class="rank-reto"><span>${esc(r.title)}</span><b>+${r.reward}</b></p>`).join('')}</section>` : ''}`;
+  const tone = `color-mix(in srgb, ${rank.tier.color} 52%, #000)`;
+  const coin = (n) => `<span class="lg-pts"><img src="/logro-coin.webp" alt="" width="18" height="18">+${n}</span>`;
+  const summary = `<section class="lg-sum" style="--tone:${tone}">
+    <p class="lg-sum__who">${whose ? `Logros de ${esc(whose)}` : 'Tus logros'}</p>
+    <div class="lg-sum__row"><img class="lg-sum__coin" src="/logro-coin.webp" alt="" width="44" height="44"><b class="lg-sum__n">${total}</b><span class="lg-sum__unit">${total === 1 ? 'moneda' : 'monedas'}</span><span class="lg-sum__rank"><img src="${rank.icon}" alt="" width="26" height="26">${esc(rank.name)}</span></div>
+    <i class="lg-bar lg-bar--rank"><u style="width:${Math.max(3, Math.round(rank.progress * 100))}%"></u></i>
+    <p class="lg-sum__next">${rank.next ? `${whose ? 'Faltan' : 'Te faltan'} <b>${rank.missing}</b> para ${esc(rank.nextName)}` : 'Rango máximo'}</p>
+    <small>Cuenta: ${account} · Retos: ${extra.points}</small></section>`;
+  const items = list.map((l) => `<article class="lg-item lg-item--${l.tier} ${l.earned ? 'is-earned' : ''}" title="${esc(l.desc)}"><span class="lg-ico">${ICON.trophy}</span><div class="lg-body"><b>${esc(l.title)}</b><small>${esc(l.desc)}</small>${l.earned ? '<em>Conseguido</em>' : `<i class="lg-bar"><u style="width:${Math.max(2, Math.round(l.have / l.need * 100))}%"></u></i><em>${fmt(l.have, l.unit ? 1 : 0)} / ${l.need}${l.unit ? ' ' + l.unit : ''}</em>`}</div>${coin(TIER_POINTS[l.tier])}</article>`).join('');
+  const retos = extra.items.length ? `<section class="lg-list"><h3 class="lg-h">Retos completados</h3>${extra.items.map((r) => `<article class="lg-item is-earned"><span class="lg-ico">${ICON.trophy}</span><div class="lg-body"><b>${esc(r.title)}</b></div>${coin(r.reward)}</article>`).join('')}</section>` : '';
+  return `${summary}<section class="lg-list"><h3 class="lg-h">Logros <small>${done} de ${list.length}</small></h3>${items}</section>${retos}`;
 }
 
 /** Logros de una sola actividad (se guardan al compartir y salen en la tarjeta). */
