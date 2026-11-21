@@ -35,47 +35,100 @@ function modal(html) {
 }
 
 /* ------------------------------- Pagos ------------------------------- */
+const PAY_STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
+const PAY_METHOD = { qr: 'QR', cash: 'Efectivo' };
+const monthLabel = (period) => { const [y, mo] = String(period).slice(0, 7).split('-'); return `${['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][+mo - 1] || mo} ${y}`; };
+
+function openProof(url) {
+  const overlay = document.createElement('div'); overlay.className = 'proof-v2';
+  overlay.innerHTML = `<div class="proof-v2__bar"><button type="button" class="btn sm ghost" data-close>← Cerrar</button><a class="btn sm ghost" href="${url}" target="_blank" rel="noopener">Abrir en pestaña</a></div><div class="proof-v2__stage"><img src="${url}" alt="Comprobante de pago"></div>`;
+  overlay.onclick = (e) => { if (e.target === overlay || e.target.classList.contains('proof-v2__stage') || e.target.closest('[data-close]')) overlay.remove(); };
+  document.body.append(overlay);
+}
+
+/* Tarjeta de pago: sirve para la pestaña Pagos y para la ficha del cliente. */
+function payCard(x, { who = '', url = '' } = {}) {
+  const proof = url ? `<button class="btn sm ghost" data-proof="${x.id}">Ver comprobante</button>` : `<span class="muted">${x.payment_method === 'cash' ? 'Pago en efectivo (sin comprobante)' : 'Sin comprobante'}</span>`;
+  const b = (a, t, cls = 'ghost') => `<button class="btn sm ${cls}" data-ma="${a}" data-id="${x.id}">${t}</button>`;
+  return `<article class="card admin-item pay-card" data-pq="${esc((who + ' ' + monthLabel(x.period) + ' ' + PAY_STATUS[x.status] + ' ' + PAY_METHOD[x.payment_method]).toLowerCase())}" data-st="${x.status}" data-mt="${x.payment_method}" data-mo="${x.period.slice(0, 7)}">
+    <div class="pay-card__top"><b>${who ? esc(who) : esc(monthLabel(x.period))}</b><span class="pill ${x.status}">${PAY_STATUS[x.status]}</span></div>
+    <span class="muted">${who ? esc(monthLabel(x.period)) + ' · ' : ''}Pagó por ${PAY_METHOD[x.payment_method] || '—'}</span>
+    <div>${proof}</div>
+    <div class="quick-actions">${x.status !== 'approved' ? b('approved', 'Aprobar pago', '') : ''}${x.status === 'pending' ? b('rejected', 'Rechazar') : ''}${x.status !== 'pending' ? b('pending', 'Volver a pendiente') : ''}${b('edit', 'Editar')}${b('delete', 'Eliminar')}</div>
+  </article>`;
+}
+
+/* Edita mes, método y estado de un pago. */
+function editPayment(x, done) {
+  const m = modal(`<div class="sheet-h"><b>Editar pago</b><button class="link" data-close>Cerrar</button></div>
+    <form class="adm-form" id="pay-form">
+      <label>Mes que cubre<input type="month" name="period" required value="${x.period.slice(0, 7)}"></label>
+      <label>Forma de pago<select name="payment_method">${Object.entries(PAY_METHOD).map(([k, v]) => `<option value="${k}" ${x.payment_method === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label>Estado<select name="status">${Object.entries(PAY_STATUS).map(([k, v]) => `<option value="${k}" ${x.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <button class="btn" type="submit">Guardar cambios</button><p class="msg" aria-live="polite"></p>
+    </form>`);
+  m.querySelector('[data-close]').onclick = () => m.remove();
+  $('#pay-form', m).onsubmit = async (e) => {
+    e.preventDefault(); const f = e.target.elements, st = f.status.value;
+    const { error } = await supabase.from('memberships').update({ period: f.period.value + '-01', payment_method: f.payment_method.value, status: st, approved_at: st === 'approved' ? (x.approved_at || new Date().toISOString()) : null, approved_by: st === 'approved' ? (x.approved_by || me.id) : null }).eq('id', x.id);
+    if (error) { m.querySelector('.msg').textContent = error.message; return; }
+    notify('Pago actualizado.', 'success'); m.remove(); done();
+  };
+}
+
+/* Conecta los botones de las tarjetas de pago dentro de `root`. */
+function bindPayCards(root, mems, urls, done) {
+  root.querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => openProof(urls[b.dataset.proof])));
+  root.querySelectorAll('[data-ma]').forEach((b) => (b.onclick = async () => {
+    const a = b.dataset.ma, id = b.dataset.id, x = mems.find((r) => r.id === id);
+    if (a === 'edit') { editPayment(x, done); return; }
+    if (a === 'delete' && !(await confirmDialog('¿Eliminar este pago? No se puede deshacer.', 'Eliminar pago'))) return;
+    if (a === 'approved' && !(await confirmDialog('¿Aprobar este pago? El cliente podrá registrar entrenamientos.', 'Aprobar pago'))) return;
+    if (a === 'rejected' && !(await confirmDialog('¿Rechazar este pago?', 'Rechazar pago'))) return;
+    b.disabled = true;
+    const { error } = a === 'delete' ? await supabase.from('memberships').delete().eq('id', id)
+      : await supabase.from('memberships').update({ status: a, approved_at: a === 'approved' ? new Date().toISOString() : null, approved_by: a === 'approved' ? me.id : null }).eq('id', id);
+    if (error) { notify(error.message); b.disabled = false; } else done();
+  }));
+}
+
+async function signedProofs(mems) {
+  const urls = {};
+  await Promise.all(mems.filter((m) => m.proof_path).map(async (m) => { const { data } = await supabase.storage.from('receipts').createSignedUrl(m.proof_path, 3600); urls[m.id] = data?.signedUrl; }));
+  return urls;
+}
+
 async function pagos() {
   const [{ data: mems = [] }, { data: profs = [] }] = await Promise.all([
     supabase.from('memberships').select('*').order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name'),
   ]);
   const name = Object.fromEntries(profs.map((p) => [p.id, p.full_name]));
-  const urls = {};
-  await Promise.all(mems.filter((m) => m.proof_path).map(async (m) => {
-    const { data } = await supabase.storage.from('receipts').createSignedUrl(m.proof_path, 3600);
-    urls[m.id] = data?.signedUrl;
-  }));
+  const urls = await signedProofs(mems);
   const pending = mems.filter((m) => m.status === 'pending');
   const rest = mems.filter((m) => m.status !== 'pending');
-  const proof = (m) => (urls[m.id] ? `<button class="link" data-proof="${m.id}">Ver comprobante</button>` : m.payment_method === 'cash' ? 'Solicitud de pago en efectivo' : 'Sin comprobante');
-  const btn = (a, id, t, cls = '') => `<button class="btn sm ${cls}" data-a="${a}" data-id="${id}">${t}</button>`;
+  const months = [...new Set(rest.map((m) => m.period.slice(0, 7)))].sort().reverse();
+  const count = (st) => rest.filter((m) => m.status === st).length;
 
   $('#body').innerHTML = `
-    <h2>Pendientes (${pending.length})</h2>
-    <div class="admin-cards">${pending.length ? pending.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)} · Método: ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'}</span><div>${proof(m)}</div><div class="quick-actions">${btn('approved', m.id, 'Aprobar')}${btn('rejected', m.id, 'Rechazar', 'ghost')}</div></article>`).join('') : '<p class="card muted">No hay pagos pendientes.</p>'}</div>
-    <h2>Historial</h2>
-    <div class="admin-cards">${rest.length ? rest.map((m) => `<article class="card admin-item"><b>${esc(name[m.user_id] || '?')}</b><span>${m.period.slice(0, 7)} · ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'} · <span class="pill ${m.status}">${STATUS[m.status]}</span></span><div>${proof(m)}</div><div class="quick-actions"><button class="btn sm ghost" data-a="pending" data-id="${m.id}">Reabrir</button><button class="btn sm ghost" data-a="delete" data-id="${m.id}">Borrar</button></div></article>`).join('') : '<p class="card muted">Sin historial.</p>'}</div>`;
+    <h2>Por revisar (${pending.length})</h2><p class="muted">Pagos que los clientes enviaron y aún no aprobaste.</p>
+    <div class="admin-cards">${pending.length ? pending.map((m) => payCard(m, { who: name[m.user_id] || '?', url: urls[m.id] })).join('') : '<p class="card muted">No hay pagos por revisar.</p>'}</div>
+    <h2>Historial de pagos (<span id="pay-count">${rest.length}</span>)</h2>
+    <label class="sr-only" for="pay-search">Buscar pago</label><input id="pay-search" type="search" placeholder="Buscar por cliente o mes…">
+    <div class="adm-chips" id="pay-chips"><button class="on" data-st="">Todos<small>${rest.length}</small></button><button data-st="approved">Aprobados<small>${count('approved')}</small></button><button data-st="rejected">Rechazados<small>${count('rejected')}</small></button></div>
+    <div class="adm-filters"><select id="pay-method" aria-label="Forma de pago"><option value="">Toda forma de pago</option><option value="qr">QR</option><option value="cash">Efectivo</option></select>
+    <select id="pay-month" aria-label="Mes"><option value="">Todos los meses</option>${months.map((mo) => `<option value="${mo}">${esc(monthLabel(mo + '-01'))}</option>`).join('')}</select></div>
+    <div class="admin-cards" id="pay-list">${rest.length ? rest.map((m) => payCard(m, { who: name[m.user_id] || '?', url: urls[m.id] })).join('') : '<p class="card muted">Sin historial.</p>'}</div><p class="card muted" id="pay-none" hidden>Ningún pago coincide con la búsqueda.</p>`;
 
-  $('#body').querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => {
-    const id = b.dataset.proof; const overlay = document.createElement('div'); overlay.className = 'proof-viewer';
-    overlay.innerHTML = `<button type="button" class="link" data-close>Cerrar</button><a class="btn ghost" href="${urls[id]}" target="_blank" rel="noopener">Abrir en pestaña</a><img src="${urls[id]}" alt="Comprobante de pago">`;
-    decorateAdminBackButton(overlay.querySelector('[data-close]'),'Cerrar',true);
-    overlay.onclick = (e) => { if (e.target === overlay || e.target.closest('[data-close]')) overlay.remove(); };
-    document.body.append(overlay);
-  }));
-
-  $('#body').querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => {
-    const a = b.dataset.a, id = b.dataset.id;
-    if (a === 'delete' && !(await confirmDialog('¿Borrar este pago del historial? No se puede deshacer.', 'Borrar pago'))) return;
-    if (a === 'approved' && !(await confirmDialog('¿Aprobar el pago de este socio?', 'Aprobar pago'))) return;
-    if (a === 'rejected' && !(await confirmDialog('¿Rechazar el comprobante de este socio?', 'Rechazar pago'))) return;
-    b.disabled = true;
-    const { error } = a === 'delete'
-      ? await supabase.from('memberships').delete().eq('id', id)
-      : await supabase.from('memberships').update({ status: a, approved_at: a === 'approved' ? new Date().toISOString() : null, approved_by: a === 'approved' ? me.id : null }).eq('id', id);
-    if (error) notify(error.message); else pagos();
-  }));
+  let st = '';
+  const apply = () => {
+    const q = $('#pay-search').value.trim().toLowerCase(), mt = $('#pay-method').value, mo = $('#pay-month').value; let n = 0;
+    $('#pay-list').querySelectorAll('.pay-card').forEach((c) => { const ok = (!q || c.dataset.pq.includes(q)) && (!st || c.dataset.st === st) && (!mt || c.dataset.mt === mt) && (!mo || c.dataset.mo === mo); c.hidden = !ok; if (ok) n++; });
+    $('#pay-count').textContent = n; $('#pay-none').hidden = n > 0 || !rest.length;
+  };
+  $('#pay-search').oninput = apply; $('#pay-method').onchange = apply; $('#pay-month').onchange = apply;
+  $('#pay-chips').querySelectorAll('button').forEach((c) => (c.onclick = () => { st = c.dataset.st; $('#pay-chips').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === c)); apply(); }));
+  bindPayCards($('#body'), mems, urls, pagos);
 }
 
 /* ------------------------- Clientes, socios y fichas ------------------------- */
@@ -86,24 +139,29 @@ const sw = (attrs, on, label, hint = '') => `<label class="adm-sw"><span><b>${es
 const ROLE_LABEL = { member: 'Cliente', socio: 'Socio', admin: 'Administrador' };
 const MIGRATION_HINT = '¿Aplicaste la migración 0031?';
 
-function openProof(url) {
-  const overlay = document.createElement('div'); overlay.className = 'proof-viewer';
-  overlay.innerHTML = `<button type="button" class="link" data-close>Cerrar</button><a class="btn ghost" href="${url}" target="_blank" rel="noopener">Abrir en pestaña</a><img src="${url}" alt="Comprobante de pago">`;
-  decorateAdminBackButton(overlay.querySelector('[data-close]'), 'Cerrar', true);
-  overlay.onclick = (e) => { if (e.target === overlay || e.target.closest('[data-close]')) overlay.remove(); };
-  document.body.append(overlay);
-}
-
-const clientCard = (u) => `<article class="card admin-item" data-q="${esc(((u.full_name || '') + ' ' + (u.username || '') + ' ' + (u.email || '')).toLowerCase())}"><b>${esc(u.full_name)}</b><span>${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)}</span><span>${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones · Última actividad: ${u.last_activity || '—'}</span><span>Pago del mes: ${u.membership ? STATUS[u.membership] : '—'}${u.access_override ? ` · <b>Acceso sin pago${u.access_until ? ' hasta ' + u.access_until : ''}</b>` : ''}</span><button class="btn sm ghost" data-d="${u.id}">Abrir ficha</button></article>`;
+const clientCard = (u) => `<article class="card admin-item" data-q="${esc(((u.full_name || '') + ' ' + (u.username || '') + ' ' + (u.email || '')).toLowerCase())}" data-pay="${u.membership || 'none'}" data-free="${u.access_override ? 1 : 0}"><b>${esc(u.full_name)}</b><span>${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)}</span><span>${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones · Última actividad: ${u.last_activity || '—'}</span><span>Pago del mes: ${u.membership ? STATUS[u.membership] : '—'}${u.access_override ? ` · <b>Acceso sin pago${u.access_until ? ' hasta ' + u.access_until : ''}</b>` : ''}</span><button class="btn sm ghost" data-d="${u.id}">Editar perfil</button></article>`;
 
 async function clientes() {
   const { data = [], error } = await supabase.rpc('admin_member_overview');
   if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>${MIGRATION_HINT}</p>`; return; }
   const list = data.filter((u) => u.role === 'member');
-  $('#body').innerHTML = `<h2>Clientes (${list.length})</h2><p class="muted">Todos los que se registran empiezan aquí. Abre su ficha para ver sus datos, pagos y módulos, darles acceso o subirlos a socio.</p>
-    <label class="sr-only" for="member-search">Buscar cliente</label><input id="member-search" type="search" placeholder="Buscar por nombre, usuario o correo…"><div class="admin-cards" id="member-cards">${list.map(clientCard).join('') || '<p class="card muted">Aún no hay clientes.</p>'}</div>`;
-  $('#member-search').oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $('#member-cards').querySelectorAll('[data-q]').forEach((card) => { card.hidden = !card.dataset.q.includes(q); }); };
-  $('#body').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => detalle(list.find((u) => u.id === b.dataset.d))));
+  const FILTERS = [['', 'Todos', () => true], ['approved', 'Pagaron', (u) => u.membership === 'approved'], ['pending', 'Por aprobar', (u) => u.membership === 'pending'], ['none', 'Sin pago', (u) => !u.membership || u.membership === 'rejected'], ['free', 'Acceso sin pago', (u) => !!u.access_override]];
+  const SORTS = { name: ['Nombre (A–Z)', (a, b) => (a.full_name || '').localeCompare(b.full_name || '')], new: ['Más recientes', (a, b) => String(b.created_at).localeCompare(String(a.created_at))], act: ['Última actividad', (a, b) => String(b.last_activity || '').localeCompare(String(a.last_activity || ''))], km: ['Más kilómetros', (a, b) => (b.total_km || 0) - (a.total_km || 0)] };
+  $('#body').innerHTML = `<h2>Clientes (<span id="cl-count">${list.length}</span>)</h2>
+    <label class="sr-only" for="member-search">Buscar cliente</label><input id="member-search" type="search" placeholder="Buscar por nombre, usuario o correo…">
+    <div class="adm-chips" id="cl-chips">${FILTERS.map(([k, t, fn], i) => `<button data-f="${k}" class="${i ? '' : 'on'}">${t}<small>${list.filter(fn).length}</small></button>`).join('')}</div>
+    <div class="adm-filters"><select id="cl-sort" aria-label="Ordenar">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select></div>
+    <div class="admin-cards" id="member-cards"></div>`;
+  let f = '';
+  const paint = () => {
+    const q = $('#member-search').value.trim().toLowerCase(), fn = FILTERS.find((x) => x[0] === f)[2], sorted = list.filter((u) => fn(u) && (`${u.full_name || ''} ${u.username || ''} ${u.email || ''}`.toLowerCase().includes(q))).sort(SORTS[$('#cl-sort').value][1]);
+    $('#cl-count').textContent = sorted.length;
+    $('#member-cards').innerHTML = sorted.map(clientCard).join('') || '<p class="card muted">Ningún cliente coincide.</p>';
+    $('#member-cards').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => detalle(list.find((u) => u.id === b.dataset.d))));
+  };
+  $('#member-search').oninput = paint; $('#cl-sort').onchange = paint;
+  $('#cl-chips').querySelectorAll('button').forEach((c) => (c.onclick = () => { f = c.dataset.f; $('#cl-chips').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === c)); paint(); }));
+  paint();
 }
 
 async function socios() {
@@ -128,25 +186,26 @@ async function socios() {
 }
 
 async function detalle(u) {
-  const [{ data: acts = [] }, { data: ws = [] }, { data: moduleRows, error: moduleError }, { data: mems = [] }] = await Promise.all([
+  const [{ data: acts = [] }, { data: ws = [] }, { data: moduleRows, error: moduleError }, { data: mems = [] }, { data: globalRows = [] }] = await Promise.all([
     supabase.from('activities').select('*').eq('user_id', u.id).order('performed_on', { ascending: false }).limit(100),
     supabase.from('workouts').select('*, workout_sets(id)').eq('user_id', u.id).order('performed_on', { ascending: false }).limit(100),
     supabase.from('profile_modules').select('module_key, enabled').eq('user_id', u.id),
     supabase.from('memberships').select('*').eq('user_id', u.id).order('period', { ascending: false }).order('created_at', { ascending: false }),
+    supabase.from('app_modules').select('module_key, enabled'),
   ]);
-  const proofUrls = {};
-  await Promise.all(mems.filter((x) => x.proof_path).map(async (x) => { const { data } = await supabase.storage.from('receipts').createSignedUrl(x.proof_path, 3600); proofUrls[x.id] = data?.signedUrl; }));
+  const globalOn = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
+  const proofUrls = await signedProofs(mems);
   const moduleState = { running: true, cycling: true, swimming: true, plyo: true, training: true };
   (moduleRows || []).forEach((row) => { moduleState[row.module_key] = row.enabled; });
   const plyoSessions = ws.filter((w) => w.kind === 'plyometrics'), trainingSessions = ws.filter((w) => w.kind === 'training');
   const self = u.id === me.id;
   const acc = (title, hint, inner, open = false) => `<details class="card pf-acc"${open ? ' open' : ''}><summary><b>${title}</b><small>${hint}</small></summary><div class="pf-acc__body">${inner}</div></details>`;
-  const payRows = mems.map((x) => `<article class="card admin-item"><b>${x.period.slice(0, 7)} · ${x.payment_method === 'cash' ? 'Efectivo' : 'QR'} · <span class="pill ${x.status}">${STATUS[x.status]}</span></b>${proofUrls[x.id] ? `<button class="link" data-proof="${x.id}">Ver comprobante</button>` : ''}<div class="quick-actions">${x.status !== 'approved' ? `<button class="btn sm" data-ma="approved" data-id="${x.id}">Aprobar</button>` : ''}${x.status !== 'rejected' ? `<button class="btn sm ghost" data-ma="rejected" data-id="${x.id}">Desaprobar</button>` : ''}${x.status !== 'pending' ? `<button class="btn sm ghost" data-ma="pending" data-id="${x.id}">Reabrir</button>` : ''}<button class="btn sm ghost" data-ma="delete" data-id="${x.id}">Borrar</button></div></article>`).join('');
+  const payRows = mems.map((x) => payCard(x, { url: proofUrls[x.id] })).join('');
   const m = modal(`<div class="sheet-h"><b>${esc(u.full_name)}</b><button class="link" data-close>Cerrar</button></div>
     <p class="muted">${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)} · alta ${u.created_at.slice(0, 10)} · <b>${ROLE_LABEL[u.role]}</b></p>
     <div class="pf-accs">
-    ${acc('Acceso y pagos', 'Aprobar, desaprobar o dar acceso sin pago', `${sw('id="acc-on"', u.access_override, 'Dar acceso sin pago', 'Puede registrar entrenamientos aunque no haya pagado')}<label class="adm-date">Acceso hasta (opcional)<input id="acc-until" type="date" value="${u.access_until || ''}"></label><button class="btn sm" id="acc-save">Guardar acceso</button><h3 class="pf-sub">Pagos de este cliente</h3><div class="admin-cards">${payRows || '<p class="card muted">Sin pagos registrados.</p>'}</div>`, true)}
-    ${acc('Módulos de este cliente', 'Qué disciplinas ve y puede usar', moduleError ? '<p class="msg">No disponible: aplica la migración 0004.</p>' : `<div class="module-settings">${[['running', 'Running'], ['cycling', 'Ciclismo'], ['swimming', 'Natación'], ['plyo', 'Pliometría'], ['training', 'Entrenamiento']].map(([key, title]) => sw(`data-module="${key}"`, moduleState[key], title)).join('')}</div>`)}
+    ${acc('Acceso y pagos', 'Pagos del cliente y acceso sin pago', `${sw('id="acc-on"', u.access_override, 'Dar acceso sin pago', 'Puede registrar entrenamientos aunque no haya pagado')}<label class="adm-date">Acceso hasta (opcional)<input id="acc-until" type="date" value="${u.access_until || ''}"></label><button class="btn sm" id="acc-save">Guardar acceso</button><h3 class="pf-sub">Pagos de este cliente</h3><div class="admin-cards">${payRows || '<p class="card muted">Sin pagos registrados.</p>'}</div>`)}
+    ${acc('Módulos de este cliente', 'Qué disciplinas ve este cliente', moduleError ? '<p class="msg">No disponible: aplica la migración 0004.</p>' : `<div class="module-settings">${[['running', 'Running'], ['cycling', 'Ciclismo'], ['swimming', 'Natación'], ['plyo', 'Pliometría'], ['training', 'Entrenamiento']].map(([key, title]) => globalOn[key] === false ? sw(`data-module="${key}" disabled`, false, title, 'Apagado para todo el club (Módulos y apariencia). Nadie lo ve.') : sw(`data-module="${key}"`, moduleState[key], title)).join('')}</div>`)}
     ${acc(`Actividades (${acts.length})`, 'Running, ciclismo y natación', `<div class="admin-cards">${acts.length ? acts.map((a) => `<article class="card admin-item"><b>${a.performed_on} · ${DISC[a.discipline]}${a.run_type ? ' · ' + RUN_TYPE[a.run_type] : ''}</b><span>${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min${a.discipline === 'running' ? ' · ' + paceStr(a.distance_km, a.duration_min) : ''}</span><button class="btn sm ghost" data-da="${a.id}">Borrar actividad</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
     ${acc(`Pliometría (${plyoSessions.length})`, 'Sesiones registradas', `<div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
     ${acc(`Entrenamiento (${trainingSessions.length})`, 'Sesiones de gimnasio', `<div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
@@ -154,15 +213,7 @@ async function detalle(u) {
     </div>`);
   m.querySelector('[data-close]').onclick = () => m.remove();
   const refresh = () => { m.remove(); (location.hash === '#socios' ? socios : clientes)(); };
-  m.querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => openProof(proofUrls[b.dataset.proof])));
-  m.querySelectorAll('[data-ma]').forEach((b) => (b.onclick = async () => {
-    const a = b.dataset.ma, id = b.dataset.id;
-    if (a === 'delete' && !(await confirmDialog('¿Borrar este pago? No se puede deshacer.', 'Borrar pago'))) return;
-    b.disabled = true;
-    const { error } = a === 'delete' ? await supabase.from('memberships').delete().eq('id', id)
-      : await supabase.from('memberships').update({ status: a, approved_at: a === 'approved' ? new Date().toISOString() : null, approved_by: a === 'approved' ? me.id : null }).eq('id', id);
-    if (error) { notify(error.message); b.disabled = false; } else { m.remove(); detalle(u); }
-  }));
+  bindPayCards(m, mems, proofUrls, () => { m.remove(); detalle(u); });
   $('#acc-save', m).onclick = async () => {
     const { error } = await supabase.rpc('admin_set_access', { target: u.id, p_override: $('#acc-on', m).checked, p_until: $('#acc-until', m).value || null });
     if (error) notify(error.message + ' ' + MIGRATION_HINT); else { u.access_override = $('#acc-on', m).checked; u.access_until = $('#acc-until', m).value || null; notify('Acceso actualizado.', 'success'); }

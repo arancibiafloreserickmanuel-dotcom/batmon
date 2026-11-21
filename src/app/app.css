@@ -2287,3 +2287,13 @@ body.appbody input.share-switch[type="checkbox"]{display:none!important}
   .adm-ex{grid-template-columns:52px 1fr}.adm-ex__img{width:52px;height:52px}.adm-ex__btns{grid-column:1 / -1}.adm-ex__btns .btn{width:100%}
   .modal .sheet{max-height:94dvh;border-radius:18px 18px 0 0}
 }
+
+/* Visor de comprobante (móvil primero) */
+.proof-v2{position:fixed;inset:0;z-index:300;background:#080808;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.proof-v2__bar{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:10px 12px;flex:none}
+.proof-v2__bar .btn{margin:0;width:auto;color:#fff!important;border-color:#555!important;background:transparent!important}
+.proof-v2__stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px;touch-action:pan-x pan-y pinch-zoom}
+.proof-v2__stage img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;border-radius:8px}
+.pay-card__top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pay-card .quick-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:600px){.pay-card .quick-actions .btn{flex:1 1 calc(50% - 8px)}}
