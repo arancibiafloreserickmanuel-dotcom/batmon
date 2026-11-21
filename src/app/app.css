@@ -2304,3 +2304,13 @@ body.appbody .adm-compact,#member-search,#pay-search,.adm-filters select,.adm-fi
 .adm-filters{gap:6px;margin:4px 0}
 .adm-chips{padding:6px 0}.adm-chips button{padding:6px 12px;font-size:12px}
 .cl-acc{margin:0 0 8px}.cl-acc .pf-acc__body{display:grid;gap:6px}.cl-acc .pf-acc__body .btn{justify-self:start;margin:4px 0 0}
+
+/* Desplegables del admin: mismo diseño que las filas del historial de Running */
+.modal .pf-accs{gap:8px}
+.modal .pf-accs .pf-acc,.cl-acc{margin:0}
+.modal .pf-accs .pf-acc>summary,.cl-acc>summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 8px;padding:14px;text-align:left}
+.modal .pf-accs .pf-acc>summary b,.cl-acc>summary b{font:400 20px Anton,sans-serif;letter-spacing:.01em;overflow-wrap:anywhere}
+.modal .pf-accs .pf-acc>summary small,.cl-acc>summary small{grid-column:1;color:var(--muted);font-size:10px}
+.modal .pf-accs .pf-acc>summary::after,.cl-acc>summary::after{content:'→';position:static;grid-column:2;grid-row:1 / span 2;width:auto;height:auto;border:0;transform:none;color:var(--ink);font-size:16px;transition:transform .25s}
+.modal .pf-accs .pf-acc[open]>summary::after,.cl-acc[open]>summary::after{transform:rotate(90deg)}
+.modal .pf-accs .pf-acc__body,.cl-acc .pf-acc__body{padding:0 14px 14px;border-top:1px solid var(--line,#e2e2e2);padding-top:12px}
