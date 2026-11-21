@@ -1,3 +1,4 @@
+import { initDropdowns } from './dropdown.js';
 import './app.css';
 import { autoEnhanceFileInputs } from './upload-field.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
@@ -870,6 +871,7 @@ function route() {
   SECTIONS[t]().then(stopLoading).catch((e) => { stopLoading();$('#body').innerHTML = `<p class="msg">Error: ${esc(e.message)}</p>`; });
 }
 
+initDropdowns();
 async function init() {
   const stopLoading=showDelayedLoading(view);
   try {

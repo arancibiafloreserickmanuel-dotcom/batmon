@@ -2299,7 +2299,7 @@ body.appbody input.share-switch[type="checkbox"]{display:none!important}
 @media(max-width:600px){.pay-card .quick-actions .btn{flex:1 1 calc(50% - 8px)}}
 
 /* Campos compactos en el panel admin */
-body.appbody .adm-compact,#member-search,#pay-search,.adm-filters select,.adm-filters input{padding:7px 12px!important;min-height:0!important;height:auto!important;font-size:13px!important;border-radius:10px!important;margin:0!important}
+body.appbody .adm-compact,#member-search,#pay-search,.adm-filters input{padding:7px 12px!important;min-height:0!important;height:auto!important;font-size:13px!important;border-radius:10px!important;margin:0!important}
 #member-search,#pay-search{width:100%;margin-bottom:4px!important}
 .adm-filters{gap:6px;margin:4px 0}
 .adm-chips{padding:6px 0}.adm-chips button{padding:6px 12px;font-size:12px}
@@ -2318,3 +2318,7 @@ body.appbody .adm-compact,#member-search,#pay-search,.adm-filters select,.adm-fi
 .adm-fold__body .admin-cards{gap:6px}
 .adm-fold .adm-fold{margin:0}
 .adm-fold.is-off{opacity:.6}
+
+/* Desplegables propios dentro del admin: compactos */
+body.appbody .adm-filters .dd,body.appbody .adm-form .dd{min-width:0}
+body.appbody .adm-filters .dd button.dd-btn,body.appbody .adm-form .dd button.dd-btn,body.appbody .adm-bulk .dd button.dd-btn,body.appbody .adm-bulkall .dd button.dd-btn{min-height:38px;padding:0 12px;font-size:13px}
