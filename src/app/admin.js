@@ -1,16 +1,14 @@
 import './app.css';
 import { autoEnhanceFileInputs } from './upload-field.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading } from './common.js';
+import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading, exerciseImgUrl } from './common.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
-import baseCatalog from '../data/plyometrics.json';
-import translations from '../data/plyometrics_es.json';
-import trainingCatalog from '../data/training_exercises.json';
 
 const view = $('#view');
 const TABS = [
   ['pagos', 'Pagos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>'],
-  ['socios', 'Socios', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.5a3.5 3.5 0 0 1 0 6.8M17 14a5.5 5.5 0 0 1 4.5 5.5"/></svg>'],
+  ['clientes', 'Clientes', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.5a3.5 3.5 0 0 1 0 6.8M17 14a5.5 5.5 0 0 1 4.5 5.5"/></svg>'],
+  ['socios', 'Socios', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9L3.5 9.2l5.9-.9L12 3Z"/></svg>'],
   ['modulos', 'Módulos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>'],
   ['ejercicios', 'Ejercicios', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg>'],
   ['eventos', 'Eventos', '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 3h6"/></svg>'],
@@ -80,40 +78,95 @@ async function pagos() {
   }));
 }
 
-/* ------------------------------- Socios ------------------------------- */
-async function socios() {
+/* ------------------------- Clientes, socios y fichas ------------------------- */
+const PERMS = [['pagos', 'Pagos'], ['clientes', 'Clientes'], ['modulos', 'Módulos y apariencia'], ['ejercicios', 'Ejercicios'], ['eventos', 'Eventos'], ['retos', 'Retos']];
+const isOwner = () => me?.role === 'admin';
+const can = (key) => isOwner() || me?.staff_permissions?.[key] === true;
+const sw = (attrs, on, label, hint = '') => `<label class="adm-sw"><span><b>${esc(label)}</b>${hint ? `<small>${esc(hint)}</small>` : ''}</span><input type="checkbox" class="share-switch" ${attrs} ${on ? 'checked' : ''} aria-label="${esc(label)}"><span><i></i></span></label>`;
+const ROLE_LABEL = { member: 'Cliente', socio: 'Socio', admin: 'Administrador' };
+const MIGRATION_HINT = '¿Aplicaste la migración 0031?';
+
+function openProof(url) {
+  const overlay = document.createElement('div'); overlay.className = 'proof-viewer';
+  overlay.innerHTML = `<button type="button" class="link" data-close>Cerrar</button><a class="btn ghost" href="${url}" target="_blank" rel="noopener">Abrir en pestaña</a><img src="${url}" alt="Comprobante de pago">`;
+  decorateAdminBackButton(overlay.querySelector('[data-close]'), 'Cerrar', true);
+  overlay.onclick = (e) => { if (e.target === overlay || e.target.closest('[data-close]')) overlay.remove(); };
+  document.body.append(overlay);
+}
+
+const clientCard = (u) => `<article class="card admin-item" data-q="${esc(((u.full_name || '') + ' ' + (u.username || '') + ' ' + (u.email || '')).toLowerCase())}"><b>${esc(u.full_name)}</b><span>${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)}</span><span>${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones · Última actividad: ${u.last_activity || '—'}</span><span>Pago del mes: ${u.membership ? STATUS[u.membership] : '—'}${u.access_override ? ` · <b>Acceso sin pago${u.access_until ? ' hasta ' + u.access_until : ''}</b>` : ''}</span><button class="btn sm ghost" data-d="${u.id}">Abrir ficha</button></article>`;
+
+async function clientes() {
   const { data = [], error } = await supabase.rpc('admin_member_overview');
-  if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>¿Ejecutaste la migración 0002?</p>`; return; }
-  $('#body').innerHTML = `<h2>Socios (${data.length})</h2><label class="sr-only" for="member-search">Buscar socio por nombre</label><input id="member-search" type="search" placeholder="Buscar socio por nombre…"><div class="admin-cards" id="member-cards">
-    ${data.map((u) => `<article class="card admin-item" data-member="${esc(u.full_name)}"><b>${esc(u.full_name)}</b><span>${esc(u.email)}</span><span>Rol: ${u.role} · ${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones</span><span>Última actividad: ${u.last_activity || '—'} · Pago: ${u.membership ? STATUS[u.membership] : '—'}</span><button class="btn sm ghost" data-d="${u.id}">Ver datos</button></article>`).join('')}
-  </div>`;
-  $('#member-search').oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $('#member-cards').querySelectorAll('[data-member]').forEach((card) => { card.hidden = !card.dataset.member.toLowerCase().includes(q); }); };
-  $('#body').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => detalle(data.find((u) => u.id === b.dataset.d))));
+  if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>${MIGRATION_HINT}</p>`; return; }
+  const list = data.filter((u) => u.role === 'member');
+  $('#body').innerHTML = `<h2>Clientes (${list.length})</h2><p class="muted">Todos los que se registran empiezan aquí. Abre su ficha para ver sus datos, pagos y módulos, darles acceso o subirlos a socio.</p>
+    <label class="sr-only" for="member-search">Buscar cliente</label><input id="member-search" type="search" placeholder="Buscar por nombre, usuario o correo…"><div class="admin-cards" id="member-cards">${list.map(clientCard).join('') || '<p class="card muted">Aún no hay clientes.</p>'}</div>`;
+  $('#member-search').oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $('#member-cards').querySelectorAll('[data-q]').forEach((card) => { card.hidden = !card.dataset.q.includes(q); }); };
+  $('#body').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => detalle(list.find((u) => u.id === b.dataset.d))));
+}
+
+async function socios() {
+  if (!isOwner()) { $('#body').innerHTML = '<p class="card muted">Solo el administrador puede gestionar a los socios.</p>'; return; }
+  const { data = [], error } = await supabase.rpc('admin_member_overview');
+  if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>${MIGRATION_HINT}</p>`; return; }
+  const staff = data.filter((u) => u.role !== 'member');
+  $('#body').innerHTML = `<h2>Socios (${staff.filter((u) => u.role === 'socio').length})</h2><p class="muted">Un socio es un cliente que tú subiste de nivel: puede ayudar en el panel solo con los permisos que actives. Para crear uno abre la ficha de un cliente y pulsa “Subir a socio”.</p>
+    <div class="admin-cards">${staff.map((u) => `<article class="card admin-item" data-uid="${u.id}"><b>${esc(u.full_name)}</b><span>${esc(u.email)} · <span class="pill ${u.role === 'admin' ? 'approved' : 'pending'}">${ROLE_LABEL[u.role]}</span></span>
+      ${u.role === 'admin' ? '<span class="muted">Administrador: acceso total.</span>' : `<div class="adm-perms">${PERMS.map(([k, t]) => sw(`data-perm="${k}"`, u.staff_permissions?.[k] === true, t)).join('')}</div><button class="btn sm ghost" data-demote="${u.id}">Bajar a cliente</button>`}</article>`).join('') || '<p class="card muted">Aún no hay socios.</p>'}</div>`;
+  $('#body').querySelectorAll('[data-perm]').forEach((input) => (input.onchange = async () => {
+    const card = input.closest('[data-uid]'), perms = {};
+    card.querySelectorAll('[data-perm]').forEach((i) => { perms[i.dataset.perm] = i.checked; });
+    const { error: er } = await supabase.rpc('admin_set_permissions', { target: card.dataset.uid, perms });
+    if (er) { input.checked = !input.checked; notify(er.message); } else notify('Permisos actualizados.', 'success');
+  }));
+  $('#body').querySelectorAll('[data-demote]').forEach((b) => (b.onclick = async () => {
+    if (!(await confirmDialog('¿Bajar a este socio a cliente? Perderá sus permisos del panel.', 'Bajar a cliente'))) return;
+    const { error: er } = await supabase.rpc('admin_set_role', { target: b.dataset.demote, new_role: 'member' });
+    if (er) notify(er.message); else socios();
+  }));
 }
 
 async function detalle(u) {
-  const [{ data: acts = [] }, { data: ws = [] }, { data: moduleRows, error: moduleError }] = await Promise.all([
+  const [{ data: acts = [] }, { data: ws = [] }, { data: moduleRows, error: moduleError }, { data: mems = [] }] = await Promise.all([
     supabase.from('activities').select('*').eq('user_id', u.id).order('performed_on', { ascending: false }).limit(100),
     supabase.from('workouts').select('*, workout_sets(id)').eq('user_id', u.id).order('performed_on', { ascending: false }).limit(100),
     supabase.from('profile_modules').select('module_key, enabled').eq('user_id', u.id),
+    supabase.from('memberships').select('*').eq('user_id', u.id).order('period', { ascending: false }).order('created_at', { ascending: false }),
   ]);
+  const proofUrls = {};
+  await Promise.all(mems.filter((x) => x.proof_path).map(async (x) => { const { data } = await supabase.storage.from('receipts').createSignedUrl(x.proof_path, 3600); proofUrls[x.id] = data?.signedUrl; }));
   const moduleState = { running: true, cycling: true, swimming: true, plyo: true, training: true };
   (moduleRows || []).forEach((row) => { moduleState[row.module_key] = row.enabled; });
-  const plyoSessions = ws.filter((w) => w.kind === 'plyometrics');
-  const trainingSessions = ws.filter((w) => w.kind === 'training');
+  const plyoSessions = ws.filter((w) => w.kind === 'plyometrics'), trainingSessions = ws.filter((w) => w.kind === 'training');
   const self = u.id === me.id;
+  const acc = (title, hint, inner, open = false) => `<details class="card pf-acc"${open ? ' open' : ''}><summary><b>${title}</b><small>${hint}</small></summary><div class="pf-acc__body">${inner}</div></details>`;
+  const payRows = mems.map((x) => `<article class="card admin-item"><b>${x.period.slice(0, 7)} · ${x.payment_method === 'cash' ? 'Efectivo' : 'QR'} · <span class="pill ${x.status}">${STATUS[x.status]}</span></b>${proofUrls[x.id] ? `<button class="link" data-proof="${x.id}">Ver comprobante</button>` : ''}<div class="quick-actions">${x.status !== 'approved' ? `<button class="btn sm" data-ma="approved" data-id="${x.id}">Aprobar</button>` : ''}${x.status !== 'rejected' ? `<button class="btn sm ghost" data-ma="rejected" data-id="${x.id}">Desaprobar</button>` : ''}${x.status !== 'pending' ? `<button class="btn sm ghost" data-ma="pending" data-id="${x.id}">Reabrir</button>` : ''}<button class="btn sm ghost" data-ma="delete" data-id="${x.id}">Borrar</button></div></article>`).join('');
   const m = modal(`<div class="sheet-h"><b>${esc(u.full_name)}</b><button class="link" data-close>Cerrar</button></div>
-    <p class="muted">${esc(u.email)} · alta ${u.created_at.slice(0, 10)} · rol <b>${u.role}</b></p>
-    <h2>Actividades (${acts.length})</h2><div class="admin-cards">${acts.length ? acts.map((a) => `<article class="card admin-item"><b>${a.performed_on} · ${DISC[a.discipline]}${a.run_type ? ' · ' + RUN_TYPE[a.run_type] : ''}</b><span>${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min${a.discipline === 'running' ? ' · ' + paceStr(a.distance_km, a.duration_min) : ''}</span><button class="btn sm ghost" data-da="${a.id}">Borrar actividad</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
-    <h2>Pliometría (${plyoSessions.length})</h2><div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
-    <h2>Entrenamiento (${trainingSessions.length})</h2><div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>
-    <h2>Módulos de este socio</h2><p class="muted">Los módulos desactivados se ocultan en su navegación y accesos directos.</p>
-    ${moduleError ? `<p class="msg">No disponible: aplica la migración 0004 para gestionar módulos.</p>` : `<div class="module-settings">${[['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']].map(([key,title]) => `<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-module="${key}" ${moduleState[key] ? 'checked' : ''} aria-label="Activar ${title}"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div>`}
-    <h2>Acciones</h2>
-    ${self ? '<p class="muted">Eres tú: no puedes cambiar tu rol ni borrarte.</p>' : `<button class="btn sm ghost" id="role">${u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}</button>
-      <button class="btn sm" id="rmuser" style="background:#a00;border-color:#a00">Eliminar socio y sus datos</button>`}`);
+    <p class="muted">${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)} · alta ${u.created_at.slice(0, 10)} · <b>${ROLE_LABEL[u.role]}</b></p>
+    <div class="pf-accs">
+    ${acc('Acceso y pagos', 'Aprobar, desaprobar o dar acceso sin pago', `${sw('id="acc-on"', u.access_override, 'Dar acceso sin pago', 'Puede registrar entrenamientos aunque no haya pagado')}<label class="adm-date">Acceso hasta (opcional)<input id="acc-until" type="date" value="${u.access_until || ''}"></label><button class="btn sm" id="acc-save">Guardar acceso</button><h3 class="pf-sub">Pagos de este cliente</h3><div class="admin-cards">${payRows || '<p class="card muted">Sin pagos registrados.</p>'}</div>`, true)}
+    ${acc('Módulos de este cliente', 'Qué disciplinas ve y puede usar', moduleError ? '<p class="msg">No disponible: aplica la migración 0004.</p>' : `<div class="module-settings">${[['running', 'Running'], ['cycling', 'Ciclismo'], ['swimming', 'Natación'], ['plyo', 'Pliometría'], ['training', 'Entrenamiento']].map(([key, title]) => sw(`data-module="${key}"`, moduleState[key], title)).join('')}</div>`)}
+    ${acc(`Actividades (${acts.length})`, 'Running, ciclismo y natación', `<div class="admin-cards">${acts.length ? acts.map((a) => `<article class="card admin-item"><b>${a.performed_on} · ${DISC[a.discipline]}${a.run_type ? ' · ' + RUN_TYPE[a.run_type] : ''}</b><span>${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min${a.discipline === 'running' ? ' · ' + paceStr(a.distance_km, a.duration_min) : ''}</span><button class="btn sm ghost" data-da="${a.id}">Borrar actividad</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc(`Pliometría (${plyoSessions.length})`, 'Sesiones registradas', `<div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc(`Entrenamiento (${trainingSessions.length})`, 'Sesiones de gimnasio', `<div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc('Cuenta', 'Nivel y eliminación', self ? '<p class="muted">Eres tú: no puedes cambiar tu nivel ni borrarte.</p>' : `${isOwner() && u.role === 'member' ? '<button class="btn sm" id="promote">Subir a socio</button><p class="muted">Un socio podrá usar el panel solo con los permisos que le actives en la sección Socios.</p>' : ''}${isOwner() && u.role === 'socio' ? '<button class="btn sm ghost" id="demote">Bajar a cliente</button>' : ''}${u.role === 'member' || isOwner() ? '<button class="btn sm" id="rmuser" style="background:#a00;border-color:#a00">Eliminar cuenta y sus datos</button>' : ''}`)}
+    </div>`);
   m.querySelector('[data-close]').onclick = () => m.remove();
-  const refresh = () => { m.remove(); socios(); };
+  const refresh = () => { m.remove(); (location.hash === '#socios' ? socios : clientes)(); };
+  m.querySelectorAll('[data-proof]').forEach((b) => (b.onclick = () => openProof(proofUrls[b.dataset.proof])));
+  m.querySelectorAll('[data-ma]').forEach((b) => (b.onclick = async () => {
+    const a = b.dataset.ma, id = b.dataset.id;
+    if (a === 'delete' && !(await confirmDialog('¿Borrar este pago? No se puede deshacer.', 'Borrar pago'))) return;
+    b.disabled = true;
+    const { error } = a === 'delete' ? await supabase.from('memberships').delete().eq('id', id)
+      : await supabase.from('memberships').update({ status: a, approved_at: a === 'approved' ? new Date().toISOString() : null, approved_by: a === 'approved' ? me.id : null }).eq('id', id);
+    if (error) { notify(error.message); b.disabled = false; } else { m.remove(); detalle(u); }
+  }));
+  $('#acc-save', m).onclick = async () => {
+    const { error } = await supabase.rpc('admin_set_access', { target: u.id, p_override: $('#acc-on', m).checked, p_until: $('#acc-until', m).value || null });
+    if (error) notify(error.message + ' ' + MIGRATION_HINT); else { u.access_override = $('#acc-on', m).checked; u.access_until = $('#acc-until', m).value || null; notify('Acceso actualizado.', 'success'); }
+  };
   m.querySelectorAll('[data-da]').forEach((b) => (b.onclick = async () => { if (!(await confirmDialog('¿Borrar esta actividad?', 'Borrar actividad'))) return; const { error } = await supabase.from('activities').delete().eq('id', b.dataset.da); if (error) notify(error.message); else { m.remove(); detalle(u); } }));
   m.querySelectorAll('[data-dw]').forEach((b) => (b.onclick = async () => { if (!(await confirmDialog('¿Borrar esta sesión?', 'Borrar sesión'))) return; const { error } = await supabase.from('workouts').delete().eq('id', b.dataset.dw); if (error) notify(error.message); else { m.remove(); detalle(u); } }));
   m.querySelectorAll('[data-module]').forEach((input) => (input.onchange = async () => {
@@ -121,13 +174,11 @@ async function detalle(u) {
     if (error) { input.checked = !input.checked; notify(`No se pudo actualizar el módulo: ${error.message}`); }
     else notify(`Módulo ${input.checked ? 'activado' : 'oculto'} para ${u.full_name}`, 'success');
   }));
-  const role = $('#role', m); if (role) role.onclick = async () => {
-    const next = u.role === 'admin' ? 'member' : 'admin';
-    if (!(await confirmDialog(`¿Cambiar el rol de ${u.full_name} a ${next === 'admin' ? 'administrador' : 'socio'}?`, 'Cambiar rol'))) return;
-    const { error } = await supabase.rpc('admin_set_role', { target: u.id, new_role: next }); if (error) notify(error.message); else refresh();
-  };
+  const setRole = (id, next, text, ok) => { const b = $(id, m); if (b) b.onclick = async () => { if (!(await confirmDialog(text, ok))) return; const { error } = await supabase.rpc('admin_set_role', { target: u.id, new_role: next }); if (error) notify(error.message + ' ' + MIGRATION_HINT); else { notify(next === 'socio' ? 'Ahora es socio. Configura sus permisos en la sección Socios.' : 'Ahora es cliente.', 'success'); refresh(); } }; };
+  setRole('#promote', 'socio', `¿Subir a ${u.full_name} de cliente a socio?`, 'Subir a socio');
+  setRole('#demote', 'member', `¿Bajar a ${u.full_name} a cliente?`, 'Bajar a cliente');
   const rm = $('#rmuser', m); if (rm) rm.onclick = async () => {
-    if (!(await confirmDialog(`Se borrará la cuenta de ${u.full_name} y todos sus datos.`, 'Eliminar socio'))) return;
+    if (!(await confirmDialog(`Se borrará la cuenta de ${u.full_name} y todos sus datos.`, 'Eliminar cuenta'))) return;
     const gone = [];
     for (const bucket of ['receipts', 'profile-media']) {
       const { data: files } = await supabase.storage.from(bucket).list(u.id, { limit: 1000 });
@@ -139,79 +190,196 @@ async function detalle(u) {
   };
 }
 
+/* ------------------------------- Módulos ------------------------------- */
+const MODULES = [['running', 'Running'], ['cycling', 'Ciclismo'], ['swimming', 'Natación'], ['plyo', 'Pliometría'], ['training', 'Entrenamiento']];
+async function modulos() {
+  const [{ data: globalRows = [], error: globalError }, { data: appearance }] = await Promise.all([
+    supabase.from('app_modules').select('module_key,enabled'), supabase.from('site_settings').select('theme_policy').eq('id', true).maybeSingle(),
+  ]);
+  if (globalError) { $('#body').innerHTML = '<h2>Módulos</h2><p class="msg">Aplica la migración 0004 para configurar módulos.</p>'; return; }
+  const globals = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
+  $('#body').innerHTML = `<h1>Módulos y apariencia</h1><p class="muted">Ajustes generales del club. Los módulos de cada cliente se configuran dentro de su ficha, en Clientes.</p>
+    <h2>Tema para todo el club</h2><label for="theme-policy">Apariencia</label><select id="theme-policy"><option value="choice" ${appearance?.theme_policy === 'choice' ? 'selected' : ''}>Cada socio puede elegir</option><option value="dark" ${appearance?.theme_policy === 'dark' ? 'selected' : ''}>Forzar modo oscuro</option><option value="light" ${appearance?.theme_policy === 'light' ? 'selected' : ''}>Forzar modo claro</option></select><p class="muted">Los fondos de textura se aplicarán en ambos modos.</p>
+    <h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key, title]) => sw(`data-global="${key}"`, globals[key] !== false, title, 'Para todos los clientes')).join('')}</div>`;
+  $('#theme-policy').onchange = async (e) => { const { error } = await supabase.from('site_settings').upsert({ id: true, theme_policy: e.target.value, updated_by: me.id, updated_at: new Date().toISOString() }, { onConflict: 'id' }); if (error) notify(error.message); };
+  $('#body').querySelectorAll('[data-global]').forEach((input) => (input.onchange = async () => { const { error } = await supabase.from('app_modules').upsert({ module_key: input.dataset.global, enabled: input.checked, updated_by: me.id, updated_at: new Date().toISOString() }, { onConflict: 'module_key' }); if (error) { input.checked = !input.checked; notify(error.message); } }));
+}
+
 /* ----------------------------- Ejercicios ----------------------------- */
+const CAT_LABEL = { plyometrics: 'Pliometría', training: 'Entrenamiento' };
+const LEVEL_LABEL = { beginner: 'Principiante', intermediate: 'Intermedio', expert: 'Avanzado' };
+const exState = { cat: 'plyometrics', q: '', muscle: '', equip: '', level: '', active: 'all', shown: 40 };
+const normName = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const lev = (a, b) => {
+  if (a === b) return 0; if (!a.length) return b.length; if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { const cur = [i]; for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[b.length];
+};
+/** Busca ejercicios iguales o parecidos dentro de la misma categoría (no se mezclan categorías). */
+function findSimilar(name, pool, selfId = null) {
+  const n = normName(name); if (!n) return { exact: [], near: [] };
+  const toks = new Set(n.split(' ').filter((t) => t.length > 2)), exact = [], near = [];
+  for (const e of pool) {
+    if (e.id === selfId) continue;
+    for (const cand of [e.name, e.name_es].filter(Boolean)) {
+      const c = normName(cand); if (!c) continue;
+      if (c === n) { exact.push(e); break; }
+      const ct = new Set(c.split(' ').filter((t) => t.length > 2)), inter = [...toks].filter((t) => ct.has(t)).length, jac = inter / Math.max(1, new Set([...toks, ...ct]).size);
+      if ((n.length >= 5 && (c.includes(n) || n.includes(c))) || jac >= 0.6 || (n.length >= 5 && lev(n, c) <= 2)) { near.push(e); break; }
+    }
+  }
+  return { exact, near: near.slice(0, 5) };
+}
+const exName = (e) => e.name_es || e.name;
+const cleanFileName = (file) => { const t = file.replace(/\.[^.]+$/, '').replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : ''; };
+const splitList = (s) => String(s || '').split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+async function uploadExerciseImage(file, category) {
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) throw new Error('Usa imágenes JPG, PNG, WebP o GIF.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Cada imagen debe pesar menos de 5 MB.');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `${category}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from('exercise-media').upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw new Error(error.message + (/bucket|not found/i.test(error.message) ? ' (aplica la migración 0031)' : ''));
+  return supabase.storage.from('exercise-media').getPublicUrl(path).data.publicUrl;
+}
+const removeExerciseImage = async (url) => { const i = String(url || '').indexOf('/exercise-media/'); if (i >= 0) await supabase.storage.from('exercise-media').remove([decodeURIComponent(url.slice(i + 16).split('?')[0])]); };
+const simNote = (sim) => (sim.exact.length ? `<span class="adm-warn adm-warn--bad">Ya existe: ${esc(exName(sim.exact[0]))}</span>` : sim.near.length ? `<span class="adm-warn">Parecido a: ${sim.near.map((e) => esc(exName(e))).join(', ')}</span>` : '');
+
 async function ejercicios() {
   const { data = [], error } = await supabase.from('exercises').select('*').order('name');
   if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>¿Ejecutaste la migración 0002?</p>`; return; }
-  const have = new Set(data.map((e) => e.id));
-  const missing = baseCatalog.filter((e) => !have.has(e.id)).length;
+  const cats = [...new Set([...Object.keys(CAT_LABEL), ...data.map((e) => e.category)])];
+  if (!cats.includes(exState.cat)) exState.cat = cats[0];
+  const pool = () => data.filter((e) => e.category === exState.cat);
+  const body = $('#body');
+  const catName = () => CAT_LABEL[exState.cat] || exState.cat;
 
-  $('#body').innerHTML = `<h2>Catálogo (${data.length})</h2>
-    <div class="card"><p class="muted">Dataset base: ${baseCatalog.length} ejercicios de pliometría (free-exercise-db, dominio público). Faltan por importar: <b>${missing}</b>.</p>
-      <button class="btn sm" id="imp">${missing ? 'Importar catálogo base' : 'Actualizar catálogo base'}</button><p class="msg" id="im"></p></div>
-    <div class="card"><p class="muted">Catálogo inicial de entrenamiento: ${trainingCatalog.length} movimientos. Faltan por importar: <b>${trainingCatalog.filter((e) => !have.has(e.id)).length}</b>.</p><button class="btn sm ghost" id="imp-training">Importar ejercicios de entrenamiento</button><p class="msg" id="training-import-msg"></p></div>
-    <div class="card"><p class="muted">Traducciones al español: ${translations.length} nombres.</p><button class="btn sm ghost" id="apply-es">Aplicar traducciones</button><p class="msg" id="es-msg"></p></div>
-    <input id="q" type="search" placeholder="Buscar…" style="margin:10px 0">
-    <div id="tb" class="admin-cards"></div>`;
+  const list = () => {
+    const q = normName(exState.q);
+    const rows = pool().filter((e) => (!q || normName(e.name + ' ' + (e.name_es || '')).includes(q)) && (!exState.muscle || (e.primary_muscles || []).includes(exState.muscle)) && (!exState.equip || e.equipment === exState.equip) && (!exState.level || e.level === exState.level) && (exState.active === 'all' || (exState.active === 'on') === !!e.is_active));
+    const shown = rows.slice(0, exState.shown);
+    $('#ex-count').textContent = `${rows.length} ejercicio${rows.length === 1 ? '' : 's'} en ${catName()}`;
+    $('#ex-list').innerHTML = shown.map((e) => `<article class="card admin-item adm-ex ${e.is_active ? '' : 'is-off'}"><div class="adm-ex__img">${e.images?.[0] ? `<img loading="lazy" src="${esc(exerciseImgUrl(e.images[0]))}" alt="">` : '<span>—</span>'}</div><div class="adm-ex__body"><b>${esc(exName(e))}</b><span>${esc([(e.primary_muscles || []).join(', '), e.equipment, LEVEL_LABEL[e.level]].filter(Boolean).join(' · ') || 'Sin datos')}</span>${e.is_active ? '' : '<em class="adm-warn">Inactivo</em>'}</div><div class="adm-ex__btns"><button class="btn sm ghost" data-edit="${esc(e.id)}">Editar</button></div></article>`).join('') || '<p class="card muted">No hay ejercicios que coincidan.</p>';
+    $('#ex-more').innerHTML = rows.length > shown.length ? `<button class="btn ghost sm" id="ex-more-btn">Ver más (${rows.length - shown.length})</button>` : '';
+    const more = $('#ex-more-btn'); if (more) more.onclick = () => { exState.shown += 40; list(); };
+    $('#ex-list').querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openForm(data.find((e) => e.id === b.dataset.edit))));
+  };
 
-  const draw = () => {
-    const q = $('#q').value.trim().toLowerCase();
-    $('#tb').innerHTML = data.filter((e) => !q || (e.name + (e.name_es || '')).toLowerCase().includes(q)).map((e) => `<article class="card admin-item exercise-admin-card">
-        <div class="exh">${e.images?.[0] ? `<img class="th" loading="lazy" src="/exercises/${esc(e.images[0])}" alt="">` : ''}<div><b>${esc(e.name)}</b><span>${esc(e.source)}</span></div></div>
-        <label>Nombre en español<input data-es="${esc(e.id)}" value="${esc(e.name_es || '')}" placeholder="Traducción"></label>
-        <label class="active-toggle"><input type="checkbox" data-act="${esc(e.id)}" ${e.is_active ? 'checked' : ''}> Activo en la biblioteca</label>
-        <button class="btn sm ghost" data-rm="${esc(e.id)}">Borrar ejercicio</button></article>`).join('') || '<p class="card muted">No hay ejercicios que coincidan.</p>';
-    $('#tb').querySelectorAll('[data-es]').forEach((i) => (i.onchange = async () => { const { error: er } = await supabase.from('exercises').update({ name_es: i.value.trim() || null }).eq('id', i.dataset.es); if (er) notify(er.message); else data.find((e) => e.id === i.dataset.es).name_es = i.value.trim() || null; }));
-    $('#tb').querySelectorAll('[data-act]').forEach((i) => (i.onchange = async () => { const { error: er } = await supabase.from('exercises').update({ is_active: i.checked }).eq('id', i.dataset.act); if (er) { notify(er.message); i.checked = !i.checked; } }));
-    $('#tb').querySelectorAll('[data-rm]').forEach((b) => (b.onclick = async () => {
+  const top = () => {
+    const p = pool(), muscles = [...new Set(p.flatMap((e) => e.primary_muscles || []))].sort(), equips = [...new Set(p.map((e) => e.equipment).filter(Boolean))].sort();
+    const opts = (items, cur, all) => `<option value="">${all}</option>${items.map(([v, t]) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}`;
+    body.innerHTML = `<div class="adm-head"><h2>Ejercicios</h2></div>
+      <div class="adm-chips" role="tablist" aria-label="Categoría">${cats.map((c) => `<button type="button" class="${c === exState.cat ? 'on' : ''}" data-cat="${esc(c)}">${esc(CAT_LABEL[c] || c)} <small>${data.filter((e) => e.category === c).length}</small></button>`).join('')}</div>
+      <div class="adm-head__btns"><button class="btn sm" id="ex-add">+ Agregar ejercicio de ${esc(catName())}</button><button class="btn sm ghost" id="ex-bulk">Agregar en masa</button></div>
+      <div class="adm-filters"><input id="ex-q" type="search" placeholder="Buscar en ${esc(catName())}…" value="${esc(exState.q)}" aria-label="Buscar ejercicio">
+        <select id="ex-muscle" aria-label="Músculo">${opts(muscles.map((m) => [m, m]), exState.muscle, 'Músculo: todos')}</select>
+        <select id="ex-equip" aria-label="Equipo">${opts(equips.map((m) => [m, m]), exState.equip, 'Equipo: todos')}</select>
+        <select id="ex-level" aria-label="Nivel">${opts(Object.entries(LEVEL_LABEL), exState.level, 'Nivel: todos')}</select>
+        <select id="ex-active" aria-label="Estado">${opts([['on', 'Activos'], ['off', 'Inactivos']], exState.active === 'all' ? '' : exState.active, 'Estado: todos')}</select></div>
+      <p class="muted" id="ex-count"></p><div id="ex-list" class="admin-cards"></div><div id="ex-more"></div>`;
+    body.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { exState.cat = b.dataset.cat; Object.assign(exState, { q: '', muscle: '', equip: '', level: '', active: 'all', shown: 40 }); top(); }));
+    $('#ex-q').oninput = (e) => { exState.q = e.target.value; exState.shown = 40; list(); };
+    for (const [id, key] of [['#ex-muscle', 'muscle'], ['#ex-equip', 'equip'], ['#ex-level', 'level']]) $(id).onchange = (e) => { exState[key] = e.target.value; exState.shown = 40; list(); };
+    $('#ex-active').onchange = (e) => { exState.active = e.target.value || 'all'; exState.shown = 40; list(); };
+    $('#ex-add').onclick = () => openForm(null);
+    $('#ex-bulk').onclick = () => openBulk();
+    list();
+  };
+
+  const datalists = () => { const p = pool(); return `<datalist id="dl-muscle">${[...new Set(p.flatMap((e) => e.primary_muscles || []))].sort().map((m) => `<option value="${esc(m)}">`).join('')}</datalist><datalist id="dl-equip">${[...new Set(p.map((e) => e.equipment).filter(Boolean))].sort().map((m) => `<option value="${esc(m)}">`).join('')}</datalist>`; };
+
+  function openForm(ex) {
+    const isNew = !ex, cat = ex ? ex.category : exState.cat;
+    const m = modal(`<div class="sheet-h"><b>${isNew ? 'Agregar ejercicio' : 'Editar ejercicio'} · ${esc(CAT_LABEL[cat] || cat)}</b><button class="link" data-close>Cerrar</button></div>
+      <form id="ex-form" class="adm-form">${datalists()}
+        <label>Nombre<input name="name" maxlength="120" required value="${esc(ex ? exName(ex) : '')}" autocomplete="off"></label><div id="ex-sim" class="adm-sim"></div>
+        <label>Nivel<select name="level">${Object.entries(LEVEL_LABEL).map(([v, t]) => `<option value="${v}" ${(ex?.level || 'beginner') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label>Equipo<input name="equipment" list="dl-equip" maxlength="80" value="${esc(ex?.equipment || '')}" placeholder="Ej: mancuernas, banco, ninguno"></label>
+        <label>Músculos principales<input name="primary" list="dl-muscle" value="${esc((ex?.primary_muscles || []).join(', '))}" placeholder="Separados por coma"></label>
+        <label>Músculos secundarios<input name="secondary" value="${esc((ex?.secondary_muscles || []).join(', '))}" placeholder="Separados por coma"></label>
+        <label>Instrucciones<textarea name="instructions" rows="4" placeholder="Un paso por línea">${esc((ex?.instructions || []).join('\n'))}</textarea></label>
+        <label>Imagen${ex?.images?.[0] ? `<img class="adm-form__img" src="${esc(exerciseImgUrl(ex.images[0]))}" alt="">` : ''}<input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+        ${sw('name="active"', ex ? ex.is_active : true, 'Activo en la biblioteca', 'Si lo apagas deja de aparecer a los clientes')}
+        <div class="quick-actions"><button class="btn" type="submit">${isNew ? 'Agregar' : 'Guardar cambios'}</button>${isNew ? '' : '<button class="btn ghost" type="button" id="ex-del">Borrar</button>'}</div><p class="msg" role="status"></p></form>`);
+    m.querySelector('[data-close]').onclick = () => m.remove();
+    const form = $('#ex-form', m), msg = form.querySelector('.msg');
+    const catPool = data.filter((e) => e.category === cat);
+    const check = () => { const sim = findSimilar(form.elements.name.value, catPool, ex?.id); $('#ex-sim', m).innerHTML = simNote(sim); return sim; };
+    form.elements.name.oninput = check; check();
+    form.onsubmit = async (event) => {
+      event.preventDefault(); const name = form.elements.name.value.trim(), sim = check(), btn = form.querySelector('[type=submit]');
+      if (!name) return;
+      if (sim.exact.length) { msg.textContent = `Ya existe un ejercicio llamado “${exName(sim.exact[0])}” en ${CAT_LABEL[cat] || cat}. Cambia el nombre.`; return; }
+      if (sim.near.length && !(await confirmDialog(`Hay ejercicios parecidos: ${sim.near.map(exName).join(', ')}. ¿Guardar de todos modos?`, 'Guardar igual'))) return;
+      btn.disabled = true; msg.textContent = 'Guardando…';
+      try {
+        const file = form.elements.image.files[0]; let images = ex?.images || [];
+        if (file) { const url = await uploadExerciseImage(file, cat); if (ex?.images?.[0]) await removeExerciseImage(ex.images[0]); images = [url, ...images.slice(1)]; }
+        const fields = { name, name_es: name, level: form.elements.level.value, equipment: form.elements.equipment.value.trim() || null, primary_muscles: splitList(form.elements.primary.value), secondary_muscles: splitList(form.elements.secondary.value), instructions: String(form.elements.instructions.value).split('\n').map((x) => x.trim()).filter(Boolean), images, is_active: form.elements.active.checked };
+        const res = isNew ? await supabase.from('exercises').insert({ id: 'custom-' + crypto.randomUUID(), category: cat, source: 'custom', created_by: me.id, ...fields }) : await supabase.from('exercises').update(fields).eq('id', ex.id);
+        if (res.error) throw new Error(res.error.message);
+        notify(isNew ? 'Ejercicio agregado.' : 'Ejercicio actualizado.', 'success'); m.remove(); ejercicios();
+      } catch (err) { msg.textContent = err.message; btn.disabled = false; }
+    };
+    const del = $('#ex-del', m);
+    if (del) del.onclick = async () => {
       if (!(await confirmDialog('¿Borrar este ejercicio del catálogo?', 'Borrar ejercicio'))) return;
-      const { error: er } = await supabase.from('exercises').delete().eq('id', b.dataset.rm);
-      if (er) notify('No se puede borrar (¿ya se usó en sesiones?). Mejor desactívalo. ' + er.message); else ejercicios();
-    }));
-  };
-  $('#q').oninput = draw; draw();
+      const { error: er } = await supabase.from('exercises').delete().eq('id', ex.id);
+      if (er) { msg.textContent = 'No se puede borrar (¿ya se usó en sesiones?). Mejor desactívalo. ' + er.message; return; }
+      if (ex.images?.[0]) await removeExerciseImage(ex.images[0]);
+      m.remove(); ejercicios();
+    };
+  }
 
-  $('#imp').onclick = async () => {
-    $('#imp').disabled = true; $('#im').textContent = 'Importando…';
-    // name_es / is_active NO se envían, así que un upsert no pisa traducciones ni desactivaciones
-    const rows = baseCatalog.map((e) => ({ id: e.id, name: e.name, category: 'plyometrics', level: e.level, equipment: e.equipment,
-      primary_muscles: e.primary_muscles, secondary_muscles: e.secondary_muscles, instructions: e.instructions, images: e.images, source: 'dataset', created_by: null }));
-    const { error: er } = await supabase.from('exercises').upsert(rows, { onConflict: 'id' });
-    if (er) { $('#im').textContent = 'Error: ' + er.message; $('#imp').disabled = false; } else ejercicios();
-  };
-  $('#imp-training').onclick = async () => {
-    const button = $('#imp-training'); button.disabled = true; $('#training-import-msg').textContent = 'Importando…';
-    const rows = trainingCatalog.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, name: e.name, name_es: e.name_es, category: 'training', level: 'beginner', equipment: e.equipment, primary_muscles: e.primary_muscles, secondary_muscles: [], instructions: e.instructions, images: [], source: 'dataset', created_by: null }));
-    if (!rows.length) { $('#training-import-msg').textContent = 'El catálogo ya está completo.'; button.disabled = false; return; }
-    const { error: importError } = await supabase.from('exercises').insert(rows);
-    if (importError) { $('#training-import-msg').textContent = `No se pudo importar: ${importError.message}`; button.disabled = false; }
-    else ejercicios();
-  };
-  $('#apply-es').onclick = async () => {
-    const button = $('#apply-es'); button.disabled = true; $('#es-msg').textContent = 'Aplicando traducciones…';
-    const results = await Promise.all(translations.map(({ id, name_es }) => supabase.from('exercises').update({ name_es }).eq('id', id)));
-    const failed = results.filter((r) => r.error);
-    if (failed.length) { $('#es-msg').textContent = `No se pudieron actualizar ${failed.length} traducciones: ${failed[0].error.message}`; button.disabled = false; }
-    else ejercicios();
-  };
-}
+  function openBulk() {
+    const cat = exState.cat, catPool = data.filter((e) => e.category === cat);
+    let drafts = [];
+    const m = modal(`<div class="sheet-h"><b>Agregar en masa · ${esc(CAT_LABEL[cat] || cat)}</b><button class="link" data-close>Cerrar</button></div>
+      <p class="muted">Elige varias fotos: cada una será un ejercicio y su nombre sale del nombre del archivo (puedes cambiarlo). También puedes pegar una lista de nombres.</p>${datalists()}
+      <label>Fotos<input id="bk-files" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label>
+      <label>O pega nombres (uno por línea)<textarea id="bk-names" rows="3" placeholder="Salto vertical&#10;Sentadilla con salto"></textarea></label><button class="btn sm ghost" id="bk-addnames" type="button">Agregar nombres a la lista</button>
+      <div class="adm-bulkall" id="bk-all" hidden><b>Aplicar a todos</b><select id="bk-level"><option value="">Nivel</option>${Object.entries(LEVEL_LABEL).map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select><input id="bk-equip" list="dl-equip" placeholder="Equipo"><input id="bk-muscle" list="dl-muscle" placeholder="Músculo principal"><button class="btn sm ghost" id="bk-apply" type="button">Aplicar</button></div>
+      <div id="bk-rows" class="adm-bulk"></div><div class="quick-actions"><button class="btn" id="bk-save" type="button" hidden>Guardar todos</button></div><p class="msg" id="bk-msg" role="status"></p>`);
+    m.querySelector('[data-close]').onclick = () => { drafts.forEach((d) => d.preview && URL.revokeObjectURL(d.preview)); m.remove(); };
+    const warnFor = (d, i) => {
+      const nn = normName(d.name), dup = nn && drafts.some((o, j) => j < i && normName(o.name) === nn);
+      return dup ? '<span class="adm-warn adm-warn--bad">Repetido en esta lista</span>' : simNote(findSimilar(d.name, catPool));
+    };
+    const draw = () => {
+      $('#bk-all', m).hidden = !drafts.length; $('#bk-save', m).hidden = !drafts.length;
+      $('#bk-rows', m).innerHTML = drafts.map((d, i) => `<article class="card adm-bulk__row" data-i="${i}"><div class="adm-bulk__img">${d.preview ? `<img src="${d.preview}" alt="">` : '<span>—</span>'}</div><div class="adm-bulk__fields"><input data-f="name" value="${esc(d.name)}" placeholder="Nombre" aria-label="Nombre"><div class="adm-bulk__two"><select data-f="level" aria-label="Nivel">${Object.entries(LEVEL_LABEL).map(([v, t]) => `<option value="${v}" ${d.level === v ? 'selected' : ''}>${t}</option>`).join('')}</select><input data-f="equipment" list="dl-equip" value="${esc(d.equipment)}" placeholder="Equipo" aria-label="Equipo"></div><input data-f="muscle" list="dl-muscle" value="${esc(d.muscle)}" placeholder="Músculo principal" aria-label="Músculo principal"><div class="adm-sim" data-warn>${warnFor(d, i)}</div></div><button class="link" data-rmrow="${i}" aria-label="Quitar">Quitar</button></article>`).join('');
+      $('#bk-rows', m).querySelectorAll('[data-i]').forEach((row) => {
+        const i = Number(row.dataset.i);
+        row.querySelectorAll('[data-f]').forEach((inp) => (inp.oninput = () => { drafts[i][inp.dataset.f] = inp.value; if (inp.dataset.f === 'name') $('#bk-rows', m).querySelectorAll('[data-i]').forEach((r2) => { r2.querySelector('[data-warn]').innerHTML = warnFor(drafts[Number(r2.dataset.i)], Number(r2.dataset.i)); }); }));
+        row.querySelector('[data-rmrow]').onclick = () => { const [gone] = drafts.splice(i, 1); if (gone.preview) URL.revokeObjectURL(gone.preview); draw(); };
+      });
+    };
+    const blank = (extra) => ({ name: '', level: 'beginner', equipment: '', muscle: '', file: null, preview: '', ...extra });
+    $('#bk-files', m).onchange = (e) => { for (const f of e.target.files) drafts.push(blank({ name: cleanFileName(f.name), file: f, preview: URL.createObjectURL(f) })); e.target.value = ''; draw(); };
+    $('#bk-addnames', m).onclick = () => { String($('#bk-names', m).value).split('\n').map((x) => x.trim()).filter(Boolean).forEach((n) => drafts.push(blank({ name: n }))); $('#bk-names', m).value = ''; draw(); };
+    $('#bk-apply', m).onclick = () => { const l = $('#bk-level', m).value, q = $('#bk-equip', m).value.trim(), mu = $('#bk-muscle', m).value.trim(); drafts.forEach((d) => { if (l) d.level = l; if (q) d.equipment = q; if (mu) d.muscle = mu; }); draw(); };
+    $('#bk-save', m).onclick = async () => {
+      const btn = $('#bk-save', m), msg = $('#bk-msg', m); btn.disabled = true;
+      const seen = new Set(catPool.flatMap((e) => [normName(e.name), normName(e.name_es)]).filter(Boolean)); let ok = 0; const skipped = [], failed = [], rows = [];
+      for (let i = 0; i < drafts.length; i++) {
+        const d = drafts[i], name = d.name.trim(), nn = normName(name);
+        if (!name) { skipped.push('(sin nombre)'); continue; }
+        if (seen.has(nn)) { skipped.push(name); continue; }
+        msg.textContent = `Subiendo ${i + 1} de ${drafts.length}…`;
+        try {
+          const url = d.file ? await uploadExerciseImage(d.file, cat) : null;
+          rows.push({ id: 'custom-' + crypto.randomUUID(), name, name_es: name, category: cat, level: d.level, equipment: d.equipment.trim() || null, primary_muscles: splitList(d.muscle), secondary_muscles: [], instructions: [], images: url ? [url] : [], source: 'custom', created_by: me.id, is_active: true });
+          seen.add(nn);
+        } catch (err) { failed.push(`${name}: ${err.message}`); }
+      }
+      if (rows.length) { const { error: er } = await supabase.from('exercises').insert(rows); if (er) { msg.textContent = 'No se pudo guardar: ' + er.message; btn.disabled = false; return; } ok = rows.length; }
+      const parts = [`Se agregaron ${ok}.`]; if (skipped.length) parts.push(`Omitidos por existir o estar vacíos: ${skipped.join(', ')}.`); if (failed.length) parts.push(`Con error: ${failed.join(' | ')}.`);
+      notify(parts.join(' '), ok ? 'success' : undefined); drafts.forEach((d) => d.preview && URL.revokeObjectURL(d.preview)); m.remove(); ejercicios();
+    };
+    draw();
+  }
 
-/* ------------------------------- Módulos ------------------------------- */
-const MODULES = [['running','Running'],['cycling','Ciclismo'],['swimming','Natación'],['plyo','Pliometría'],['training','Entrenamiento']];
-async function modulos() {
-  const [{ data: globalRows = [], error: globalError }, { data: users = [], error: userError }, { data: appearance }] = await Promise.all([
-    supabase.from('app_modules').select('module_key,enabled'), supabase.from('profiles').select('id,full_name').order('full_name'), supabase.from('site_settings').select('theme_policy').eq('id',true).maybeSingle(),
-  ]);
-  if (globalError || userError) { $('#body').innerHTML = `<h2>Módulos</h2><p class="msg">Aplica la migración 0004 para configurar módulos.</p>`; return; }
-  const globals = Object.fromEntries(globalRows.map((r) => [r.module_key, r.enabled]));
-  $('#body').innerHTML = `<h1>Módulos y apariencia</h1><p class="muted">Configura qué módulos y tema verá el club.</p><h2>Tema para todo el club</h2><label for="theme-policy">Apariencia</label><select id="theme-policy"><option value="choice" ${appearance?.theme_policy==='choice'?'selected':''}>Cada socio puede elegir</option><option value="dark" ${appearance?.theme_policy==='dark'?'selected':''}>Forzar modo oscuro</option><option value="light" ${appearance?.theme_policy==='light'?'selected':''}>Forzar modo claro</option></select><p class="muted">Los fondos de textura se aplicarán en ambos modos.</p><h2>Disponibilidad general</h2><div class="module-settings">${MODULES.map(([key,title]) => `<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-global="${key}" ${globals[key] !== false ? 'checked' : ''} aria-label="Activar ${title} para todos"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div><h2>Acceso por socio</h2><input id="module-user-search" type="search" placeholder="Buscar socio…"><div class="admin-cards" id="module-users">${users.map(u => `<details class="card module-user" data-name="${esc(u.full_name)}"><summary><b>${esc(u.full_name)}</b></summary><div class="module-settings">${MODULES.map(([key,title])=>`<label class="module-toggle"><span>${title}</span><span class="module-check"><input type="checkbox" data-user="${u.id}" data-module="${key}" checked aria-label="Activar ${title} para ${esc(u.full_name)}"><span class="module-checkmark" aria-hidden="true"></span></span></label>`).join('')}</div></details>`).join('')}</div>`;
-  $('#theme-policy').onchange=async e=>{const {error}=await supabase.from('site_settings').upsert({id:true,theme_policy:e.target.value,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'id'});if(error)notify(error.message);};
-  const userRows = await supabase.from('profile_modules').select('user_id,module_key,enabled');
-  if (userRows.error) { notify(`No se pudieron leer excepciones: ${userRows.error.message}`); return; }
-  userRows.data.forEach(r => { const input = $('#module-users').querySelector(`[data-user="${r.user_id}"][data-module="${r.module_key}"]`); if (input) input.checked = r.enabled; });
-  $('#module-user-search').oninput = e => { const q=e.target.value.toLowerCase(); $('#module-users').querySelectorAll('[data-name]').forEach(card => card.hidden=!card.dataset.name.toLowerCase().includes(q)); };
-  $('#body').querySelectorAll('[data-global]').forEach(input => input.onchange=async()=>{ const {error}=await supabase.from('app_modules').upsert({module_key:input.dataset.global,enabled:input.checked,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'module_key'}); if(error){input.checked=!input.checked;notify(error.message);} });
-  $('#body').querySelectorAll('[data-user]').forEach(input => input.onchange=async()=>{ const {error}=await supabase.from('profile_modules').upsert({user_id:input.dataset.user,module_key:input.dataset.module,enabled:input.checked,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:'user_id,module_key'}); if(error){input.checked=!input.checked;notify(error.message);} });
+  top();
 }
 
 /* ------------------------------- Eventos ------------------------------- */
@@ -585,48 +753,66 @@ async function eventos() {
 }
 
 async function retos() {
-  const {data:rows=[],error}=await supabase.from('club_challenges').select('*').order('starts_on',{ascending:false});
-  const body=$('#body');
-  if(error){body.innerHTML=`<h1>Retos del club</h1><div class="card warn">No se pudieron cargar. Aplica la migración 0015 cuando esté lista: ${esc(error.message)}</div>`;return;}
-  const disciplineLabel={running:'Running',cycling:'Ciclismo',swimming:'Natación',plyo:'Pliometría',training:'Entrenamiento'};
-  body.innerHTML=`<h1>Retos del club</h1><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p><form class="card admin-challenge-form" id="challenge-form"><input type="hidden" name="id"><label>Título<input name="title" maxlength="100" required></label><label>Descripción<textarea name="description" maxlength="500" rows="3"></textarea></label><div class="row"><label>Disciplina<select name="discipline">${Object.entries(disciplineLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Medición<select name="metric"><option value="sessions">Sesiones</option><option value="distance_km">Distancia (km)</option></select></label></div><div class="row"><div class="route-field route-field--full"><span><b>Ruta</b> <small class="muted" id="ch-route-info">Sin ruta</small></span><button type="button" class="btn ghost sm" id="ch-route-btn">Marcar de dónde a dónde</button><input type="hidden" name="route_json"></div><label>Meta<input name="goal_value" type="number" min="1" step="0.1" required></label><label>Logros de recompensa<input name="reward_logros" type="number" min="0" max="5000" step="1" placeholder="50"></label><label>Insignia (máx. 6 caracteres)<input name="badge" maxlength="6" placeholder="400'"></label><label>Inicio<input name="starts_on" type="date" required></label><label>Fin<input name="ends_on" type="date" required></label></div><div class="quick-actions"><button class="btn" type="submit">Crear reto</button><button class="btn ghost" type="button" id="challenge-cancel" hidden>Cancelar edición</button></div><p class="msg" aria-live="polite"></p></form><h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map(row=>`<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric==='distance_km'?'Kilómetros':'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description||'')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('')||'<p class="card muted">Aún no hay retos.</p>'}</div>`;
-  const form=$('#challenge-form',body);
-  const readRoute=()=>{try{return JSON.parse(form.elements.route_json.value||'null');}catch{return null;}};
-  const paintRoute=()=>{const r=readRoute(),d=form.elements.discipline.value;$('#ch-route-info',body).textContent=r?routeSummary(r):d==='running'?'Obligatoria en retos de running':'Opcional';};
-  $('#ch-route-btn',body).onclick=async()=>{const d=form.elements.discipline.value,out=await openRoutePicker({route:readRoute(),profile:d==='cycling'?'bike':'foot',title:'Ruta del reto',allowRemove:true});if(!out)return;form.elements.route_json.value=out.route?JSON.stringify(out.route):'';if(out.route&&form.elements.metric.value==='distance_km'&&!form.elements.goal_value.value)form.elements.goal_value.value=out.route.distance_km;paintRoute();};
-  paintRoute();
-  form.elements.discipline.addEventListener('change',paintRoute);
-  form.elements.discipline.onchange=()=>{if(form.elements.discipline.value==='plyo'||form.elements.discipline.value==='training'){form.elements.metric.value='sessions';form.elements.metric.querySelector('[value="distance_km"]').disabled=true;}else form.elements.metric.querySelector('[value="distance_km"]').disabled=false;};
-  form.onsubmit=async event=>{
-    event.preventDefault();const data=new FormData(form),id=data.get('id'),start=data.get('starts_on'),end=data.get('ends_on'),metric=data.get('metric'),discipline=data.get('discipline'),msg=form.querySelector('.msg'),button=form.querySelector('[type="submit"]');
-    if(end<start){msg.textContent='La fecha final debe ser igual o posterior al inicio.';return;}
-    const routeObj=readRoute();if(discipline==='running'&&!routeObj){msg.textContent='En los retos de running la ruta es obligatoria: márcala de dónde a dónde.';return;}
-    if((discipline==='plyo'||discipline==='training')&&metric==='distance_km'){msg.textContent='Pliometría y Entrenamiento solo admiten retos por sesiones.';return;}
-    button.disabled=true;const row={title:String(data.get('title')).trim(),description:String(data.get('description')||'').trim()||null,discipline,metric,goal_value:Number(data.get('goal_value')),starts_on:start,ends_on:end};
-    if(routeObj||(id&&rows.find(x=>x.id===id)?.route))row.route=routeObj;
-    {const r=String(data.get('reward_logros')||'').trim(),bd=String(data.get('badge')||'').trim();if(r!=='')row.reward_logros=Number(r);if(bd||(id&&rows.find(x=>x.id===id)?.badge))row.badge=bd||null;}
-    const result=id?await supabase.from('club_challenges').update(row).eq('id',id):await supabase.from('club_challenges').insert({...row,created_by:me.id});
-    button.disabled=false;if(result.error){msg.textContent=`No se guardó el reto: ${result.error.message}`;return;}notify(id?'Reto actualizado.':'Reto creado.','success');retos();
-  };
-  $('#challenge-cancel',body).onclick=()=>retos();
-  body.querySelectorAll('[data-edit-challenge]').forEach(button=>button.onclick=()=>{
-    const row=rows.find(item=>item.id===button.dataset.editChallenge);if(!row)return;
-    for(const key of ['id','title','description','discipline','metric','goal_value','starts_on','ends_on','reward_logros','badge'])form.elements[key].value=row[key]??'';
-    form.elements.route_json.value=row.route?JSON.stringify(row.route):'';paintRoute();
-    form.elements.discipline.dispatchEvent(new Event('change'));
-    $('#challenge-cancel',body).hidden=false;form.querySelector('[type="submit"]').textContent='Guardar cambios';form.scrollIntoView({behavior:'smooth',block:'start'});
-  });
-  body.querySelectorAll('[data-delete-challenge]').forEach(button=>button.onclick=async()=>{
-    if(!(await confirmDialog('¿Eliminar el reto? También se borrará la participación asociada.','Eliminar reto')))return;
-    const {error:deleteError}=await supabase.from('club_challenges').delete().eq('id',button.dataset.deleteChallenge);
-    if(deleteError)notify(deleteError.message);else{notify('Reto eliminado.','success');retos();}
-  });
+  const { data: rows = [], error } = await supabase.from('club_challenges').select('*').order('starts_on', { ascending: false });
+  const body = $('#body');
+  if (error) { body.innerHTML = `<h1>Retos del club</h1><div class="card warn">No se pudieron cargar. Aplica la migración 0015 cuando esté lista: ${esc(error.message)}</div>`; return; }
+  const disciplineLabel = { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación', plyo: 'Pliometría', training: 'Entrenamiento' };
+  body.innerHTML = `<div class="adm-head"><h1>Retos del club</h1><button class="btn sm" id="ch-new">+ Nuevo reto</button></div><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p>
+    <h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map((row) => `<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric === 'distance_km' ? 'Kilómetros' : 'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description || '')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('') || '<p class="card muted">Aún no hay retos. Pulsa “Nuevo reto” para crear el primero.</p>'}</div>`;
+
+  function openForm(row) {
+    const v = (k) => esc(row?.[k] ?? '');
+    const m = modal(`<div class="sheet-h"><b>${row ? 'Editar reto' : 'Nuevo reto'}</b><button class="link" data-close>Cerrar</button></div>
+      <form class="admin-challenge-form adm-form" id="challenge-form"><input type="hidden" name="id" value="${v('id')}">
+        <label>Título<input name="title" maxlength="100" required value="${v('title')}"></label>
+        <label>Descripción<textarea name="description" maxlength="500" rows="3">${v('description')}</textarea></label>
+        <div class="row"><label>Disciplina<select name="discipline">${Object.entries(disciplineLabel).map(([value, label]) => `<option value="${value}" ${row?.discipline === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+        <label>Medición<select name="metric"><option value="sessions" ${row?.metric === 'sessions' ? 'selected' : ''}>Sesiones</option><option value="distance_km" ${row?.metric === 'distance_km' ? 'selected' : ''}>Distancia (km)</option></select></label></div>
+        <div class="route-field route-field--full"><span><b>Ruta</b> <small class="muted" id="ch-route-info">Sin ruta</small></span><button type="button" class="btn ghost sm" id="ch-route-btn">Marcar de dónde a dónde</button><input type="hidden" name="route_json"></div>
+        <div class="row"><label>Meta<input name="goal_value" type="number" min="1" step="0.1" required value="${v('goal_value')}"></label>
+        <label>Logros de recompensa<input name="reward_logros" type="number" min="0" max="5000" step="1" placeholder="50" value="${v('reward_logros')}"></label></div>
+        <label>Insignia (máx. 6 caracteres)<input name="badge" maxlength="6" placeholder="400'" value="${v('badge')}"></label>
+        <div class="row"><label>Inicio<input name="starts_on" type="date" required value="${v('starts_on')}"></label><label>Fin<input name="ends_on" type="date" required value="${v('ends_on')}"></label></div>
+        <div class="quick-actions"><button class="btn" type="submit">${row ? 'Guardar cambios' : 'Crear reto'}</button></div><p class="msg" aria-live="polite"></p></form>`);
+    m.querySelector('[data-close]').onclick = () => m.remove();
+    const form = $('#challenge-form', m);
+    form.elements.route_json.value = row?.route ? JSON.stringify(row.route) : '';
+    const readRoute = () => { try { return JSON.parse(form.elements.route_json.value || 'null'); } catch { return null; } };
+    const paintRoute = () => { const r = readRoute(), d = form.elements.discipline.value; $('#ch-route-info', m).textContent = r ? routeSummary(r) : d === 'running' ? 'Obligatoria en retos de running' : 'Opcional'; };
+    $('#ch-route-btn', m).onclick = async () => { const d = form.elements.discipline.value, out = await openRoutePicker({ route: readRoute(), profile: d === 'cycling' ? 'bike' : 'foot', title: 'Ruta del reto', allowRemove: true }); if (!out) return; form.elements.route_json.value = out.route ? JSON.stringify(out.route) : ''; if (out.route && form.elements.metric.value === 'distance_km' && !form.elements.goal_value.value) form.elements.goal_value.value = out.route.distance_km; paintRoute(); };
+    const syncMetric = () => { const d = form.elements.discipline.value, dist = form.elements.metric.querySelector('[value="distance_km"]'); if (d === 'plyo' || d === 'training') { form.elements.metric.value = 'sessions'; dist.disabled = true; } else dist.disabled = false; paintRoute(); };
+    form.elements.discipline.onchange = syncMetric; syncMetric();
+    form.onsubmit = async (event) => {
+      event.preventDefault(); const data = new FormData(form), id = data.get('id'), start = data.get('starts_on'), end = data.get('ends_on'), metric = data.get('metric'), discipline = data.get('discipline'), msg = form.querySelector('.msg'), button = form.querySelector('[type="submit"]');
+      if (end < start) { msg.textContent = 'La fecha final debe ser igual o posterior al inicio.'; return; }
+      const routeObj = readRoute(); if (discipline === 'running' && !routeObj) { msg.textContent = 'En los retos de running la ruta es obligatoria: márcala de dónde a dónde.'; return; }
+      if ((discipline === 'plyo' || discipline === 'training') && metric === 'distance_km') { msg.textContent = 'Pliometría y Entrenamiento solo admiten retos por sesiones.'; return; }
+      button.disabled = true;
+      const payload = { title: String(data.get('title')).trim(), description: String(data.get('description') || '').trim() || null, discipline, metric, goal_value: Number(data.get('goal_value')), starts_on: start, ends_on: end };
+      if (routeObj || row?.route) payload.route = routeObj;
+      { const r = String(data.get('reward_logros') || '').trim(), bd = String(data.get('badge') || '').trim(); if (r !== '') payload.reward_logros = Number(r); if (bd || row?.badge) payload.badge = bd || null; }
+      const result = id ? await supabase.from('club_challenges').update(payload).eq('id', id) : await supabase.from('club_challenges').insert({ ...payload, created_by: me.id });
+      button.disabled = false; if (result.error) { msg.textContent = `No se guardó el reto: ${result.error.message}`; return; }
+      notify(id ? 'Reto actualizado.' : 'Reto creado.', 'success'); m.remove(); retos();
+    };
+  }
+
+  $('#ch-new', body).onclick = () => openForm(null);
+  body.querySelectorAll('[data-edit-challenge]').forEach((button) => (button.onclick = () => { const row = rows.find((item) => item.id === button.dataset.editChallenge); if (row) openForm(row); }));
+  body.querySelectorAll('[data-delete-challenge]').forEach((button) => (button.onclick = async () => {
+    if (!(await confirmDialog('¿Eliminar el reto? También se borrará la participación asociada.', 'Eliminar reto'))) return;
+    const { error: deleteError } = await supabase.from('club_challenges').delete().eq('id', button.dataset.deleteChallenge);
+    if (deleteError) notify(deleteError.message); else { notify('Reto eliminado.', 'success'); retos(); }
+  }));
 }
 
 /* ------------------------------- Shell ------------------------------- */
-const SECTIONS = { pagos, socios, modulos, ejercicios, eventos, retos };
+const SECTIONS = { pagos, clientes, socios, modulos, ejercicios, eventos, retos };
+const allowedTabs = () => TABS.filter(([h]) => (h === 'socios' ? isOwner() : can(h)));
 function route() {
-  const t = SECTIONS[location.hash.slice(1)] ? location.hash.slice(1) : 'pagos';
+  const allowed = allowedTabs().map(([h]) => h);
+  if (!allowed.length) { $('#body').innerHTML = '<h2>Sin permisos</h2><p class="muted">Aún no tienes permisos asignados en el panel. Pídele al administrador que te los active.</p>'; return; }
+  const asked = location.hash.slice(1), t = SECTIONS[asked] && allowed.includes(asked) ? asked : allowed[0];
   document.querySelectorAll('#tabs a').forEach((a) => {
     const active = a.getAttribute('href') === '#' + t;
     a.classList.toggle('on', active);
@@ -645,7 +831,7 @@ async function init() {
     const theme = appearance?.theme_policy === 'choice' ? localStorage.getItem(`batmon_theme_${session.user.id}`) || 'light' : appearance?.theme_policy || 'light';
     document.body.dataset.theme = theme;
     me = await getProfile(session.user.id);
-    if (me?.role !== 'admin') { stopLoading();view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para administradores.</p>'; return; }
+    if (!['admin', 'socio'].includes(me?.role)) { stopLoading();view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para el equipo del club.</p>'; return; }
     const adminName=me.full_name||session.user.user_metadata?.full_name||'Administrador';
     const nameNode=$('#admin-header-name');
     const avatarNode=$('#admin-header-avatar');
@@ -661,7 +847,7 @@ async function init() {
     stopLoading();
     view.innerHTML = '<div id="body"></div>';
     $('#tabs').hidden = false;
-    $('#tabs').innerHTML = TABS.map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
+    $('#tabs').innerHTML = allowedTabs().map(([h, t, icon]) => `<a href="#${h}" aria-label="${t}" aria-current="false"><span class="tab-icon">${icon}</span><span class="tab-label">${t}</span></a>`).join('');
     window.addEventListener('hashchange', route);
     route();
   } catch (error) {

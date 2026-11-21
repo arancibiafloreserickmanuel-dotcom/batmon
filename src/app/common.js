@@ -8,7 +8,8 @@ export const monthStart = () => { const d = new Date(); return iso(new Date(d.ge
 export const weekStart = (from = new Date()) => { const d = new Date(from); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return iso(d); };
 export const paceStr = (km, min) => { if (!km || !min) return '—'; const p = min / km; let m = Math.floor(p), s = Math.round((p - m) * 60); if (s === 60) { m++; s = 0; } return `${m}:${String(s).padStart(2, '0')} /km`; };
 export const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
-export const imgSrc = (e) => (e?.images?.[0] ? `/exercises/${e.images[0]}` : null);
+export const exerciseImgUrl = (p) => (/^https?:\/\//.test(p) ? p : `/exercises/${encodeURI(p)}`);
+export const imgSrc = (e) => (e?.images?.[0] ? exerciseImgUrl(e.images[0]) : null);
 
 export const loadingMarkup = () => `<div class="loading-state" role="status" aria-live="polite"><div class="wheel-and-hamster" role="img" aria-label="Hámster naranja corriendo en una rueda"><div class="wheel"></div><div class="hamster"><div class="hamster__body"><div class="hamster__head"><div class="hamster__ear"></div><div class="hamster__eye"></div><div class="hamster__nose"></div></div><div class="hamster__limb hamster__limb--fr"></div><div class="hamster__limb hamster__limb--fl"></div><div class="hamster__limb hamster__limb--br"></div><div class="hamster__limb hamster__limb--bl"></div><div class="hamster__tail"></div></div></div><div class="spoke"></div></div><span class="loading-label">Cargando…</span></div>`;
 

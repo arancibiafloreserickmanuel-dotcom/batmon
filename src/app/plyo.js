@@ -2,7 +2,7 @@ import { supabase, $, esc } from '../supabase.js';
 import { mountPlyoCoach } from './coach-ui.js';
 import { loadAthlete, saveAthlete, plyoWeekIndex, plyoItems } from './coach.js';
 import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
-import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart } from './common.js';
+import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart, exerciseImgUrl } from './common.js';
 import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros } from './share.js';
 import { sessionMediaMarkup, readSessionMedia, saveSessionMedia } from './profile-ui.js';
 
@@ -15,7 +15,7 @@ const FIELD_LABELS = { // clave BD -> [etiqueta corta, step]
 };
 const REST_PRESETS = [30, 45, 60, 90, 120, 180];
 const name = (e) => esc(e?.name_es || e?.name || '?');
-const thumb = (e, cls = 'th') => (e?.images?.[0] ? `<img class="${cls}" loading="lazy" src="/exercises/${esc(e.images[0])}" alt="">` : `<div class="${cls} ph">?</div>`);
+const thumb = (e, cls = 'th') => (e?.images?.[0] ? `<img class="${cls}" loading="lazy" src="${esc(exerciseImgUrl(e.images[0]))}" alt="">` : `<div class="${cls} ph">?</div>`);
 const fmtClock = (s) => { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
 
 // Determina qué parámetros aplican a un ejercicio según su tipo de movimiento.
@@ -84,7 +84,7 @@ export async function renderPlyo(view, ctx) {
   view.querySelectorAll('.tabs-pill__input').forEach((input) => { input.checked = input.value === section; input.onchange = () => { section = input.value; planPage = null; editId = null; draftPlan = null; renderPlyo(view, ctx); }; });
   const box = $('#sub', view);
   if (!catalog.length) {
-    box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y pulsa “Importar catálogo base”.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
+    box.innerHTML = `<div class="card"><p>El catálogo de ejercicios está vacío.</p><p class="muted">${ctx.isAdmin ? 'Ve a Admin → Ejercicios y agrega ejercicios.' : 'Pídele al administrador que importe el catálogo.'}</p></div>`;
     return;
   }
   if (section === 'train') renderTrain(box, view, ctx);
@@ -101,7 +101,7 @@ function renderTrain(box, view, ctx) {
   const isRest = !!entry?.rest && !routine;
   const hasPending = W && W.status !== 'done';
   const firstEx = routine ? catalog.find((e) => e.id === routine.items[0]?.exercise_id) : null;
-  const photo = isRest ? REST_IMG : firstEx?.images?.[0] ? `/exercises/${encodeURI(firstEx.images[0])}` : '';
+  const photo = isRest ? REST_IMG : firstEx?.images?.[0] ? exerciseImgUrl(firstEx.images[0]) : '';
   const repsOf = (it) => { const t = it.targets || {}; if (t.reps) return `${t.reps}`; if (t.contacts) return `${t.contacts} cont.`; if (t.seconds) return `${t.seconds} s`; if (t.time_sec) return `${t.time_sec} s`; return '—'; };
   const rows = routine ? routine.items.map((it) => {
     const ex = catalog.find((e) => e.id === it.exercise_id);
@@ -521,7 +521,7 @@ function plyoGroup(e) {
   const s = `${e?.id || ''} ${e?.name || ''} ${e?.name_es || ''}`.toLowerCase().replace(/_/g, ' ');
   return (PLYO_GROUPS.find((g) => g[2].test(s)) || ['otros'])[0];
 }
-const exPhoto = (e) => (e?.images?.[0] ? `/exercises/${encodeURI(e.images[0])}` : '');
+const exPhoto = (e) => (e?.images?.[0] ? exerciseImgUrl(e.images[0]) : '');
 const exById = (id) => catalog.find((e) => e.id === id);
 const setSummary = (it) => { const s = it.sets?.[0]; return `${it.sets?.length || it.target_sets || 1} × ${s?.reps || it.targets?.reps || '—'}`; };
 
@@ -1076,7 +1076,7 @@ function library(box, view, ctx) {
 function detail(e, ctx, view) {
   const mine = e.source === 'custom' && e.created_by === ctx.user.id;
   const m = modal(`<div class="sheet-h"><b>${name(e)}</b><button class="link" data-close>Cerrar</button></div>
-    <div class="imgs">${(e.images || []).map((i) => `<img src="/exercises/${esc(i)}" alt="" loading="lazy">`).join('')}</div>
+    <div class="imgs">${(e.images || []).map((i) => `<img src="${esc(exerciseImgUrl(i))}" alt="" loading="lazy">`).join('')}</div>
     <p class="muted">${esc(LEVEL[e.level] || e.level || '')} · ${esc(equipEs(e.equipment))}</p>
     <p><b>Músculos:</b> ${esc((e.primary_muscles || []).map(muscleEs).join(', ') || '—')}${e.secondary_muscles?.length ? ` <span class="muted">(+ ${esc(e.secondary_muscles.map(muscleEs).join(', '))})</span>` : ''}</p>
     <ol>${(e.how?.length ? e.how : e.instructions || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>

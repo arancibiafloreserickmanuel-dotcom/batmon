@@ -2,7 +2,7 @@ import './app.css';
 import { initDropdowns } from './dropdown.js';
 import { runSessionOn, whenLabel, sessionLine } from './coach.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, iso, today, monthStart, weekStart, DISC, RUN_TYPE, showDelayedLoading, notify, confirmDialog } from './common.js';
+import { fmt, iso, today, monthStart, weekStart, DISC, RUN_TYPE, showDelayedLoading, notify, confirmDialog, exerciseImgUrl } from './common.js';
 import { renderRunning } from './running.js';
 import { renderPlyo } from './plyo.js';
 import { renderTraining } from './training.js';
@@ -74,7 +74,7 @@ async function boot(user) {
   const members = Object.fromEntries((moduleRows || []).map(row => [row.module_key, row.enabled]));
   const modules = Object.fromEntries(Object.keys(globals).map(key => [key, globals[key] && members[key] !== false]));
   await syncGoogleAvatar(user, profile);
-  ctx = { user, profile, isAdmin: profile?.role === 'admin', canRegister: profile?.role === 'admin' || membership?.status === 'approved', modules, themePolicy: appearance?.theme_policy || 'choice' };
+  ctx = { user, profile, isAdmin: ['admin', 'socio'].includes(profile?.role), canRegister: ['admin', 'socio'].includes(profile?.role) || membership?.status === 'approved' || (!!profile?.access_override && (!profile?.access_until || profile.access_until >= new Date().toISOString().slice(0, 10))), modules, themePolicy: appearance?.theme_policy || 'choice' };
   applyTheme();
   if (!hasMemberIdentity(profile)) {
     $('#tabs').hidden = true;
@@ -242,7 +242,7 @@ function setupUnifiedCalendar(view, clubEvents = [], agenda = {}) {
   const plyoRoutinesById = agenda.plyoRoutinesById || new Map();
   const exercisesById = agenda.exercisesById || new Map();
   const runPlan = agenda.runPlan || null;
-  const exercisePhoto = (id) => { const img = exercisesById.get(String(id))?.images?.[0]; return img ? `/exercises/${encodeURI(img)}` : ''; };
+  const exercisePhoto = (id) => { const img = exercisesById.get(String(id))?.images?.[0]; return img ? exerciseImgUrl(img) : ''; };
   const activities = (agenda.activities || []).filter((item) => agenda.modules?.[item.discipline]);
   const workouts = (agenda.workouts || []).filter((item) => item.kind === 'training' ? agenda.modules?.training : item.kind === 'plyometrics' ? agenda.modules?.plyo : true);
   const challenges = agenda.challenges || [];
@@ -640,7 +640,7 @@ async function renderHome(v) {
     }
     if (plyoRoutine) {
       const first = (plyoRoutine.items || []).map((it) => exercisesById.get(String(it.exercise_id))).find((e) => e?.images?.[0]);
-      const photo = first ? `/exercises/${encodeURI(first.images[0])}` : '';
+      const photo = first ? exerciseImgUrl(first.images[0]) : '';
       const when = plyoEntry.time || (plyoEntry.after ? `Después: ${plyoEntry.after}` : '');
       slides.push({ at: plyoEntry.time || '99', html: `<article class="day-slide day-slide--photo" style="${photo ? `--day-photo:url('${photo}')` : ''}" aria-label="Pliometría de hoy"><div class="day-slide__body"><span class="day-kicker">Pliometría${plyoEntry.name ? ` · ${esc(plyoEntry.name)}` : ''}</span><h2>${esc(plyoRoutine.name)}</h2><p class="day-meta">${(plyoRoutine.items || []).length} ejercicios${when ? ` · ${esc(when)}` : ''}</p>${btn('#plyo', 'Iniciar sesión', plyoDone)}</div></article>` });
     }
