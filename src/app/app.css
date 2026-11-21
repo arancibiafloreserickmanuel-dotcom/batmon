@@ -2234,3 +2234,10 @@ body.appbody input.share-switch[type="checkbox"]{display:none!important}
 #acc-privacy .pf-acc__body>p.muted{margin:0 0 6px;line-height:1.45}
 #acc-privacy .msg:empty{display:none}
 .bf-row{padding:8px 0}
+.home-compliance small{display:none!important}
+.home-greeting{grid-template-areas:"title count" "bar bar"!important;row-gap:10px!important;column-gap:14px!important;align-items:end!important}
+.home-greeting__title>p{margin:0 0 4px!important;font:600 12px Inter,sans-serif!important;letter-spacing:.02em!important}
+.home-greeting__title h1{font-size:clamp(26px,8vw,34px)!important;line-height:1.05!important}
+.home-compliance>div:first-child{justify-self:end;align-self:end;padding-bottom:4px;flex-direction:column;align-items:flex-end;gap:2px!important}
+.home-compliance>div:first-child b{font-size:22px!important;line-height:1}
+.home-compliance__track{height:5px!important;margin-top:0!important}
