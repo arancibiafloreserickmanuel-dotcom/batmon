@@ -2185,3 +2185,8 @@ body.appbody .pf-avatar-wrap .rank-mini img{width:26px;height:26px}
 .pf-top .pf-fullname{font-size:13px!important;letter-spacing:.05em!important}
 body.appbody .pf-avatar-wrap .rank-mini{background:transparent!important;box-shadow:none!important;border-radius:0!important;width:36px!important;height:36px!important;right:-8px;bottom:-6px}
 body.appbody .pf-avatar-wrap .rank-mini img{width:34px;height:34px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.pf-stats{gap:16px!important}
+.pf-avatar-wrap,.pf-avatar-wrap .profile-avatar{width:80px!important;height:80px!important}
+.pf-counts{gap:4px!important}
+.pf-counts span{font-size:9px!important;letter-spacing:0!important;overflow:hidden;text-overflow:clip}
+.pf-counts>div{min-width:0;padding:0 2px}
