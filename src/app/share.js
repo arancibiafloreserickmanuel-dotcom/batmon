@@ -20,7 +20,7 @@ const ICON = {
 
 export function shareSectionMarkup({ titlePlaceholder = 'Mi actividad' } = {}) {
   return `<section class="share-box" data-share>
-    <label class="share-toggle"><span><b>Compartir actividad</b><small>Tus amigos del club la verán en Actividades. Solo se comparte si lo activas.</small></span><input type="checkbox" class="share-switch" data-share-on></label>
+    <label class="share-toggle"><span><b>Compartir actividad</b><small>Tus amigos del club la verán en Actividades. Solo se comparte si lo activas.</small></span><input type="checkbox" class="share-switch" data-share-on><span><i></i></span></label>
     <div class="share-fields" data-share-fields hidden>
       <label>Título<input data-share-title maxlength="100" placeholder="${esc(titlePlaceholder)}"></label>
       <label>Descripción<textarea data-share-desc rows="3" maxlength="1000" placeholder="¿Cómo te ha ido? Comparte más detalles sobre tu actividad."></textarea></label>

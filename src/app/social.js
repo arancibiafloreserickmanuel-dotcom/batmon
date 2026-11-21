@@ -46,7 +46,7 @@ export async function mountBestFriends(box, ctx) {
   const people = dir.filter((p) => ids.includes(p.id));
   const avatars = new Map(await Promise.all(people.map(async (p) => [p.id, await avatarSrc(p, 1800)])));
   box.innerHTML = `<h2>Mejores amigos</h2><p class="muted">Elige entre las personas que ya sigues. Solo ellos verán lo que compartas como “Mejores amigos” y recibirás avisos cuando suban de rango o completen un reto, y ellos los tuyos.</p>
-    ${people.length ? `<div class="bf-list">${people.map((p) => `<label class="bf-row"><span class="community-avatar bf-avatar">${avatars.get(p.id) ? avatarImg(avatars.get(p.id)) : esc(initialsOf(p.full_name))}</span><b>${esc(p.full_name || 'Socio Batmon')}</b><input type="checkbox" class="share-switch" data-bf="${p.id}" ${closeSet.has(p.id) ? 'checked' : ''} aria-label="Mejor amigo: ${esc(p.full_name || '')}"></label>`).join('')}</div>` : '<p class="card muted">Aún no sigues a nadie. Búscalos en Club → Miembros.</p>'}`;
+    ${people.length ? `<div class="bf-list">${people.map((p) => `<label class="bf-row"><span class="community-avatar bf-avatar">${avatars.get(p.id) ? avatarImg(avatars.get(p.id)) : esc(initialsOf(p.full_name))}</span><b>${esc(p.full_name || 'Socio Batmon')}</b><input type="checkbox" class="share-switch" data-bf="${p.id}" ${closeSet.has(p.id) ? 'checked' : ''} aria-label="Mejor amigo: ${esc(p.full_name || '')}"><span><i></i></span></label>`).join('')}</div>` : '<p class="card muted">Aún no sigues a nadie. Búscalos en Club → Miembros.</p>'}`;
   box.querySelectorAll('[data-bf]').forEach((input) => {
     input.onchange = async () => {
       const id = input.dataset.bf, on = input.checked; input.disabled = true;

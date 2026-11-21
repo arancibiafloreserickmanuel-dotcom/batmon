@@ -207,7 +207,7 @@ export function sessionMediaMarkup(ctx, kind) {
   const mods = enabledModules(ctx), cur = mods.includes(kind) ? kind : mods[0];
   return `<fieldset class="sess-media"><legend>Foto o video de la sesión</legend>
     <label class="sess-media__pick">Tomar o elegir<input type="file" name="sess_media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"></label>
-    <label class="sess-media__row"><span>Publicar en mi perfil</span><input type="checkbox" class="share-switch" name="sess_pub" aria-label="Publicar en mi perfil"></label>
+    <label class="sess-media__row"><span>Publicar en mi perfil</span><input type="checkbox" class="share-switch" name="sess_pub" aria-label="Publicar en mi perfil"><span><i></i></span></label>
     <label>Categoría<select name="sess_cat">${mods.map((k) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${MOD[k]}</option>`).join('')}</select></label>
     <small class="muted">Si no la publicas, queda guardada y podrás publicarla después desde Editar perfil.</small></fieldset>`;
 }
@@ -239,7 +239,7 @@ export const privacyOf = (profile) => ({ photos: true, videos: true, progress: f
 
 export function mountPrivacy(box, ctx) {
   const priv = privacyOf(ctx.profile);
-  box.innerHTML = `<p class="muted">Elige qué ven los socios que te siguen cuando abren tu perfil. Tu membresía, ajustes y notificaciones nunca se muestran.</p>${PRIVACY_ITEMS.map(([k, t]) => `<label class="bf-row pf-priv"><b>${t}</b><input type="checkbox" class="share-switch" data-priv="${k}" ${priv[k] ? 'checked' : ''} aria-label="${t}"></label>`).join('')}<p class="msg" data-msg></p>`;
+  box.innerHTML = `<p class="muted">Elige qué ven los socios que te siguen cuando abren tu perfil. Tu membresía, ajustes y notificaciones nunca se muestran.</p>${PRIVACY_ITEMS.map(([k, t]) => `<label class="bf-row pf-priv"><b>${t}</b><input type="checkbox" class="share-switch" data-priv="${k}" ${priv[k] ? 'checked' : ''} aria-label="${t}"><span><i></i></span></label>`).join('')}<p class="msg" data-msg></p>`;
   box.querySelectorAll('[data-priv]').forEach((input) => {
     input.onchange = async () => {
       input.disabled = true;
