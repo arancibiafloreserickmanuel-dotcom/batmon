@@ -6,6 +6,13 @@ import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { computeLogros, logrosMarkup } from './share.js';
 import { rankFor } from './ranks.js';
 
+const svg = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+export const TAB_ICONS = {
+  photos: svg('<rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.4"/><path d="M8.5 6l1.4-2.2h4.2L15.5 6"/>'),
+  videos: svg('<rect x="3" y="5" width="18" height="14" rx="3.5"/><path d="M10.2 9.2v5.6l4.8-2.8z"/>'),
+  progress: svg('<path d="M3.5 3.5v17h17"/><path d="M7.5 15.5l3.8-4.6 3 2.8 5-6.2"/>'),
+  logros: svg('<path d="M8 4h8v5.5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2a2.8 2.8 0 0 0 3 4.4M16 6h2.8a2.8 2.8 0 0 1-3 4.4M12 13.5V17M8.5 20h7M10 17h4"/>'),
+};
 export const MOD = { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación', plyo: 'Pliometría', training: 'Gym' };
 export const LOOKS = [['orig', 'Original'], ['bn', 'B/N'], ['calido', 'Cálido'], ['suave', 'Suave'], ['contraste', 'Contraste']];
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -261,7 +268,7 @@ export async function renderPublicProfile(v, ctx, personId) {
   const accepted = edge?.status === 'accepted', incoming = edge?.status === 'pending' && edge.addressee === me, outgoing = edge?.status === 'pending' && edge.requester === me;
   const priv = { photos: true, videos: true, progress: false, logros: false, ...(info.privacy || {}) };
   const name = info.full_name || 'Socio Batmon', avatar = await avatarSrc(info, 1800), rank = info.rank_name ? rankByName(info.rank_name) : null;
-  const tabs = accepted ? [['photos', 'Fotos', '▦'], ['videos', 'Videos', '▷'], ['progress', 'Progreso', '▥'], ['logros', 'Logros', '★']].filter(([k]) => priv[k]) : [];
+  const tabs = accepted ? [['photos', 'Fotos', TAB_ICONS.photos], ['videos', 'Videos', TAB_ICONS.videos], ['progress', 'Progreso', TAB_ICONS.progress], ['logros', 'Logros', TAB_ICONS.logros]].filter(([k]) => priv[k]) : [];
   let tab = tabs[0]?.[0] || '';
   const action = incoming ? '<button class="btn" data-accept>Aceptar</button>' : accepted ? '<button class="btn ghost" data-unfollow>Siguiendo</button>' : outgoing ? '<button class="btn ghost" disabled>Solicitud enviada</button>' : '<button class="btn" data-follow>Seguir</button>';
   v.innerHTML = `<section class="ig"><div class="ig-top"><button class="link" id="ig-back" type="button" aria-label="Volver">←</button><b>${esc(name)}</b><span></span></div>

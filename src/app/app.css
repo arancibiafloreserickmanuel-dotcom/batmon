@@ -2154,3 +2154,12 @@ body.appbody .pf-top .rank-mini img{width:30px;height:30px}
 .pf-stats{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:20px}
 .pf-counts{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
 .pf-counts b{display:block;font:24px Anton,sans-serif}.pf-counts span{font-size:11px;color:var(--muted)}
+
+.pf-fullname{font:600 17px/1.15 Inter,sans-serif!important;letter-spacing:0!important}
+.pf-side{display:grid;gap:8px;min-width:0}
+.pf-user{font:600 14px Inter,sans-serif;color:var(--ink);overflow-wrap:anywhere}
+.pf-counts{text-align:left;gap:6px}
+.pf-counts>div{text-align:left}
+.pf-counts b{font:600 18px Inter,sans-serif!important}
+.pf-counts span{font-size:12px!important;color:var(--ink)!important}
+body.appbody .profile-media-tabs button svg,.ig-tabs button svg{width:25px;height:25px;display:block;margin:0 auto}
