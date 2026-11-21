@@ -2163,3 +2163,22 @@ body.appbody .pf-top .rank-mini img{width:30px;height:30px}
 .pf-counts b{font:600 18px Inter,sans-serif!important}
 .pf-counts span{font-size:12px!important;color:var(--ink)!important}
 body.appbody .profile-media-tabs button svg,.ig-tabs button svg{width:25px;height:25px;display:block;margin:0 auto}
+
+/* Cabecera del perfil: nombre centrado, rango sobre la foto, más aire */
+.profile-page{gap:20px}
+.pf-top{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.pf-top__spacer{display:block}
+.pf-top .pf-fullname{grid-column:2;margin:0;text-align:center;font:19px/1.1 Anton,sans-serif!important;letter-spacing:.03em!important;text-transform:uppercase;max-width:62vw;overflow-wrap:anywhere}
+.pf-top .profile-tools{grid-column:3;justify-self:end}
+.pf-stats{gap:26px!important;align-items:center}
+.pf-avatar-wrap{position:relative;width:88px;height:88px;flex:none}
+.pf-avatar-wrap .profile-avatar{width:88px;height:88px}
+body.appbody .pf-avatar-wrap .rank-mini{position:absolute;right:-6px;bottom:-4px;width:34px!important;height:34px!important;border-radius:50%!important;background:var(--card-surface)!important;box-shadow:var(--button-shadow)!important;display:grid!important;place-items:center}
+body.appbody .pf-avatar-wrap .rank-mini img{width:26px;height:26px}
+.pf-side{gap:14px!important}
+.pf-user{font:15px/1 Anton,sans-serif!important;letter-spacing:.05em;text-transform:none}
+.pf-counts{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.pf-counts>div{text-align:center!important}
+.pf-counts b{font:22px/1 Anton,sans-serif!important;display:block;margin-bottom:5px}
+.pf-counts span{font:600 10.5px Inter,sans-serif!important;color:var(--muted)!important;letter-spacing:.01em;white-space:nowrap}
+.profile-actions{margin-top:2px!important}
