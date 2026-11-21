@@ -34,6 +34,9 @@ function modal(html) {
   return m;
 }
 
+/* Fila desplegable compacta (mismo diseño que el historial de Running). */
+const fold = (title, sub, inner, attrs = '', cls = '') => `<details class="card adm-fold ${cls}" ${attrs}><summary><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</summary><div class="adm-fold__body">${inner}</div></details>`;
+
 /* ------------------------------- Pagos ------------------------------- */
 const PAY_STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const PAY_METHOD = { qr: 'QR', cash: 'Efectivo' };
@@ -50,12 +53,9 @@ function openProof(url) {
 function payCard(x, { who = '', url = '' } = {}) {
   const proof = url ? `<button class="btn sm ghost" data-proof="${x.id}">Ver comprobante</button>` : `<span class="muted">${x.payment_method === 'cash' ? 'Pago en efectivo (sin comprobante)' : 'Sin comprobante'}</span>`;
   const b = (a, t, cls = 'ghost') => `<button class="btn sm ${cls}" data-ma="${a}" data-id="${x.id}">${t}</button>`;
-  return `<article class="card admin-item pay-card" data-pq="${esc((who + ' ' + monthLabel(x.period) + ' ' + PAY_STATUS[x.status] + ' ' + PAY_METHOD[x.payment_method]).toLowerCase())}" data-st="${x.status}" data-mt="${x.payment_method}" data-mo="${x.period.slice(0, 7)}">
-    <div class="pay-card__top"><b>${who ? esc(who) : esc(monthLabel(x.period))}</b><span class="pill ${x.status}">${PAY_STATUS[x.status]}</span></div>
-    <span class="muted">${who ? esc(monthLabel(x.period)) + ' · ' : ''}Pagó por ${PAY_METHOD[x.payment_method] || '—'}</span>
-    <div>${proof}</div>
-    <div class="quick-actions">${x.status !== 'approved' ? b('approved', 'Aprobar pago', '') : ''}${x.status === 'pending' ? b('rejected', 'Rechazar') : ''}${x.status !== 'pending' ? b('pending', 'Volver a pendiente') : ''}${b('edit', 'Editar')}${b('delete', 'Eliminar')}</div>
-  </article>`;
+  return fold(who ? esc(who) : esc(monthLabel(x.period)), `${who ? esc(monthLabel(x.period)) + ' · ' : ''}${PAY_METHOD[x.payment_method] || '—'} · <span class="pill ${x.status}">${PAY_STATUS[x.status]}</span>`,
+    `<div>${proof}</div><div class="quick-actions">${x.status !== 'approved' ? b('approved', 'Aprobar pago', '') : ''}${x.status === 'pending' ? b('rejected', 'Rechazar') : ''}${x.status !== 'pending' ? b('pending', 'Volver a pendiente') : ''}${b('edit', 'Editar')}${b('delete', 'Eliminar')}</div>`,
+    `data-pq="${esc((who + ' ' + monthLabel(x.period) + ' ' + PAY_STATUS[x.status] + ' ' + PAY_METHOD[x.payment_method]).toLowerCase())}" data-st="${x.status}" data-mt="${x.payment_method}" data-mo="${x.period.slice(0, 7)}"`, 'pay-card');
 }
 
 /* Edita mes, método y estado de un pago. */
@@ -139,7 +139,7 @@ const sw = (attrs, on, label, hint = '') => `<label class="adm-sw"><span><b>${es
 const ROLE_LABEL = { member: 'Cliente', socio: 'Socio', admin: 'Administrador' };
 const MIGRATION_HINT = '¿Aplicaste la migración 0031?';
 
-const clientCard = (u) => `<details class="card pf-acc cl-acc" data-q="${esc(((u.full_name || '') + ' ' + (u.username || '') + ' ' + (u.email || '')).toLowerCase())}"><summary><b>${esc(u.full_name)}</b><small>${u.username ? '@' + esc(u.username) + ' · ' : ''}${u.membership ? STATUS[u.membership] : 'Sin pago'}${u.access_override ? ' · Acceso sin pago' : ''}</small></summary><div class="pf-acc__body"><span class="muted">${esc(u.email)}</span><span>${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones · Última actividad: ${u.last_activity || '—'}</span>${u.access_override ? `<span><b>Acceso sin pago${u.access_until ? ' hasta ' + u.access_until : ''}</b></span>` : ''}<button class="btn sm" data-d="${u.id}">Editar perfil</button></div></details>`;
+const clientCard = (u) => `<details class="card adm-fold cl-acc" data-q="${esc(((u.full_name || '') + ' ' + (u.username || '') + ' ' + (u.email || '')).toLowerCase())}"><summary><b>${esc(u.full_name)}</b><small>${u.username ? '@' + esc(u.username) + ' · ' : ''}${u.membership ? STATUS[u.membership] : 'Sin pago'}${u.access_override ? ' · Acceso sin pago' : ''}</small></summary><div class="adm-fold__body"><span class="muted">${esc(u.email)}</span><span>${fmt(u.total_km)} km · ${u.plyo_sessions} sesiones · Última actividad: ${u.last_activity || '—'}</span>${u.access_override ? `<span><b>Acceso sin pago${u.access_until ? ' hasta ' + u.access_until : ''}</b></span>` : ''}<button class="btn sm" data-d="${u.id}">Editar perfil</button></div></details>`;
 
 async function clientes() {
   const { data = [], error } = await supabase.rpc('admin_member_overview');
@@ -170,8 +170,7 @@ async function socios() {
   if (error) { $('#body').innerHTML = `<p class="msg">${esc(error.message)}<br>${MIGRATION_HINT}</p>`; return; }
   const staff = data.filter((u) => u.role !== 'member');
   $('#body').innerHTML = `<h2>Socios (${staff.filter((u) => u.role === 'socio').length})</h2><p class="muted">Un socio es un cliente que tú subiste de nivel: puede ayudar en el panel solo con los permisos que actives. Para crear uno abre la ficha de un cliente y pulsa “Subir a socio”.</p>
-    <div class="admin-cards">${staff.map((u) => `<article class="card admin-item" data-uid="${u.id}"><b>${esc(u.full_name)}</b><span>${esc(u.email)} · <span class="pill ${u.role === 'admin' ? 'approved' : 'pending'}">${ROLE_LABEL[u.role]}</span></span>
-      ${u.role === 'admin' ? '<span class="muted">Administrador: acceso total.</span>' : `<div class="adm-perms">${PERMS.map(([k, t]) => sw(`data-perm="${k}"`, u.staff_permissions?.[k] === true, t)).join('')}</div><button class="btn sm ghost" data-demote="${u.id}">Bajar a cliente</button>`}</article>`).join('') || '<p class="card muted">Aún no hay socios.</p>'}</div>`;
+    <div class="admin-cards">${staff.map((u) => fold(esc(u.full_name), `${esc(u.email)} · <span class="pill ${u.role === 'admin' ? 'approved' : 'pending'}">${ROLE_LABEL[u.role]}</span>`, u.role === 'admin' ? '<span class="muted">Administrador: acceso total.</span>' : `<div class="adm-perms">${PERMS.map(([k, t]) => sw(`data-perm="${k}"`, u.staff_permissions?.[k] === true, t)).join('')}</div><button class="btn sm ghost" data-demote="${u.id}">Bajar a cliente</button>`, `data-uid="${u.id}"`)).join('') || '<p class="card muted">Aún no hay socios.</p>'}</div>`;
   $('#body').querySelectorAll('[data-perm]').forEach((input) => (input.onchange = async () => {
     const card = input.closest('[data-uid]'), perms = {};
     card.querySelectorAll('[data-perm]').forEach((i) => { perms[i.dataset.perm] = i.checked; });
@@ -199,16 +198,16 @@ async function detalle(u) {
   (moduleRows || []).forEach((row) => { moduleState[row.module_key] = row.enabled; });
   const plyoSessions = ws.filter((w) => w.kind === 'plyometrics'), trainingSessions = ws.filter((w) => w.kind === 'training');
   const self = u.id === me.id;
-  const acc = (title, hint, inner, open = false) => `<details class="card pf-acc"${open ? ' open' : ''}><summary><b>${title}</b><small>${hint}</small></summary><div class="pf-acc__body">${inner}</div></details>`;
+  const acc = (title, hint, inner) => fold(title, hint, inner);
   const payRows = mems.map((x) => payCard(x, { url: proofUrls[x.id] })).join('');
   const m = modal(`<div class="sheet-h"><b>${esc(u.full_name)}</b><button class="link" data-close>Cerrar</button></div>
     <p class="muted">${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)} · alta ${u.created_at.slice(0, 10)} · <b>${ROLE_LABEL[u.role]}</b></p>
     <div class="pf-accs">
     ${acc('Acceso y pagos', 'Pagos del cliente y acceso sin pago', `${sw('id="acc-on"', u.access_override, 'Dar acceso sin pago', 'Puede registrar entrenamientos aunque no haya pagado')}<label class="adm-date">Acceso hasta (opcional)<input id="acc-until" type="date" value="${u.access_until || ''}"></label><button class="btn sm" id="acc-save">Guardar acceso</button><h3 class="pf-sub">Pagos de este cliente</h3><div class="admin-cards">${payRows || '<p class="card muted">Sin pagos registrados.</p>'}</div>`)}
     ${acc('Módulos de este cliente', 'Qué disciplinas ve este cliente', moduleError ? '<p class="msg">No disponible: aplica la migración 0004.</p>' : `<div class="module-settings">${[['running', 'Running'], ['cycling', 'Ciclismo'], ['swimming', 'Natación'], ['plyo', 'Pliometría'], ['training', 'Entrenamiento']].map(([key, title]) => globalOn[key] === false ? sw(`data-module="${key}" disabled`, false, title, 'Apagado para todo el club (Módulos y apariencia). Nadie lo ve.') : sw(`data-module="${key}"`, moduleState[key], title)).join('')}</div>`)}
-    ${acc(`Actividades (${acts.length})`, 'Running, ciclismo y natación', `<div class="admin-cards">${acts.length ? acts.map((a) => `<article class="card admin-item"><b>${a.performed_on} · ${DISC[a.discipline]}${a.run_type ? ' · ' + RUN_TYPE[a.run_type] : ''}</b><span>${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min${a.discipline === 'running' ? ' · ' + paceStr(a.distance_km, a.duration_min) : ''}</span><button class="btn sm ghost" data-da="${a.id}">Borrar actividad</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
-    ${acc(`Pliometría (${plyoSessions.length})`, 'Sesiones registradas', `<div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
-    ${acc(`Entrenamiento (${trainingSessions.length})`, 'Sesiones de gimnasio', `<div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => `<article class="card admin-item"><b>${w.performed_on}</b><span>${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}</span><button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button></article>`).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc(`Actividades (${acts.length})`, 'Running, ciclismo y natación', `<div class="admin-cards">${acts.length ? acts.map((a) => fold(`${a.performed_on} · ${DISC[a.discipline]}${a.run_type ? ' · ' + RUN_TYPE[a.run_type] : ''}`, `${fmt(a.distance_km)} km · ${fmt(a.duration_min)} min${a.discipline === 'running' ? ' · ' + paceStr(a.distance_km, a.duration_min) : ''}`, `<button class="btn sm ghost" data-da="${a.id}">Borrar actividad</button>`)).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc(`Pliometría (${plyoSessions.length})`, 'Sesiones registradas', `<div class="admin-cards">${plyoSessions.length ? plyoSessions.map((w) => fold(w.performed_on, `${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}`, `<button class="btn sm ghost" data-dw="${w.id}">Borrar sesión</button>`)).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
+    ${acc(`Entrenamiento (${trainingSessions.length})`, 'Sesiones de gimnasio', `<div class="admin-cards">${trainingSessions.length ? trainingSessions.map((w) => fold(w.performed_on, `${w.workout_sets.length} series${w.duration_min ? ' · ' + fmt(w.duration_min, 0) + ' min' : ''}`, `<button class="btn sm ghost" data-dw="${w.id}">Borrar entrenamiento</button>`)).join('') : '<p class="card muted">Sin datos.</p>'}</div>`)}
     ${acc('Cuenta', 'Nivel y eliminación', self ? '<p class="muted">Eres tú: no puedes cambiar tu nivel ni borrarte.</p>' : `${isOwner() && u.role === 'member' ? '<button class="btn sm" id="promote">Subir a socio</button><p class="muted">Un socio podrá usar el panel solo con los permisos que le actives en la sección Socios.</p>' : ''}${isOwner() && u.role === 'socio' ? '<button class="btn sm ghost" id="demote">Bajar a cliente</button>' : ''}${u.role === 'member' || isOwner() ? '<button class="btn sm" id="rmuser" style="background:#a00;border-color:#a00">Eliminar cuenta y sus datos</button>' : ''}`)}
     </div>`);
   m.querySelector('[data-close]').onclick = () => m.remove();
@@ -310,7 +309,7 @@ async function ejercicios() {
     const rows = pool().filter((e) => (!q || normName(e.name + ' ' + (e.name_es || '')).includes(q)) && (!exState.muscle || (e.primary_muscles || []).includes(exState.muscle)) && (!exState.equip || e.equipment === exState.equip) && (!exState.level || e.level === exState.level) && (exState.active === 'all' || (exState.active === 'on') === !!e.is_active));
     const shown = rows.slice(0, exState.shown);
     $('#ex-count').textContent = `${rows.length} ejercicio${rows.length === 1 ? '' : 's'} en ${catName()}`;
-    $('#ex-list').innerHTML = shown.map((e) => `<article class="card admin-item adm-ex ${e.is_active ? '' : 'is-off'}"><div class="adm-ex__img">${e.images?.[0] ? `<img loading="lazy" src="${esc(exerciseImgUrl(e.images[0]))}" alt="">` : '<span>—</span>'}</div><div class="adm-ex__body"><b>${esc(exName(e))}</b><span>${esc([(e.primary_muscles || []).join(', '), e.equipment, LEVEL_LABEL[e.level]].filter(Boolean).join(' · ') || 'Sin datos')}</span>${e.is_active ? '' : '<em class="adm-warn">Inactivo</em>'}</div><div class="adm-ex__btns"><button class="btn sm ghost" data-edit="${esc(e.id)}">Editar</button></div></article>`).join('') || '<p class="card muted">No hay ejercicios que coincidan.</p>';
+    $('#ex-list').innerHTML = shown.map((e) => fold(esc(exName(e)), esc([(e.primary_muscles || []).join(', '), e.equipment, LEVEL_LABEL[e.level]].filter(Boolean).join(' · ') || 'Sin datos') + (e.is_active ? '' : ' · <em class="adm-warn">Inactivo</em>'), `${e.images?.[0] ? `<img class="adm-form__img" loading="lazy" src="${esc(exerciseImgUrl(e.images[0]))}" alt="">` : ''}<div><button class="btn sm ghost" data-edit="${esc(e.id)}">Editar</button></div>`, '', e.is_active ? '' : 'is-off')).join('') || '<p class="card muted">No hay ejercicios que coincidan.</p>';
     $('#ex-more').innerHTML = rows.length > shown.length ? `<button class="btn ghost sm" id="ex-more-btn">Ver más (${rows.length - shown.length})</button>` : '';
     const more = $('#ex-more-btn'); if (more) more.onclick = () => { exState.shown += 40; list(); };
     $('#ex-list').querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openForm(data.find((e) => e.id === b.dataset.edit))));
@@ -477,11 +476,10 @@ async function eventos() {
     const cancelled = rsvps.filter((r) => r.status === 'cancelled');
     const img = imgUrls[e.id] ? `<img class="admin-event-thumb" src="${imgUrls[e.id]}" alt="${esc(e.title)}">` : '<div class="admin-event-thumb ph">📅</div>';
 
-    return `<article class="card admin-event-card" data-event-id="${e.id}">
+    return fold(esc(e.title), `${formatEventDate(e.event_date)}${e.location ? ' · ' + esc(e.location) : ''} · ${confirmed.length} confirmados`, `
       <div class="admin-event-hero">
         ${img}
         <div class="admin-event-info">
-          <h3>${esc(e.title)}</h3>
           <div class="admin-event-meta">
             <span>🗓 ${formatEventDate(e.event_date)}</span>
             ${e.location ? `<span>📍 ${esc(e.location)}</span>` : ''}
@@ -498,8 +496,7 @@ async function eventos() {
         <button class="btn sm ghost" data-action="remind" data-id="${e.id}">Recordar evento</button>
         <button class="btn sm ghost" data-action="edit" data-id="${e.id}">Editar</button>
         <button class="btn sm ghost" data-action="delete" data-id="${e.id}" style="color:var(--red);">Borrar</button>
-      </div>
-    </article>`;
+      </div>`, `data-event-id="${e.id}"`, 'admin-event-card');
   };
 
   $('#body').innerHTML = `
@@ -513,7 +510,7 @@ async function eventos() {
     <h2>Próximos eventos (${upcoming.length})</h2>
     <div class="admin-cards">${upcoming.length ? upcoming.map(renderCard).join('') : '<p class="card muted">No hay eventos próximos programados.</p>'}</div>
     ${past.length ? `
-      <details class="card" style="margin-top:20px;">
+      <details class="card adm-fold" style="margin-top:20px;">
         <summary><b>Ver anteriores eventos (${past.length})</b></summary>
         <div class="admin-cards" style="margin-top:12px;">${past.map(renderCard).join('')}</div>
       </details>
@@ -809,7 +806,7 @@ async function retos() {
   if (error) { body.innerHTML = `<h1>Retos del club</h1><div class="card warn">No se pudieron cargar. Aplica la migración 0015 cuando esté lista: ${esc(error.message)}</div>`; return; }
   const disciplineLabel = { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación', plyo: 'Pliometría', training: 'Entrenamiento' };
   body.innerHTML = `<div class="adm-head"><h1>Retos del club</h1><button class="btn sm" id="ch-new">+ Nuevo reto</button></div><p class="muted">Las clasificaciones usan sesiones y distancias reales guardadas en la app.</p>
-    <h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map((row) => `<article class="card admin-challenge-row"><span class="notification-kind">${disciplineLabel[row.discipline]} · ${row.metric === 'distance_km' ? 'Kilómetros' : 'Sesiones'} · meta ${row.goal_value}</span><h3>${esc(row.title)}</h3><p>${esc(row.description || '')}</p><small>${row.starts_on} – ${row.ends_on}</small><div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div></article>`).join('') || '<p class="card muted">Aún no hay retos. Pulsa “Nuevo reto” para crear el primero.</p>'}</div>`;
+    <h2>Retos publicados (${rows.length})</h2><div class="admin-cards">${rows.map((row) => fold(esc(row.title), `${disciplineLabel[row.discipline]} · ${row.metric === 'distance_km' ? 'Km' : 'Sesiones'} · meta ${row.goal_value} · ${row.starts_on} – ${row.ends_on}`, `${row.description ? `<p>${esc(row.description)}</p>` : ''}<div class="quick-actions"><button class="btn sm ghost" data-edit-challenge="${row.id}">Editar</button><button class="btn sm ghost" data-delete-challenge="${row.id}">Eliminar</button></div>`)).join('') || '<p class="card muted">Aún no hay retos. Pulsa “Nuevo reto” para crear el primero.</p>'}</div>`;
 
   function openForm(row) {
     const v = (k) => esc(row?.[k] ?? '');

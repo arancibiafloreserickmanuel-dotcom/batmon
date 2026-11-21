@@ -2305,12 +2305,16 @@ body.appbody .adm-compact,#member-search,#pay-search,.adm-filters select,.adm-fi
 .adm-chips{padding:6px 0}.adm-chips button{padding:6px 12px;font-size:12px}
 .cl-acc{margin:0 0 8px}.cl-acc .pf-acc__body{display:grid;gap:6px}.cl-acc .pf-acc__body .btn{justify-self:start;margin:4px 0 0}
 
-/* Desplegables del admin: mismo diseño que las filas del historial de Running */
-.modal .pf-accs{gap:8px}
-.modal .pf-accs .pf-acc,.cl-acc{margin:0}
-.modal .pf-accs .pf-acc>summary,.cl-acc>summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 8px;padding:14px;text-align:left}
-.modal .pf-accs .pf-acc>summary b,.cl-acc>summary b{font:400 20px Anton,sans-serif;letter-spacing:.01em;overflow-wrap:anywhere}
-.modal .pf-accs .pf-acc>summary small,.cl-acc>summary small{grid-column:1;color:var(--muted);font-size:10px}
-.modal .pf-accs .pf-acc>summary::after,.cl-acc>summary::after{content:'→';position:static;grid-column:2;grid-row:1 / span 2;width:auto;height:auto;border:0;transform:none;color:var(--ink);font-size:16px;transition:transform .25s}
-.modal .pf-accs .pf-acc[open]>summary::after,.cl-acc[open]>summary::after{transform:rotate(90deg)}
-.modal .pf-accs .pf-acc__body,.cl-acc .pf-acc__body{padding:0 14px 14px;border-top:1px solid var(--line,#e2e2e2);padding-top:12px}
+/* Desplegables del admin: mismo diseño que las filas del historial de Running, compactos */
+.adm-fold{padding:0!important;overflow:hidden;margin:0 0 6px}
+.adm-fold>summary{list-style:none;display:grid;grid-template-columns:1fr auto;align-items:center;gap:1px 8px;padding:9px 12px;cursor:pointer;text-align:left}
+.adm-fold>summary::-webkit-details-marker{display:none}
+.adm-fold>summary b{font:400 17px Anton,sans-serif;letter-spacing:.01em;overflow-wrap:anywhere;line-height:1.15}
+.adm-fold>summary small{grid-column:1;color:var(--muted);font-size:10px;line-height:1.3}
+.adm-fold>summary::after{content:'→';grid-column:2;grid-row:1 / span 2;color:var(--ink);font-size:15px;transition:transform .25s}
+.adm-fold[open]>summary::after{transform:rotate(90deg)}
+.adm-fold__body{display:grid;gap:6px;padding:10px 12px 12px;border-top:1px solid var(--line,#e2e2e2)}
+.adm-fold__body .btn{margin:0;justify-self:start}
+.adm-fold__body .admin-cards{gap:6px}
+.adm-fold .adm-fold{margin:0}
+.adm-fold.is-off{opacity:.6}
