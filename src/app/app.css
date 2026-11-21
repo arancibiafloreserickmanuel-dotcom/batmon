@@ -2226,3 +2226,11 @@ body.appbody .pf-avatar-wrap .rank-mini img{width:34px;height:34px;filter:drop-s
 .logro.is-earned em{color:var(--ink)}
 .pf-edit-head{display:grid;gap:10px;margin-bottom:4px}
 .pf-edit-head h1{margin:4px 0 0}
+body.appbody input.share-switch[type="checkbox"]{display:none!important}
+.share-switch+span{font-size:12px!important}
+.pf-priv{grid-template-columns:1fr auto!important;align-items:center;gap:14px;padding:14px 2px;border-bottom:1px solid var(--line);margin:0}
+.pf-priv:last-of-type{border-bottom:0}
+.pf-priv b{font-size:14px;font-weight:600}
+#acc-privacy .pf-acc__body>p.muted{margin:0 0 6px;line-height:1.45}
+#acc-privacy .msg:empty{display:none}
+.bf-row{padding:8px 0}
