@@ -75,7 +75,7 @@ html, body {
 
 .apparel-gallery { position: relative; }
 .apparel-runway { position: relative; height: 1200svh; }
-.apparel-stage { position: sticky; top: 70px; height: calc(100svh - 70px); overflow: hidden; perspective: 1000px; isolation: isolate; }
+.apparel-stage { position: sticky; top: 70px; height: calc(100vh - 70px); height: calc(100lvh - 70px); overflow: hidden; perspective: 1000px; isolation: isolate; }
 .apparel-type { position: absolute; z-index: 1; inset: 0; overflow: hidden; color: #c90020; font-family: 'Anton', sans-serif; font-weight: 400; text-align: center; pointer-events: none; }
 .apparel-section-heading { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); color: #0d0d0c; font: 400 clamp(28px, 5vw, 52px)/.95 Anton, sans-serif; letter-spacing: 0; text-transform: uppercase; white-space: nowrap; }
 .apparel-title-top, .apparel-title-bottom { position: absolute; width: max-content; max-width: none; white-space: nowrap; line-height: .82; letter-spacing: -.025em; will-change: transform, opacity; }
@@ -123,7 +123,8 @@ html, body {
   .apparel-title-top { font-size: clamp(40px, 11vw, 64px); }
   .apparel-title-middle { top: 46%; font-size: clamp(12px, 4vw, 19px); }
   .apparel-title-bottom { top: 61%; font-size: clamp(40px, 11vw, 66px); }
-  .apparel-stage { top: 52px; height: calc(100svh - 52px); }
+  .apparel-stage { top: 52px; height: calc(100vh - 52px); height: calc(100lvh - 52px); }
+  .app-stage { top: 52px; height: calc(100vh - 52px); height: calc(100lvh - 52px); }
   .apparel-fallback img { width: 82vw; height: 68svh; }
   .center { padding:0 16px; }
   .visual-wrap { padding:0 16px; margin-top:4vh; }
@@ -153,9 +154,11 @@ html, body {
 .fallback.show { display: flex; }
 
 /* App: carrusel 3D de celulares */
-.app-showcase { padding: 8vh 0 12vh; background: #fff; }
+.app-showcase { padding: 0; }
+.app-runway { position: relative; height: 480svh; }
+.app-stage { position: sticky; top: 70px; height: calc(100vh - 70px); height: calc(100lvh - 70px); display: flex; flex-direction: column; justify-content: center; gap: 2vh; overflow: hidden; }
 .app-showcase h2 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: clamp(28px, 5vw, 52px); line-height: .95; text-transform: uppercase; }
-.app-slider { position: relative; width: 100%; max-width: 1920px; height: clamp(440px, 78vh, 720px); margin: 3vh auto 0; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.app-slider { position: relative; width: 100%; max-width: 1920px; height: min(68%, 720px); width: 100%; margin: 0 auto; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .app-slider.is-grabbing { cursor: grabbing; }
 .app-slider::before, .app-slider::after { content: ""; position: absolute; top: 0; bottom: 0; width: clamp(40px, 12vw, 240px); z-index: 500; pointer-events: none; }
 .app-slider::before { left: 0; background: linear-gradient(to right, #fff, rgba(255,255,255,0)); }
@@ -175,3 +178,6 @@ html, body {
 
 /* el murciélago pasa por detrás del contenido: el fondo blanco va en html, no en body ni en las secciones */
 body, .app-showcase, .bat-final { background: transparent; }
+
+#bat-canvas { opacity: 0; transition: opacity .6s ease; }
+#bat-canvas.is-on { opacity: 1; }

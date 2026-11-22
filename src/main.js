@@ -94,8 +94,8 @@ const appLoader = new IntersectionObserver(([entry]) => {
 }, { rootMargin: '300px 0px' });
 if (appRoot) appLoader.observe(appRoot);
 // Murciélago que vuela con el scroll (se carga cuando la página ya está lista)
-const startBat = () => import('./bat-flight.js').then(({ mountBatFlight }) => { if (!pageIsClosing) mountBatFlight().catch((e) => console.warn('Murciélago no disponible', e)); });
-if (document.readyState === 'complete') setTimeout(startBat, 800); else addEventListener('load', () => setTimeout(startBat, 800), { once: true });
+const startBat = () => import('./bat-flight.js').then(({ mountBatFlight }) => { if (!pageIsClosing) mountBatFlight().catch((e) => { console.warn('Murciélago no disponible', e); const h = document.querySelector('.bc-mark-frame img'); if (h) h.src = '/hero-batmon.png'; }); });
+if (document.readyState === 'complete') startBat(); else addEventListener('load', startBat, { once: true });
 if (apparelRoot) apparelLoader.observe(apparelRoot);
 window.addEventListener('pagehide', () => {
   pageIsClosing = true;

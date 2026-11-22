@@ -1,5 +1,6 @@
 // Carrusel 3D de celulares (animación de https://github.com/shivc868/component-018), con avance automático en bucle.
 import { gsap } from 'gsap';
+import { MathUtils } from 'three';
 import { Draggable } from 'gsap/Draggable';
 import { InertiaPlugin } from 'gsap/InertiaPlugin';
 
@@ -55,15 +56,19 @@ export function mountAppSlider(root) {
   const proxy = document.createElement('div');
   const update = () => { position = -draggable.x / C.dragUnit; render(position); };
 
-  // Bucle automático: avanza un celular cada AUTO_EVERY segundos mientras esté a la vista y nadie lo arrastre
-  function autoNext() {
+  // El scroll vertical mueve el carrusel mientras la sección está fija; al terminar se libera la página
+  const runway = document.getElementById('app-runway');
+  const progress = () => {
+    if (!runway) return 0;
+    const stageH = runway.firstElementChild?.offsetHeight || innerHeight;
+    return MathUtils.clamp(-runway.getBoundingClientRect().top / Math.max(1, runway.offsetHeight - stageH), 0, 1);
+  };
+  function follow() {
+    if (hold || spread < 1) return;
     autoTween?.kill();
-    if (!visible || hold || spread < 1) return;
-    autoTween = gsap.to(proxy, {
-      x: Math.round(gsap.getProperty(proxy, 'x') / C.dragUnit) * C.dragUnit - C.dragUnit, duration: 1.1, ease: 'power3.inOut', delay: AUTO_EVERY - 1.1,
-      onUpdate: () => { draggable.update(); update(); }, onComplete: autoNext,
-    });
+    autoTween = gsap.to(proxy, { x: -progress() * (COUNT - 1) * C.dragUnit, duration: 0.55, ease: 'power2.out', overwrite: true, onUpdate: () => { draggable.update(); update(); } });
   }
+  addEventListener('scroll', follow, { passive: true });
 
   const draggable = Draggable.create(proxy, {
     type: 'x', trigger: root, inertia: true,
@@ -72,7 +77,7 @@ export function mountAppSlider(root) {
     onRelease() { root.classList.remove('is-grabbing'); },
     onDrag: update, onThrowUpdate: update,
     onDragEnd() {
-      const resume = () => { idleCall?.kill(); idleCall = gsap.delayedCall(AUTO_RESUME, () => { hold = false; autoNext(); }); };
+      const resume = () => { idleCall?.kill(); idleCall = gsap.delayedCall(AUTO_RESUME, () => { hold = false; }); };
       if (!this.tween || !this.tween.isActive()) {
         gsap.to(proxy, { x: Math.round(this.x / C.dragUnit) * C.dragUnit, duration: 0.5, ease: 'power3.out', onUpdate: () => { draggable.update(); update(); }, onComplete: resume });
       } else this.tween.eventCallback('onComplete', resume);
@@ -96,10 +101,10 @@ export function mountAppSlider(root) {
     visible = e.isIntersecting;
     if (visible && !introduced) {
       introduced = true;
-      gsap.to({ v: 0 }, { v: 1, duration: C.introDuration, ease: C.introEase, onUpdate() { spread = this.targets()[0].v; render(position); }, onComplete: autoNext });
-    } else if (visible) autoNext(); else autoTween?.kill();
+      gsap.to({ v: 0 }, { v: 1, duration: C.introDuration, ease: C.introEase, onUpdate() { spread = this.targets()[0].v; render(position); }, onComplete: follow });
+    }
   }, { threshold: 0.25 });
   io.observe(root);
 
-  return () => { io.disconnect(); mq.removeEventListener('change', apply); removeEventListener('resize', onResize); autoTween?.kill(); idleCall?.kill(); draggable.kill(); };
+  return () => { io.disconnect(); mq.removeEventListener('change', apply); removeEventListener('resize', onResize); autoTween?.kill(); idleCall?.kill(); removeEventListener('scroll', follow); draggable.kill(); };
 }

@@ -12,7 +12,8 @@ const mix = (a, b, t) => a + (b - a) * t;
 const nearestTurn = (a) => Math.round(a / (2 * Math.PI)) * 2 * Math.PI;   // el frente más cercano (múltiplo de 360°)
 
 export async function mountBatFlight() {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
+  const restoreHero = () => { const h = document.querySelector('.bc-mark-frame img'); if (h) h.src = '/hero-batmon.png'; };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { restoreHero(); return () => {}; }
   const poster = document.getElementById('bat-poster');
   const hero = document.querySelector('.bc-mark-frame img');   // la imagen de la portada, de donde despega
   const secs = { com: '#comunidad', cpl: '#complejos', ind: '#indumentaria', app: '#app', fin: '#final' };
@@ -41,7 +42,7 @@ export async function mountBatFlight() {
   const weights = { Volar: 1, Picada: 0, Planear: 0, Reposo: 0 };
 
   let W = 0, H = 0, vw = 1440, K = 1;
-  let waypoints = [], finalTop = 0, landStart = 0, landEnd = 0, diveA = 0, diveB = 0;
+  let hideA = 1e9, hideB = 1e9, waypoints = [], finalTop = 0, landStart = 0, landEnd = 0, diveA = 0, diveB = 0;
   const top = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect().top + scrollY : 0; };
   const hgt = (sel) => document.querySelector(sel)?.offsetHeight || 0;
 
@@ -51,7 +52,8 @@ export async function mountBatFlight() {
     camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2; camera.updateProjectionMatrix();
     K = W < 768 ? 1.55 : 1;                 // en móvil el murciélago es proporcionalmente más grande
     const T = Object.fromEntries(Object.entries(secs).map(([k, s]) => [k, top(s)]));
-    const hCom = hgt(secs.com), hCpl = hgt(secs.cpl), hApp = hgt(secs.app);
+    const hCom = hgt(secs.com), hCpl = hgt(secs.cpl), hApp = hgt(secs.app), hInd = hgt(secs.ind);
+    const Rn = Math.max(1, hInd - H);                 // recorrido fijo de Indumentaria (las poleras suben)
     // [scrollY, x, y, ancho (fracción de pantalla), yaw°, alabeo°]
     waypoints = [
       [0, 0.80, 0.30, 0.30, -38, 8],
@@ -60,11 +62,16 @@ export async function mountBatFlight() {
       [T.com + hCom * 0.7, 0.22, 0.52, 0.27, 180, -9],
       [T.cpl + hCpl * 0.15, 0.72, 0.30, 0.26, 255, 10],
       [T.cpl + hCpl * 0.8, 0.30, 0.50, 0.27, 320, -8],
-      [T.ind - H * 0.1, 0.55, 0.22, 0.28, 360, 4],
+      [T.ind - H * 0.15, 0.50, 1.08, 0.27, 360, 0],
     ];
-    diveA = T.ind; diveB = T.ind + H * 1.1;   // caída en picada al entrar a Indumentaria
-    waypoints.push([diveA, 0.52, 0.26, 0.30, 360, 0], [diveB, 0.50, 1.35, 0.36, 360, 0]);
-    waypoints.push([T.app - H * 0.5, 0.82, -0.25, 0.26, 420, 8], [T.app + hApp * 0.55, 0.28, 0.48, 0.26, 540, -8]);
+    // Indumentaria: sube detrás de las poleras en zigzag casi horizontal, como parte de las imágenes
+    const climb = [[0.05, 0.22, 0.90, 345, -16], [0.20, 0.78, 0.74, 20, 16], [0.35, 0.28, 0.60, 340, -16], [0.50, 0.76, 0.48, 22, 16], [0.65, 0.30, 0.38, 340, -16], [0.80, 0.72, 0.30, 20, 14], [0.92, 0.50, 0.24, 360, 0]];
+    for (const [f, x, y, yw, rl] of climb) waypoints.push([T.ind + Rn * f, x, y, 0.28, yw, rl]);
+    diveA = T.ind + Rn * 0.94; diveB = T.ind + Rn + H * 0.15;   // al terminar las poleras, cae en picada
+    hideA = diveB; hideB = T.app - H * 0.3;
+    waypoints.push([diveA, 0.50, 0.26, 0.30, 360, 0], [diveB, 0.50, 1.35, 0.36, 360, 0]);
+    // App (fija): vuela por detrás de los celulares
+    waypoints.push([T.app - H * 0.3, 0.82, -0.30, 0.26, 420, 8], [T.app + hApp * 0.3, 0.22, 0.50, 0.26, 470, -8], [T.app + hApp * 0.6, 0.80, 0.42, 0.26, 520, 8], [T.app + hApp * 0.85, 0.30, 0.56, 0.26, 580, -8]);
     finalTop = poster ? poster.getBoundingClientRect().top + scrollY : T.fin;
     const ph = poster ? poster.offsetHeight : H;
     landEnd = finalTop - (H - ph) / 2;                // póster centrado en pantalla
@@ -149,7 +156,8 @@ export async function mountBatFlight() {
     fadeV += ((land > 0.985 ? 1 : 0) - fadeV) * (1 - Math.exp(-dt * 2.6));
     const alpha = 1 - fadeV;
     for (const m of mats) { m.opacity = alpha; m.transparent = alpha < 0.999; }
-    bat.visible = alpha > 0.01 && S.span > 2 && S.y < H * 1.6 && S.y > -H * 0.6;
+    const hidden = y > hideA && y < hideB;
+    bat.visible = !hidden && alpha > 0.01 && S.span > 2 && S.y < H * 1.6 && S.y > -H * 0.6;
     const sc = S.span / MODEL_SPAN;
     bat.scale.setScalar(sc);
     bat.position.set(S.x - W / 2, -(S.y - H / 2), 0);
@@ -163,7 +171,7 @@ export async function mountBatFlight() {
   addEventListener('load', layout);
   document.addEventListener('visibilitychange', onVis);
   new ResizeObserver(layout).observe(document.body);
-  if (hero) { const im = new Image(); im.onload = () => { hero.src = im.src; }; im.src = '/bat/hero-sin-murcielago.webp'; }
+  requestAnimationFrame(() => requestAnimationFrame(() => canvas.classList.add('is-on')));
   raf = requestAnimationFrame(frame);
   return () => { cancelAnimationFrame(raf); removeEventListener('resize', layout); document.removeEventListener('visibilitychange', onVis); canvas.remove(); renderer.dispose(); };
 }
