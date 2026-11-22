@@ -2457,7 +2457,7 @@ body.appbody .run-review-form .dd button.dd-btn{min-height:36px;height:36px;padd
 .rt-actions{display:flex;gap:8px;flex-wrap:wrap}.rt-actions .btn{margin:0;flex:1 1 auto}
 
 /* Botón Me gusta animado (sin fondo): corazón + contador */
-body.appbody .act-actions .lk{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:6px 10px;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+body.appbody :is(.act-actions,.community-post-actions) .lk{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:6px 10px;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
 .lk__icon{position:relative;display:grid;place-items:center;width:26px;height:26px}
 .lk__heart{width:26px;height:26px;overflow:visible}
 .lk__outline{fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linejoin:round;transition:stroke .25s ease}
@@ -2471,5 +2471,8 @@ body.appbody .act-actions .lk{display:inline-flex;align-items:center;justify-con
 .lk .slot{position:relative;display:inline-block;overflow:hidden;padding:4px 0;margin:-4px 0}
 .lk .slot>span{display:inline-block}
 .lk .slot>span+span{position:absolute;left:0;top:4px}
-body.appbody .act-actions .lk .lk__burst{width:104px;height:104px}
-body.appbody .act-actions .lk .lk__heart{width:26px;height:26px}
+body.appbody :is(.act-actions,.community-post-actions) .lk .lk__burst{width:104px;height:104px}
+body.appbody :is(.act-actions,.community-post-actions) .lk .lk__heart{width:26px;height:26px}
+
+.community-post{overflow:visible}.community-post .community-media{border-radius:12px}
+body.appbody .community-post-actions .lk{width:auto;justify-content:flex-start;padding:4px 8px 4px 0;min-height:40px}

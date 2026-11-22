@@ -1,3 +1,4 @@
+import { likeMarkup, mountLike } from './like-button.js';
 import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
@@ -64,19 +65,22 @@ async function renderActivity(box, ctx) {
       ? `<video class="community-media" src="${esc(src)}" controls playsinline preload="metadata"></video>`
       : `<img class="community-media look-${post.look||'orig'}" src="${esc(src)}" alt="Publicación de ${esc(people.get(post.user_id)||'un socio')}" loading="lazy">`
       : '<div class="card warn">El archivo ya no está disponible.</div>';
-    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`<button type="button" class="link" data-like-post="${post.id}" aria-pressed="${ownLike}">${ownLike?'♥':'♡'} ${likes.length} Me gusta</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}">Eliminar</button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
+    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`${likeMarkup(ownLike,likes.length,`data-like-post="${post.id}"`)}`:''}${post.user_id===ctx.user.id?`<button type="button" class="link" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}">Eliminar</button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
   }).join('');
   box.innerHTML = `${shareButton()}<div class="quick-actions"><a class="link" href="#inicio">Ver calendario y eventos del club</a></div><div class="community-feed">${cards}</div>`;
   bindShareButton(box, ctx);
   box.querySelectorAll('[data-avatar]').forEach(b=>b.onclick=()=>openPhotoViewer(avatarOf.get(b.dataset.avatar),people.get(b.dataset.avatar)||''));
-  box.querySelectorAll('[data-like-post]').forEach(button => button.onclick = async () => {
-    const postId = button.dataset.likePost;
-    const action = button.getAttribute('aria-pressed') === 'true'
-      ? supabase.from('post_reactions').delete().eq('post_id',postId).eq('user_id',ctx.user.id)
-      : supabase.from('post_reactions').insert({post_id:postId,user_id:ctx.user.id});
-    const {error: actionError} = await action;
-    if (actionError) notify(`No se pudo actualizar la reacción: ${actionError.message}`);
-    else renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
+  box.querySelectorAll('[data-like-post]').forEach(button => {
+    const postId = button.dataset.likePost, base = reactions.filter(r => r.post_id === postId && r.user_id !== ctx.user.id).length;
+    let liked = button.getAttribute('aria-pressed') === 'true';
+    const ctl = mountLike(button, { liked, count: base + (liked ? 1 : 0) });
+    button.onclick = async () => {
+      const was = liked; liked = !was; ctl.set(liked, base + (liked ? 1 : 0)); // anima en el mismo botón, sin recargar el muro
+      const { error: actionError } = was
+        ? await supabase.from('post_reactions').delete().eq('post_id', postId).eq('user_id', ctx.user.id)
+        : await supabase.from('post_reactions').insert({ post_id: postId, user_id: ctx.user.id });
+      if (actionError) { liked = was; ctl.set(was, base + (was ? 1 : 0)); notify(`No se pudo actualizar la reacción: ${actionError.message}`); }
+    };
   });
   box.querySelectorAll('[data-comment-form]').forEach(form => form.onsubmit = async event => {
     event.preventDefault(); const input=form.elements.body; const body=input.value.trim(); if(!body)return;
