@@ -2497,3 +2497,6 @@ body.appbody .act-del:active{color:var(--ink)}
 .act-talk:is(:hover,:active,:focus-visible) .tk-dots path:nth-child(4){animation-delay:350ms}
 @keyframes tk-twinkle{0%{opacity:1;transform:scale(1)}25%{opacity:0;transform:scale(.95)}50%{opacity:1;transform:scale(1)}75%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.talk-icon *{transition:none}.act-talk .tk-dots path{animation:none!important}}
+
+/* Eliminar como icono de papelera */
+body.appbody .icon-del{width:44px;min-width:44px;padding:0;display:inline-grid;place-items:center}
