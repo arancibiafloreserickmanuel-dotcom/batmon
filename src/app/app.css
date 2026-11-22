@@ -2502,3 +2502,10 @@ body.appbody .act-del:active{color:var(--ink)}
 body.appbody .icon-del{width:44px;min-width:44px;padding:0;display:inline-grid;place-items:center}
 
 body.appbody .community-post-actions .icon-del{margin-left:auto;display:inline-grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;color:var(--muted);background:transparent!important;border:0!important;box-shadow:none!important}
+
+/* Muro: acciones en tercios (me gusta · comentar · eliminar) */
+body.appbody .community-post-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));align-items:center;border-top:1px solid var(--line);margin-top:8px}
+body.appbody .community-post-actions>*{justify-self:stretch;display:grid;place-items:center;min-height:48px;padding:6px;border-radius:0!important;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--ink);margin:0;width:auto}
+body.appbody .community-post-actions .lk{display:inline-flex;justify-content:center;width:100%;padding:6px 10px}
+body.appbody .community-post-actions .icon-del{margin-left:0;width:auto;height:auto;color:var(--ink)}
+body.appbody .community-post-actions .act-talk .talk-icon{width:24px;height:21px}
