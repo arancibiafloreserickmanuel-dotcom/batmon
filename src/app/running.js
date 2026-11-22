@@ -152,6 +152,7 @@ async function mountMap(el, segments, { center = null, locate = null, zoomContro
     const startAt = center || (first ? [+first.lat, +first.lon] : [-19.0196, -65.2619]);
 
     const map = L.map(el, interactive ? { zoomControl: false, attributionControl: true, scrollWheelZoom: true } : { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false }).setView(startAt, first || center ? 16 : 13);
+    map.attributionControl?.setPrefix(false);
 
     let baseLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>' }).addTo(map);
     const setBase = (l) => { map.removeLayer(baseLayer); baseLayer = L.tileLayer(l.url, { maxZoom: l.max, attribution: l.attr, subdomains: 'abc' }).addTo(map); baseLayer.bringToBack(); };

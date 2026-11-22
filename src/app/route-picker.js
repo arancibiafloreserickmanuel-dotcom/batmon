@@ -85,6 +85,7 @@ export function openRoutePicker({ route = null, profile = 'foot', title = 'Marca
       if (!modal.isConnected) return;
       const bounds = L.latLngBounds([AREA.south, AREA.west], [AREA.north, AREA.east]);
       map = L.map($('[data-map]'), { zoomControl: false, attributionControl: true, maxBounds: bounds, maxBoundsViscosity: 1, minZoom: 8 }).setView(DEFAULT_CENTER, 13);
+      map.attributionControl.setPrefix(false);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
       requestAnimationFrame(() => map.invalidateSize());
       map.on('click', (e) => addPoint(e.latlng.lat, e.latlng.lng));
@@ -162,6 +163,7 @@ export async function mountRouteMap(el, route) {
     if (!el.isConnected) return null;
     el.innerHTML = '';
     const map = L.map(el, { zoomControl: false, attributionControl: true, scrollWheelZoom: false });
+    map.attributionControl.setPrefix(false);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
     const line = L.featureGroup([L.polyline(route.points, { color: '#fff', weight: 9, opacity: .9 }), L.polyline(route.points, { color: '#111', weight: 5, opacity: .95 })]).addTo(map);
     L.marker(route.points[0], { icon: pinIcon(L, 'A', 'a') }).addTo(map);
