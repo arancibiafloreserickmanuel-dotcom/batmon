@@ -208,7 +208,7 @@ export function sessionMediaMarkup(ctx, kind) {
   return `<fieldset class="sess-media"><legend>Foto o video de la sesión</legend>
     <label class="sess-media__pick">Tomar o elegir<input type="file" name="sess_media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"></label>
     <label class="sess-media__row"><span>Publicar en mi perfil</span><input type="checkbox" class="share-switch" name="sess_pub" aria-label="Publicar en mi perfil"><span><i></i></span></label>
-    <label>Categoría<select name="sess_cat">${mods.map((k) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${MOD[k]}</option>`).join('')}</select></label>
+    ${mods.includes(kind) ? `<input type="hidden" name="sess_cat" value="${cur}">` : `<label>Categoría<select name="sess_cat">${mods.map((k) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${MOD[k]}</option>`).join('')}</select></label>`}
     <small class="muted">Si no la publicas, queda guardada y podrás publicarla después desde Editar perfil.</small></fieldset>`;
 }
 
