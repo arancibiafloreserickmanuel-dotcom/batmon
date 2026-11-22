@@ -160,7 +160,7 @@ export function mountApparelGallery() {
       // van en sentido contrario: ahí el murciélago se da la vuelta (180°) para seguir mirando hacia donde avanza.
       const c = Math.cos(batAngle + spin.rotation.y);
       const t = Math.min(1, Math.max(0, (c + 0.35) / 0.7));
-      const flip = Math.PI * (1 - t * t * (3 - 2 * t));
+      const flip = Math.PI * (t * t * (3 - 2 * t));   // de frente mira a la izquierda; atrás se da la vuelta
       batHolder.rotation.y = -spin.rotation.y + flip;
     }
     renderer.render(scene, camera);
