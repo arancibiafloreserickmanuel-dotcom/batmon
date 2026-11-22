@@ -2582,3 +2582,7 @@ body[data-theme="dark"] .share-switch:checked+span i{background:var(--c1);box-sh
 .plyo-routine-row__links{gap:4px;margin-top:2px}
 body.appbody .plyo-icon-btn{width:34px;height:34px;min-height:0;padding:0;display:inline-grid;place-items:center;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:50%;color:var(--muted);cursor:pointer}
 body.appbody .plyo-icon-btn:active,body.appbody .plyo-icon-btn:hover{color:var(--ink)}
+
+.plyo-fold{margin:0 0 12px}
+.plyo-fold>.adm-fold__body{padding:4px 12px 12px;display:grid;gap:10px}
+.plyo-fold>.adm-fold__body>.card{margin:0}
