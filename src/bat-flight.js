@@ -13,6 +13,7 @@ const mix = (a, b, t) => a + (b - a) * t;
 export async function mountBatFlight() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
   const poster = document.getElementById('bat-poster');
+  const hero = document.querySelector('.bc-mark-frame img');   // la imagen de la portada, de donde despega
   const secs = { com: '#comunidad', cpl: '#complejos', ind: '#indumentaria', app: '#app', fin: '#final' };
 
   const canvas = document.createElement('canvas');
@@ -61,7 +62,7 @@ export async function mountBatFlight() {
     diveA = T.ind; diveB = T.ind + H * 1.1;   // caída en picada al entrar a Indumentaria
     waypoints.push([diveA, 0.52, 0.26, 0.30, 0, 0], [diveB, 0.50, 1.35, 0.36, 0, 0]);
     waypoints.push([T.app - H * 0.5, 0.82, -0.25, 0.26, -35, 8], [T.app + hApp * 0.55, 0.28, 0.48, 0.26, 28, -8]);
-    finalTop = T.fin;
+    finalTop = poster ? poster.getBoundingClientRect().top + scrollY : T.fin;
     const ph = poster ? poster.offsetHeight : H;
     landEnd = finalTop - (H - ph) / 2;                // póster centrado en pantalla
     landStart = landEnd - H * 0.95;
@@ -80,7 +81,7 @@ export async function mountBatFlight() {
 
   // estado suavizado
   const S = { x: 0, y: 0, span: 0, yaw: 0, roll: 0, pitch: 0, ready: false, flap: 1 };
-  let last = performance.now(), raf = 0, running = true, lastY = scrollY, t0 = last;
+  let frontNow = true, last = performance.now(), raf = 0, running = true, lastY = scrollY, t0 = last;
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -106,15 +107,28 @@ export async function mountBatFlight() {
       yawRad = mix(yawRad, 0, ss(0.45, 1, land)); rollRad = mix(rollRad, 0, ss(0.35, 1, land));
       rest = ss(0.8, 1, land);
     }
+    // despegue: parte exactamente del murciélago de la imagen de la portada y se va al abrir el scroll
+    const take = hero ? 1 - ss(0, H * 0.75, y) : 0;
+    if (hero && take > 0) {
+      const r = hero.getBoundingClientRect();
+      const tx = r.left + r.width * EMBLEM.cx, ty = r.top + r.height * EMBLEM.cy, tw = r.width * EMBLEM.w;
+      const e = take * take * (3 - 2 * take);
+      X = mix(X, tx, e); Y = mix(Y, ty, e); span = mix(span, tw, e);
+      yawRad = mix(yawRad, 0, ss(0.3, 1, take)); rollRad = mix(rollRad, 0, ss(0.2, 1, take));
+      rest = Math.max(rest, ss(0.85, 1, take));
+    }
+    // delante en la portada y al aterrizar; detrás del contenido en el resto (Comunidad, Complejos, Indumentaria, App)
+    const front = y < H * 0.9 || land > 0.01;
+    if (front !== frontNow) { frontNow = front; canvas.style.zIndex = front ? '50' : '-1'; }
     // vuelo: vaivén vertical natural cuando no está aterrizando ni cayendo
-    const free = (1 - dive) * (1 - land);
+    const free = (1 - dive) * (1 - land) * (1 - take);
     Y += Math.sin(t * 2.1) * 10 * free + Math.sin(t * 4.3) * 3 * free;
     X += Math.sin(t * 1.3 + 1) * 8 * free;
     // inclinación según la velocidad de scroll
     const vy = (y - lastY) / Math.max(dt, 1e-3); lastY = y;
     pitch = MathUtils.clamp(-vy / 6000, -0.35, 0.35) * free;
 
-    const k = 1 - Math.exp(-dt * (land > 0.6 ? 14 : 5));
+    const k = 1 - Math.exp(-dt * (land > 0.6 || take > 0.6 ? 16 : 5));
     if (!S.ready) { Object.assign(S, { x: X, y: Y, span, yaw: yawRad, roll: rollRad, pitch, ready: true }); }
     else { S.x += (X - S.x) * k; S.y += (Y - S.y) * k; S.span += (span - S.span) * k; S.yaw += (yawRad - S.yaw) * k; S.roll += (rollRad - S.roll) * k; S.pitch += (pitch - S.pitch) * k; }
 
@@ -142,6 +156,7 @@ export async function mountBatFlight() {
   addEventListener('load', layout);
   document.addEventListener('visibilitychange', onVis);
   new ResizeObserver(layout).observe(document.body);
+  if (hero) { const im = new Image(); im.onload = () => { hero.src = im.src; }; im.src = '/bat/hero-sin-murcielago.webp'; }
   raf = requestAnimationFrame(frame);
   return () => { cancelAnimationFrame(raf); removeEventListener('resize', layout); document.removeEventListener('visibilitychange', onVis); canvas.remove(); renderer.dispose(); };
 }

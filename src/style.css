@@ -170,5 +170,8 @@ html, body {
 
 /* Murciélago 3D que acompaña el scroll */
 #bat-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100lvh; z-index: 50; pointer-events: none; }
-.bat-final { display: flex; justify-content: center; background: #fff; }
+.bat-final { display: flex; justify-content: center; padding-top: 90svh; }
 .bat-final img { display: block; height: min(100svh, 177.8vw); width: auto; max-width: 100vw; user-select: none; -webkit-user-drag: none; }
+
+/* el murciélago pasa por detrás del contenido: el fondo blanco va en html, no en body ni en las secciones */
+body, .app-showcase, .bat-final { background: transparent; }
