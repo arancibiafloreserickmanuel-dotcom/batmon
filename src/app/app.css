@@ -2548,3 +2548,5 @@ body.appbody [data-share-open]{margin-bottom:12px}
 /* Conteo de comentarios junto al icono */
 body.appbody :is(.act-actions,.community-post-actions) .act-talk{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .act-count{font:700 16px Inter,sans-serif;font-variant-numeric:tabular-nums;line-height:1}
+
+.act-foot .act-likes{margin:4px 14px 12px;font-size:13px;font-weight:600;color:var(--ink)}

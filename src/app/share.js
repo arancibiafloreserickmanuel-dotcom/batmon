@@ -323,8 +323,8 @@ export async function renderSharedFeed(box, ctx) {
   };
   const footMarkup = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
-    return `<p class="act-likes"${likesLine(a) ? '' : ' hidden'}>${esc(likesLine(a))}</p>
-      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}<span class="act-count">${c.length || ''}</span></button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>`;
+    return `<div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}<span class="act-count">${c.length || ''}</span></button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
+      <p class="act-likes"${likesLine(a) ? '' : ' hidden'}>${esc(likesLine(a))}</p>`;
   };
 
   box.innerHTML = `<div class="act-list">${acts.map(cardMarkup).join('')}</div>`;
