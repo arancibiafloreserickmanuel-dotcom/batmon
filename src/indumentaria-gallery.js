@@ -21,9 +21,11 @@ import {
 const images = [
   { src: '/apparel-1-polera-militar-espalda.png', alt: 'Polera Batmon Crowd, vista posterior' },
   { src: '/apparel-2-polera-militar-frente.png', alt: 'Polera Batmon Crowd, vista frontal' },
+  { src: '/apparel-7-militar-persona.webp', alt: 'Dos corredores con la polera militar Batmon Crowd, de frente y de espalda' },
   { src: '/apparel-3-poster-militar.png', alt: 'Nueva polera Batmon Crowd' },
   { src: '/apparel-4-negra-espalda.webp', alt: 'Buzo manga larga Batmon Crowd, alas en la espalda' },
   { src: '/apparel-5-negra-delante.webp', alt: 'Buzo manga larga Batmon Crowd Club, espalda' },
+  { src: '/apparel-8-negra-persona.webp', alt: 'Dos corredores con la polera negra Batmon Crowd, de frente y de espalda' },
   { src: '/apparel-6-poster-negra.webp', alt: 'Buzos manga larga Batmon Crowd, vista de ambos diseños' },
 ];
 
