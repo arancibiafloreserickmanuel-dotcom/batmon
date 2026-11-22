@@ -86,6 +86,13 @@ const apparelLoader = new IntersectionObserver(([entry]) => {
   });
 }, { rootMargin: '240px 0px' });
 let disposeApparelGallery = () => {};
+const appRoot = document.getElementById('app-slider');
+const appLoader = new IntersectionObserver(([entry]) => {
+  if (!entry.isIntersecting) return;
+  appLoader.disconnect();
+  import('./app-slider.js').then(({ mountAppSlider }) => { if (!pageIsClosing) mountAppSlider(appRoot); });
+}, { rootMargin: '300px 0px' });
+if (appRoot) appLoader.observe(appRoot);
 if (apparelRoot) apparelLoader.observe(apparelRoot);
 window.addEventListener('pagehide', () => {
   pageIsClosing = true;
