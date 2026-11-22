@@ -2586,3 +2586,8 @@ body.appbody .plyo-icon-btn:active,body.appbody .plyo-icon-btn:hover{color:var(-
 .plyo-fold{margin:0 0 12px}
 .plyo-fold>.adm-fold__body{padding:4px 12px 12px;display:grid;gap:10px}
 .plyo-fold>.adm-fold__body>.card{margin:0}
+
+/* Fondo móvil fijo: capa del tamaño de la pantalla (no se estira con páginas largas como el perfil) */
+body.appbody{background-image:none!important;background-attachment:scroll!important}
+body.appbody::before{content:"";position:fixed;left:0;top:0;width:100%;height:100vh;height:100lvh;z-index:-1;pointer-events:none;background:url('/theme-light.png') center top/cover no-repeat}
+body.appbody[data-theme="dark"]::before{background-image:url('/theme-dark.png')}
