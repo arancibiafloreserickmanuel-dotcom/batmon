@@ -27,6 +27,9 @@ export async function renderCommunity(view, ctx) {
     box.innerHTML = '<div id="club-acts"></div><div id="club-wall"></div>';
     await Promise.all([renderSharedFeed($('#club-acts', box), ctx), renderActivity($('#club-wall', box), ctx)]);
     const share = $('[data-share-open]', box); if (share) box.prepend(share); // el botón va arriba de las actividades
+    // Un solo aviso de "vacío": solo si no hay ni actividades ni publicaciones
+    const hasAny = box.querySelector('.act-card, .community-post');
+    box.querySelectorAll('.profile-empty').forEach((el, i) => { if (hasAny || i > 0) el.remove(); });
   }
 }
 
