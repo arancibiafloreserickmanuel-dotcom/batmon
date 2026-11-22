@@ -2380,3 +2380,15 @@ body.appbody .route-picker__go{flex:0 0 36px;width:36px;height:36px;min-height:0
 .rp-hit{touch-action:none;cursor:grab}
 /* El botón COMENZAR y sus iconos no se montan sobre el resto de la pantalla (menú inferior, cabecera) */
 .run-map-wrap--static:not(:has(.goal-menu-input:checked)){z-index:0;isolation:isolate}
+
+/* Registro manual compacto */
+.run-manual-card>summary{padding:10px 14px;font-size:13px}
+.run-manual-card form{padding:10px 12px;display:grid;gap:8px}
+.run-manual-card h2{display:none}
+:is(.run-manual-card form,#manual-create,#manual-edit) .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+:is(.run-manual-card form,#manual-create,#manual-edit) label{display:grid;gap:3px;margin:0;font-size:11px}
+body.appbody :is(.run-manual-card form,#manual-create,#manual-edit) :is(input:not([type=file]):not([type=hidden]),select){min-height:0!important;height:34px!important;padding:0 10px!important;font-size:13px!important;border-radius:9px!important;margin:0!important}
+body.appbody :is(.run-manual-card form,#manual-create,#manual-edit) .dd button.dd-btn{min-height:34px;height:34px;padding:0 10px;font-size:13px}
+:is(.run-manual-card form,#manual-create,#manual-edit) .run-manual-pace{margin:0;font-size:11px}
+:is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions{margin:0;gap:8px}
+:is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions .btn{margin:0;flex:1}
