@@ -278,7 +278,7 @@ export async function renderSharedFeed(box, ctx) {
     return `<article class="card act-card" data-act="${a.id}">
       <header class="act-head"><button type="button" class="act-avatar" data-avatar aria-label="Ver foto de ${esc(name)}">${avatars.get(a.user_id) ? avatarImg(avatars.get(a.user_id)) : esc(initialsOf(name))}</button>
         <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}${a.visibility === 'close' ? ' · Mejores amigos' : ''}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
-        ${own ? '<button type="button" class="link act-del" data-del>Quitar</button>' : ''}</header>
+        ${own ? '<button type="button" class="act-del" data-del aria-label="Eliminar actividad" title="Eliminar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>' : ''}</header>
       <h2 class="act-title">${esc(a.title)}</h2>
       ${statsMarkup(a)}
       ${logros.length ? `<div class="act-logros">${logros.map((l) => `<div class="act-logro act-logro--${esc(l.tier)}"><span>${ICON.trophy}</span><b>${esc(l.text)}</b></div>`).join('')}</div>` : ''}
@@ -339,11 +339,16 @@ export async function renderSharedFeed(box, ctx) {
     const av = card.querySelector('[data-avatar]');
     if (av) av.onclick = () => openPhotoViewer(avatars.get(a.user_id), nameOf(a.user_id));
     const del = card.querySelector('[data-del]');
-    if (del) del.onclick = () => openShredder({ name: 'actividad', points: Array.isArray(a.route?.points) ? a.route.points : null, onCommit: async () => {
+    if (del) del.onclick = async () => {
+      const remove = async () => {
       const { error: err } = await supabase.from('shared_activities').delete().eq('id', a.id);
       if (err) { notify(err.message); return; }
       const removed = a.photos || []; if (removed.length) await supabase.storage.from('profile-media').remove(removed);
       card.remove(); notify('Actividad quitada.', 'success');
-    } });
+      };
+      const pic = (photos.get(a.id) || []).find(Boolean);
+      if (pic) { openShredder({ name: 'actividad', image: pic, onCommit: remove }); return; } // con foto: se tritura la foto publicada
+      if (await confirmDialog('La actividad dejará de verse en el club. Seguirá guardada en tu historial.', '¿Eliminar actividad?')) remove(); // sin foto: confirmación normal
+    };
   });
 }

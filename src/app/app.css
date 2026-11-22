@@ -2478,3 +2478,7 @@ body.appbody :is(.act-actions,.community-post-actions) .lk .lk__heart{width:26px
 
 .community-post{overflow:visible}.community-post .community-media{border-radius:12px}
 body.appbody .community-post-actions .lk{width:auto;justify-content:flex-start;padding:4px 8px 4px 0;min-height:40px}
+
+/* Eliminar actividad en Club: solo icono */
+body.appbody .act-del{width:34px;height:34px;min-height:0;padding:0;display:grid;place-items:center;border-radius:50%;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--muted);cursor:pointer}
+body.appbody .act-del:active{color:var(--ink)}

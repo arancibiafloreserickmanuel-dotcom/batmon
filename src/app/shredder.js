@@ -26,9 +26,9 @@ const MARKUP = `<button type="button" class="shred-x" data-cancel aria-label="Ca
 
 /**
  * Abre la trituradora para eliminar algo.
- * { name, points?: [[lat,lon]], undoSeconds = 5, onCommit }: onCommit se llama cuando pasa el tiempo de "Deshacer" (aquí se borra de verdad).
+ * { name, points?: [[lat,lon]], image?: url de la foto publicada (si hay, la hoja es esa foto), undoSeconds = 5, onCommit }: onCommit se llama cuando pasa el tiempo de "Deshacer" (aquí se borra de verdad).
  */
-export function openShredder({ name = 'elemento', points = null, undoSeconds = 5, onCommit } = {}) {
+export function openShredder({ name = 'elemento', points = null, image = '', undoSeconds = 5, onCommit } = {}) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const UNDO = undoSeconds;
   const root = document.createElement('div');
@@ -47,7 +47,19 @@ export function openShredder({ name = 'elemento', points = null, undoSeconds = 5
   const para = (c, x, y, widths, lh, h) => { widths.forEach((w, i) => bar(c, x, y + i * lh, w, h)); return y + widths.length * lh; };
   const pen = (c, fill, alpha = 1) => { c.fillStyle = fill; c.globalAlpha = alpha; };
 
+  let photo = null;
+  if (image) {
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { if (alive) { photo = im; paint(); } };
+    im.onerror = () => { if (!im.dataset.retry && alive) { im.dataset.retry = '1'; im.removeAttribute('crossorigin'); im.src = image; } };
+    im.src = image;
+  }
+
   function drawDoc(c) {
+    if (photo) { // la foto publicada ocupa toda la hoja (recortada para llenarla)
+      const k = Math.max(W / photo.naturalWidth, H / photo.naturalHeight), w = photo.naturalWidth * k, h = photo.naturalHeight * k;
+      c.drawImage(photo, (W - w) / 2, (H - h) / 2, w, h); return;
+    }
     const ink = colour('--doc-ink'), muted = colour('--doc-muted'), accent = colour('--doc-accent');
     pen(c, ink); bar(c, 16, 18, 92, 7); barRight(c, W - 16, 17, 34, 9);
     pen(c, muted, 0.7); bar(c, 16, 31, 56, 3); barRight(c, W - 16, 31, 24, 3);
