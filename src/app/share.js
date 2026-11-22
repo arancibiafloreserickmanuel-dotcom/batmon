@@ -226,8 +226,7 @@ function statsMarkup(a) {
   const cells = [];
   if (a.kind === 'running') {
     cells.push(['Distancia', `${fmt(s.distance_km, 2)} km`]);
-    if (s.elevation_m) cells.push(['Desnivel', `${fmt(s.elevation_m, 0)} m`]);
-    else if (s.distance_km && s.duration_sec) cells.push(['Ritmo', `${paceStr(Number(s.distance_km), s.duration_sec / 60)} /km`]);
+    if (s.distance_km && s.duration_sec) cells.push(['Ritmo', `${paceStr(Number(s.distance_km), s.duration_sec / 60)} /km`]);
     cells.push(['Tiempo', clock(s.duration_sec)]);
   } else {
     cells.push(['Tiempo', clock(s.duration_sec)]);
@@ -235,7 +234,9 @@ function statsMarkup(a) {
     if (s.exercises) cells.push(['Ejercicios', String(s.exercises)]);
   }
   if (a.effort) cells.push(['Esfuerzo', EFFORT_LABEL[a.effort] || String(a.effort)]);
-  return `<div class="act-stats">${cells.slice(0, 4).map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
+  cells.push(['Fecha', dateLabel(a.performed_on)]);
+  if (a.kind === 'running' && s.elevation_m) cells.push(['Desnivel', `${fmt(s.elevation_m, 0)} m`]);
+  return `<div class="act-stats">${cells.map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
 }
 
 async function mountRouteMap(el, route) {
@@ -245,7 +246,7 @@ async function mountRouteMap(el, route) {
     el.innerHTML = '';
     const map = L.map(el, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-    const lines = route.map((seg) => L.polyline(seg, { color: '#fc4c02', weight: 4, opacity: .95, lineJoin: 'round' }).addTo(map));
+    const lines = route.map((seg) => L.polyline(seg, { color: '#10100e', weight: 4, opacity: .95, lineJoin: 'round' }).addTo(map));
     map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [24, 24], maxZoom: 16 });
   } catch { el.innerHTML = '<p class="muted act-map__err">No se pudo cargar el mapa.</p>'; }
 }
@@ -276,18 +277,24 @@ export async function renderSharedFeed(box, ctx) {
   const photos = new Map(await Promise.all(acts.map(async (a) => [a.id, await Promise.all((a.photos || []).map(sign))])));
   const nameOf = (id) => people.get(id)?.full_name || 'Socio Batmon';
 
+  // Se desliza hacia un lado: primero las fotos, después el mapa del recorrido.
+  const mediaMarkup = (a) => {
+    const pics = (photos.get(a.id) || []).filter(Boolean), hasMap = !!a.route?.length, n = pics.length + (hasMap ? 1 : 0);
+    if (!n) return '';
+    return `<div class="act-media"><div class="act-slides" data-slides>${pics.map((u) => `<div class="act-slide"><img src="${esc(u)}" alt="Foto de la actividad" loading="lazy"></div>`).join('')}${hasMap ? '<div class="act-slide"><div class="act-map" data-route aria-label="Mapa del recorrido"></div></div>' : ''}</div>${n > 1 ? `<div class="act-dots" aria-hidden="true">${Array.from({ length: n }, (_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}</div>`;
+  };
+
   const cardMarkup = (a) => {
     const own = a.user_id === me, name = nameOf(a.user_id), logros = a.stats?.logros || [];
     return `<article class="card act-card" data-act="${a.id}">
       <header class="act-head"><button type="button" class="act-avatar" data-avatar aria-label="Ver foto de ${esc(name)}">${avatars.get(a.user_id) ? avatarImg(avatars.get(a.user_id)) : esc(initialsOf(name))}</button>
         <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}${a.visibility === 'close' ? ' · Mejores amigos' : ''}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
         <span class="act-tools"><button type="button" class="act-del act-talk" data-hcomments aria-label="Comentarios" title="Comentarios">${TALK_ICON}</button>${own ? '<button type="button" class="act-del" data-del aria-label="Eliminar actividad" title="Eliminar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="tr-lid"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/></g><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>' : ''}</span></header>
+      ${mediaMarkup(a)}
       <h2 class="act-title">${esc(a.title)}</h2>
       ${statsMarkup(a)}
       ${logros.length ? `<div class="act-logros">${logros.map((l) => `<div class="act-logro act-logro--${esc(l.tier)}"><span>${ICON.trophy}</span><b>${esc(l.text)}</b></div>`).join('')}</div>` : ''}
-      ${a.route?.length ? '<div class="act-map" data-route aria-label="Mapa del recorrido"></div>' : ''}
       ${a.description ? `<p class="act-desc">${esc(a.description)}</p>` : ''}
-      ${(photos.get(a.id) || []).filter(Boolean).length ? `<div class="act-photos">${photos.get(a.id).filter(Boolean).map((u) => `<img src="${esc(u)}" alt="Foto de la actividad" loading="lazy">`).join('')}</div>` : ''}
       <div class="act-foot" data-foot></div></article>`;
   };
 
@@ -344,6 +351,8 @@ export async function renderSharedFeed(box, ctx) {
 
   box.querySelectorAll('[data-act]').forEach((card) => {
     paintFoot(card);
+    const slides = card.querySelector('[data-slides]');
+    if (slides) slides.addEventListener('scroll', () => { const i = Math.round(slides.scrollLeft / slides.clientWidth); card.querySelectorAll('.act-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
     const mapEl = card.querySelector('[data-route]'), a = acts.find((x) => x.id === card.dataset.act);
     if (mapEl) { if (observer) observer.observe(mapEl); else mountRouteMap(mapEl, a.route); }
     const av = card.querySelector('[data-avatar]');

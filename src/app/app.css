@@ -2520,3 +2520,18 @@ button:is(:hover,:active,:focus-visible) .sh-arrow{animation:sh-up .7s ease-in-o
 @media (prefers-reduced-motion:reduce){.tr-lid{transition:none}button .sh-arrow{animation:none!important}}
 body.appbody .community-post-actions .act-share{display:grid;place-items:center}
 body.appbody .community-post-actions .act-share svg{width:24px;height:24px}
+
+/* Actividad en Club: fotos y mapa en un carrusel horizontal, datos debajo y descripción pequeña */
+.act-media{position:relative;margin-top:4px}
+.act-slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.act-slides::-webkit-scrollbar{display:none}
+.act-slide{flex:0 0 100%;scroll-snap-align:center;height:260px;display:grid}
+.act-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.act-slide .act-map{height:100%;width:100%}
+.act-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.act-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.4);transition:transform .2s,background .2s}
+.act-dots i.on{background:#fff;transform:scale(1.25)}
+.act-title{margin:12px 14px 6px}
+.act-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px 12px}
+.act-stats b{font-size:15px}
+.act-desc{margin:0 14px 8px;font-size:12px;line-height:1.4;color:var(--muted);white-space:pre-wrap}
