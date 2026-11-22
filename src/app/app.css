@@ -2550,3 +2550,24 @@ body.appbody :is(.act-actions,.community-post-actions) .act-talk{display:inline-
 .act-count{font:700 16px Inter,sans-serif;font-variant-numeric:tabular-nums;line-height:1}
 
 .act-foot .act-likes{margin:4px 14px 12px;font-size:13px;font-weight:600;color:var(--ink)}
+
+/* Portada de evento: fecha pequeña y título grande sobre la foto (títulos cortos) */
+.ev-card__img,.event-page__cover{position:relative}
+.ev-cover-text{position:absolute;left:0;right:0;bottom:0;display:grid;gap:2px;padding:44px 16px 14px;color:#fff;background:linear-gradient(180deg,transparent,rgba(0,0,0,.72))}
+.ev-cover-text small{font:600 11px/1.2 'IBM Plex Mono',monospace;letter-spacing:.14em}
+.ev-cover-text b{font:400 clamp(30px,9vw,44px)/1 Anton,sans-serif;letter-spacing:.02em;text-transform:uppercase}
+/* Lugar del evento: botones de mapa */
+.event-place{display:grid;gap:10px}
+.event-place__actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.event-place__actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;margin:0;text-decoration:none;text-align:center}
+.event-place__actions svg{width:16px;height:16px;flex:none}
+.event-place__map{height:220px;border-radius:16px;overflow:hidden;background:var(--line)}
+.ef-place{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+/* Página de evento: más aire entre bloques, botones y tarjetas */
+.event-page__body{gap:16px;padding:18px 4px 8px}
+.event-detail-actions{gap:12px;margin-top:2px}
+.event-detail-actions .btn{min-height:50px}
+.event-facts{gap:12px}
+.event-attendees{margin-top:4px;display:grid;gap:10px}
+.event-page .route-card{margin:0}
+.event-page__more{margin:0}

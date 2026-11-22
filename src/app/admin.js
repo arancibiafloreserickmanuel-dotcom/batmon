@@ -4,6 +4,7 @@ import { autoEnhanceFileInputs } from './upload-field.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading, exerciseImgUrl } from './common.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
+import { openPlacePicker } from './place-picker.js';
 
 const view = $('#view');
 const TABS = [
@@ -557,8 +558,11 @@ async function eventos() {
           </div>
         </div>
 
-        <label for="ef-loc">Ubicación (opcional)</label>
+        <label for="ef-loc">Lugar (opcional)</label>
         <input id="ef-loc" value="${esc(existing?.location || '')}" placeholder="Ej: Parque Central / Costanera">
+        <label for="ef-placeurl">Enlace del mapa (Google Maps u otro, opcional)</label>
+        <input id="ef-placeurl" type="url" inputmode="url" maxlength="500" value="${esc(existing?.place_url || '')}" placeholder="https://maps.app.goo.gl/…">
+        <div class="ef-place"><button type="button" class="btn sm ghost" id="ef-pickplace">Marcar en el mapa</button><span class="muted" id="ef-placestate"></span></div>
 
 
         <label for="ef-category">Categoría (ej. Carrera 10K) (opcional)</label>
@@ -596,6 +600,16 @@ async function eventos() {
     `);
     m.querySelector('[data-close]').onclick = () => m.remove();
 
+    let placeLat = existing?.place_lat ?? null, placeLon = existing?.place_lon ?? null, placeTouched = false;
+    const extra_place = {}, placeState = m.querySelector('#ef-placestate');
+    const showPlace = () => { placeState.textContent = placeLat != null ? '📍 Punto marcado en el mapa' : ''; };
+    showPlace();
+    m.querySelector('#ef-pickplace').onclick = async () => {
+      const out = await openPlacePicker({ lat: placeLat, lon: placeLon });
+      if (!out) return;
+      placeTouched = true; if (out === 'remove') { placeLat = placeLon = null; } else { placeLat = out.lat; placeLon = out.lon; }
+      showPlace();
+    };
     let routeVal = existing?.route ?? null, routeTouched = false;
     m.querySelector('#ef-route-btn').onclick = async () => {
       const out = await openRoutePicker({ route: routeVal, title: 'Ruta del evento', allowRemove: true });
@@ -616,6 +630,8 @@ async function eventos() {
       const dateVal = m.querySelector('#ef-date').value;
       const timeVal = m.querySelector('#ef-time').value || '08:00';
       const location = m.querySelector('#ef-loc').value.trim();
+      { const u = m.querySelector('#ef-placeurl').value.trim(); if (u || existing?.place_url) extra_place.place_url = u || null; }
+      if (placeTouched || existing?.place_lat != null) { extra_place.place_lat = placeLat; extra_place.place_lon = placeLon; }
       const file = m.querySelector('#ef-img').files[0];
       const notifyChecked = m.querySelector('#ef-notify').checked;
       const extra = {};
@@ -652,6 +668,7 @@ async function eventos() {
         notify_members: notifyChecked,
         updated_at: new Date().toISOString(),
         ...extra,
+        ...extra_place,
       };
 
       let eventId = existing?.id;

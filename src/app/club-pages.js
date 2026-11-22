@@ -20,6 +20,24 @@ function bindRouteCard(root, route, id, ctx) {
   if (run) run.onclick = () => { setPlannedRoute(ctx.user.id, { ...route, set_at: Date.now() }); try { localStorage.setItem(`batmon_running_page_${ctx.user.id}`, 'run'); } catch { /* sin almacenamiento */ } notify('Ruta lista en Running.', 'success'); location.hash = '#running'; };
 }
 const fullDate = (d) => new Date(d).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' });
+// "HOY · MIÉ 5 AGO": texto corto de fecha para la portada
+const kickerDate = (iso, past) => {
+  const d = new Date(iso), t = new Date(), same = (a, b) => a.toDateString() === b.toDateString(), tm = new Date(t.getTime() + 864e5);
+  const rel = same(d, t) ? 'HOY · ' : same(d, tm) ? 'MAÑANA · ' : '';
+  return rel + d.toLocaleDateString('es-BO', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/[.,]/g, '').toUpperCase() + (past ? ' · FINALIZADO' : '');
+};
+// Título corto + foto: fecha chica y título grande sobre la imagen. Si es largo, queda como siempre (debajo).
+const SHORT_TITLE = 18;
+const overlayOk = (e, img) => !!img && e.title.trim().length <= SHORT_TITLE;
+const coverText = (e, past) => `<div class="ev-cover-text"><small>${esc(kickerDate(e.event_date, past))}</small><b>${esc(e.title)}</b></div>`;
+
+// Enlace para abrir el lugar en Google Maps: el que puso el admin, el punto marcado o una búsqueda por nombre
+const mapsHref = (e) => {
+  if (e.place_url && /^https?:\/\//i.test(e.place_url)) return e.place_url;
+  if (e.place_lat != null && e.place_lon != null) return `https://www.google.com/maps/search/?api=1&query=${e.place_lat},${e.place_lon}`;
+  return e.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}` : '';
+};
+
 const goBack = () => { if (history.length > 1) history.back(); else location.hash = '#club'; };
 
 async function eventImage(ev) {
@@ -33,18 +51,18 @@ export const eventHref = (id, from) => { if (from) sessionStorage.setItem('batmo
 
 /* ───────────── Club → Eventos: scroll tipo red social ───────────── */
 export async function renderEventsFeed(box) {
-  const { data: events = [], error } = await supabase.from('events').select('id,title,description,event_date,location,image_path,category,created_at').order('event_date', { ascending: false });
+  const { data: events = [], error } = await supabase.from('events').select('*').order('event_date', { ascending: false });
   if (error) { box.innerHTML = `<div class="card warn">No se pudieron cargar los eventos: ${esc(error.message)}</div>`; return; }
   if (!events.length) { box.innerHTML = '<div class="card profile-empty">Todavía no hay eventos publicados.</div>'; return; }
   const now = Date.now();
   const upcoming = events.filter((e) => new Date(e.event_date) >= now).sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
   const past = events.filter((e) => new Date(e.event_date) < now);
   const imgs = new Map(await Promise.all(events.map(async (e) => [e.id, await eventImage(e)])));
-  const card = (e, isPast) => `<a class="card ev-card ${isPast ? 'is-past' : ''}" href="${eventHref(e.id, 'club')}">
-    ${imgs.get(e.id) ? `<div class="ev-card__img"><img src="${esc(imgs.get(e.id))}" alt="" loading="lazy"></div>` : '<div class="ev-card__img ev-card__img--empty"></div>'}
-    <div class="ev-card__body"><span class="ev-card__date">${esc(fullDate(e.event_date))}${isPast ? ' · Finalizado' : ''}</span><h2>${esc(e.title)}</h2>
+  const card = (e, isPast) => { const ov = overlayOk(e, imgs.get(e.id)); return `<a class="card ev-card ${isPast ? 'is-past' : ''}" href="${eventHref(e.id, 'club')}">
+    ${imgs.get(e.id) ? `<div class="ev-card__img"><img src="${esc(imgs.get(e.id))}" alt="" loading="lazy">${ov ? coverText(e, isPast) : ''}</div>` : '<div class="ev-card__img ev-card__img--empty"></div>'}
+    <div class="ev-card__body">${ov ? '' : `<span class="ev-card__date">${esc(fullDate(e.event_date))}${isPast ? ' · Finalizado' : ''}</span><h2>${esc(e.title)}</h2>`}
       ${e.location ? `<p class="ev-card__line">${ICON.pin}${esc(e.location)}</p>` : ''}${e.category ? `<span class="ev-chip">${esc(e.category)}</span>` : ''}
-      ${e.description ? `<p class="ev-card__desc">${esc(e.description)}</p>` : ''}</div></a>`;
+      ${e.description ? `<p class="ev-card__desc">${esc(e.description)}</p>` : ''}</div></a>`; };
   box.innerHTML = `<div class="ev-feed">${upcoming.length ? `<h3 class="ev-section">Próximos eventos</h3>${upcoming.map((e) => card(e, false)).join('')}` : ''}${past.length ? `<h3 class="ev-section">Eventos anteriores</h3>${past.map((e) => card(e, true)).join('')}` : ''}</div>`;
 }
 
@@ -69,19 +87,19 @@ export async function renderEventPage(view, ctx, eventId) {
   const facts = [['Terreno', event.terrain], ['Precio', event.price], ['Desnivel', event.elevation], ['Temperatura', event.temperature], ['Humedad', event.humidity], ['Viento', event.wind]].filter(([, v]) => v);
   const desc = event.description || '', longDesc = desc.length > 180, hasMore = !!(event.more_info || longDesc);
   const isUrl = /^https?:\/\//i.test(event.more_info || '');
-  const past = d < new Date();
+  const past = d < new Date(), ov = overlayOk(event, image), gmaps = mapsHref(event), hasPoint = event.place_lat != null && event.place_lon != null;
 
   view.innerHTML = `<article class="event-page">
-    <div class="event-page__cover ${image ? '' : 'is-empty'}">${image ? `<img src="${esc(image)}" alt="">` : ''}<button type="button" class="event-page__round event-page__round--back" id="ev-back" aria-label="Volver">${ICON.back}</button><button type="button" class="event-page__round event-page__round--share" id="ev-share" aria-label="Compartir evento">${ICON.share}</button></div>
+    <div class="event-page__cover ${image ? '' : 'is-empty'}">${image ? `<img src="${esc(image)}" alt="">` : ''}<button type="button" class="event-page__round event-page__round--back" id="ev-back" aria-label="Volver">${ICON.back}</button><button type="button" class="event-page__round event-page__round--share" id="ev-share" aria-label="Compartir evento">${ICON.share}</button>${ov ? coverText(event, past) : ''}</div>
     <div class="event-page__body">
-      <span class="event-page__date">${esc(fullDate(event.event_date))}${past ? ' · Finalizado' : ''}</span>
-      <h1 class="event-page__title">${esc(event.title)}</h1>
-      ${event.location ? `<p class="event-page__line">${ICON.pin}${esc(event.location)}</p>` : ''}
+      ${ov ? '' : `<span class="event-page__date">${esc(fullDate(event.event_date))}${past ? ' · Finalizado' : ''}</span>
+      <h1 class="event-page__title">${esc(event.title)}</h1>`}
       <p class="event-page__line">${event.category ? esc(event.category) + ' · ' : ''}${people.length} confirmado${people.length === 1 ? '' : 's'} del club</p>
       ${event.category ? `<span class="ev-chip">${esc(event.category)}</span>` : ''}
       ${desc ? `<p class="event-page__desc ${longDesc ? 'is-clamped' : ''}" id="ev-desc">${esc(desc)}</p>` : ''}
       ${hasMore ? '<button type="button" class="btn ghost event-page__more" id="ev-more">Más información</button>' : ''}
-      <div class="event-detail-meta"><div class="event-detail-info-card"><small>HORA</small><b>${timeLabel}</b></div><div class="event-detail-info-card"><small>LUGAR</small><b>${esc(event.location || 'Por confirmar')}</b></div></div>
+      <div class="event-detail-meta"><div class="event-detail-info-card"><small>HORA</small><b>${timeLabel}</b></div><div class="event-detail-info-card"><small>LUGAR</small><b>${esc(event.location || (hasPoint ? 'Ubicación en el mapa' : 'Por confirmar'))}</b></div></div>
+      ${gmaps || hasPoint ? `<div class="event-place"><div class="event-place__actions">${hasPoint ? `<button type="button" class="btn ghost" id="ev-map-toggle">${ICON.pin}Ver en el mapa</button>` : ''}${gmaps ? `<a class="btn ghost" href="${esc(gmaps)}" target="_blank" rel="noopener">${ICON.pin}Abrir en Google Maps</a>` : ''}</div>${hasPoint ? '<div class="event-place__map" id="ev-place-map" hidden></div>' : ''}</div>` : ''}
       ${event.route ? routeCardMarkup(event.route, 'ev-route', !!ctx.modules?.running) : ''}
       ${facts.length ? `<div class="event-facts">${facts.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
       <div class="event-detail-actions"><button class="btn ${rsvp?.status === 'confirmed' ? 'is-confirmed' : ''}" data-confirm>${rsvp?.status === 'confirmed' ? 'Voy ✓' : 'Voy'}</button><button class="btn ghost" data-cancel>No voy</button></div>
@@ -89,6 +107,20 @@ export async function renderEventPage(view, ctx, eventId) {
     </div></article>`;
 
   $('#ev-back', view).onclick = goBack;
+  const mapBtn = $('#ev-map-toggle', view);
+  if (mapBtn) {
+    let mounted = false;
+    mapBtn.onclick = async () => {
+      const el = $('#ev-place-map', view); el.hidden = !el.hidden;
+      if (el.hidden || mounted) return; mounted = true;
+      const [{ default: L }] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
+      const map = L.map(el, { zoomControl: false, attributionControl: true, scrollWheelZoom: false }).setView([event.place_lat, event.place_lon], 16);
+      map.attributionControl.setPrefix(false);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+      L.marker([event.place_lat, event.place_lon]).addTo(map);
+      requestAnimationFrame(() => map.invalidateSize());
+    };
+  }
   if (event.route) bindRouteCard(view, event.route, 'ev-route', ctx);
   $('#ev-share', view).onclick = async () => {
     const url = `${location.origin}/app.html#evento/${eventId}`;
