@@ -2346,3 +2346,8 @@ body.appbody .admin-header{grid-template-columns:auto minmax(0,1fr)}
   body.appbody a.animated-back.admin-header-back .animated-back-sweep svg{width:12px;height:12px;flex-basis:12px}
   body.appbody a.animated-back.admin-header-back:hover .animated-back-sweep,body.appbody a.animated-back.admin-header-back:focus-visible .animated-back-sweep{width:calc(100% - 4px)}
 }
+/* Todos los botones Volver / Cerrar con animación: mismo tamaño compacto */
+body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout){min-width:0;width:max-content;height:26px;min-height:26px;padding:2px 8px 2px 28px;border-radius:8px;font-size:8px;line-height:1;letter-spacing:0}
+body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout) .animated-back-sweep{top:2px;left:2px;width:20px;height:20px;border-radius:6px}
+body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout) .animated-back-sweep svg{width:12px;height:12px;flex-basis:12px}
+body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout):hover .animated-back-sweep,body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout):focus-visible .animated-back-sweep{width:calc(100% - 4px)}
