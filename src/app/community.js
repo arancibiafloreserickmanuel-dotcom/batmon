@@ -87,6 +87,17 @@ async function renderActivity(box, ctx) {
       if (actionError) { liked = was; ctl.set(was, base + (was ? 1 : 0)); notify(`No se pudo actualizar la reacción: ${actionError.message}`); }
     };
   });
+  const openPost = postId => openComments({
+    getList: () => comments.filter(x => x.post_id === postId).map(x => ({ id: x.id, name: people.get(x.user_id) || 'Socio', body: x.body, at: x.created_at, mine: x.user_id === ctx.user.id })),
+    onSend: async body => {
+      const { data, error: commentError } = await supabase.from('post_comments').insert({ post_id: postId, user_id: ctx.user.id, body }).select('id,post_id,user_id,body,created_at').single();
+      if (commentError) { notify(`No se pudo comentar: ${commentError.message}`); return false; }
+      comments.push(data); return true;
+    },
+    onClose: () => { const line = box.querySelector(`[data-comments-line="${postId}"]`); if (line) line.innerHTML = commentsLink(postId); },
+  });
+  box.querySelectorAll('[data-focus-comment]').forEach(button => button.onclick = () => openPost(button.closest('[data-post-card]').dataset.postCard));
+  box.addEventListener('click', e => { const l = e.target.closest('[data-open-comments]'); if (l) openPost(l.dataset.openComments); });
   box.querySelectorAll('[data-delete-post]').forEach(button => button.onclick = () => openShredder({name:'publicación',image:button.closest('[data-post-card]')?.querySelector('img.community-media')?.src||'',onCommit:async()=>{
     const postId=button.dataset.deletePost, path=button.dataset.mediaPath;
     const {error: deleteError}=await supabase.from('profile_posts').delete().eq('id',postId).eq('user_id',ctx.user.id);
