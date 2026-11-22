@@ -63,13 +63,13 @@ export async function mountBatFlight() {
       [T.com + hCom * 0.7, 0.22, 0.52, 0.27, 180, -9],
       [T.cpl + hCpl * 0.15, 0.72, 0.30, 0.26, 255, 10],
       [T.cpl + hCpl * 0.8, 0.30, 0.50, 0.27, 320, -8],
-      [T.ind - H * 0.15, 0.50, 1.08, 0.27, 360, 0],
+      [T.ind - H * 0.55, 0.50, 0.30, 0.27, 360, 0],
     ];
     // Indumentaria: al llegar cae en picada; dentro de la galería va como una foto más de la espiral (la dibuja la propia galería)
     const indEnd = T.ind + Rn;
-    dives = [[T.ind - H * 0.1, T.ind + H * 0.05, T.ind + H * 0.45, T.ind + H * 0.7], [indEnd - H * 0.05, indEnd + H * 0.05, T.app, T.app + H * 0.3]];
-    waypoints.push([T.ind + H * 0.1, 0.50, 0.42, 0.30, 360, 0], [T.ind + H * 0.6, 0.50, 1.35, 0.36, 360, 0]);
-    hideA = T.ind + H * 0.65; hideB = indEnd - H * 0.1;
+    dives = [[T.ind - H * 0.5, T.ind - H * 0.35, T.ind, T.ind + H * 0.3], [indEnd - H * 0.05, indEnd + H * 0.05, T.app, T.app + H * 0.3]];
+    waypoints.push([T.ind - H * 0.4, 0.50, 0.45, 0.30, 360, 0], [T.ind + H * 0.2, 0.50, 1.35, 0.36, 360, 0]);
+    hideA = T.ind + H * 0.25; hideB = indEnd - H * 0.1;
     waypoints.push([hideB, 0.60, -0.40, 0.30, 360, 0], [indEnd, 0.60, -0.30, 0.30, 360, 0], [T.app + H * 0.1, 0.50, 0.50, 0.32, 360, 0]);
     // App (fija): vuela por detrás de los celulares
     waypoints.push([T.app + hApp * 0.3, 0.22, 0.50, 0.26, 470, -8], [T.app + hApp * 0.6, 0.80, 0.42, 0.26, 520, 8], [T.app + hApp * 0.85, 0.30, 0.56, 0.26, 580, -8]);
