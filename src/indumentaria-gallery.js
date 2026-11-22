@@ -19,12 +19,12 @@ import {
 } from 'three';
 
 const images = [
-  { src: '/apparel-shirt-back.png', alt: 'Polera Batmon Crowd, vista posterior' },
-  { src: '/apparel-shirt-front.png', alt: 'Polera Batmon Crowd, vista frontal' },
-  { src: '/apparel-new-polera.png', alt: 'Nueva polera Batmon Crowd' },
-  { src: '/apparel-longsleeve-wings-back.webp', alt: 'Buzo manga larga Batmon Crowd, alas en la espalda' },
-  { src: '/apparel-longsleeve-club-back.webp', alt: 'Buzo manga larga Batmon Crowd Club, espalda' },
-  { src: '/apparel-longsleeve-mockup.webp', alt: 'Buzos manga larga Batmon Crowd, vista de ambos diseños' },
+  { src: '/apparel-1-polera-militar-espalda.png', alt: 'Polera Batmon Crowd, vista posterior' },
+  { src: '/apparel-2-polera-militar-frente.png', alt: 'Polera Batmon Crowd, vista frontal' },
+  { src: '/apparel-3-poster-militar.png', alt: 'Nueva polera Batmon Crowd' },
+  { src: '/apparel-4-negra-espalda.webp', alt: 'Buzo manga larga Batmon Crowd, alas en la espalda' },
+  { src: '/apparel-5-negra-delante.webp', alt: 'Buzo manga larga Batmon Crowd Club, espalda' },
+  { src: '/apparel-6-poster-negra.webp', alt: 'Buzos manga larga Batmon Crowd, vista de ambos diseños' },
 ];
 
 const C = {
