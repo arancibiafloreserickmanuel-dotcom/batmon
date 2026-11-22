@@ -4,7 +4,8 @@ import { supabase, $, esc } from '../supabase.js';
 import { fmt, today, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
 
 import { createRunningTracker, distanceBetween } from './running-tracker.js';
-import { getPlannedRoute, setPlannedRoute, findRouteMatches, matchLiveRoute, coverage, activityRoute } from './route-tools.js';
+import { getPlannedRoute, setPlannedRoute, findRouteMatches, matchLiveRoute, coverage, activityRoute, thumbSvg } from './route-tools.js';
+import { mountMyRoutes, saveRouteToLibrary } from './my-routes.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
 import { mapToolsMarkup, mountMapTools } from './running-map-tools.js';
 import { sessionMediaMarkup, readSessionMedia, saveSessionMedia } from './profile-ui.js';
@@ -56,14 +57,7 @@ function routeSegments(activity) {
 
 }
 
-function routeThumbnail(activity) {
-  const segments=routeSegments(activity).map((segment)=>segment.filter((p)=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon))).filter((s)=>s.length);
-  const points=segments.flat();if(!points.length)return '';
-  const minLat=Math.min(...points.map(p=>+p.lat)),maxLat=Math.max(...points.map(p=>+p.lat)),minLon=Math.min(...points.map(p=>+p.lon)),maxLon=Math.max(...points.map(p=>+p.lon));
-  const xRange=maxLon-minLon||1e-6,yRange=maxLat-minLat||1e-6;
-  const paths=segments.map((segment)=>segment.map((p,i)=>`${i?'L':'M'} ${(5+(+p.lon-minLon)/xRange*62).toFixed(1)} ${(35-(+p.lat-minLat)/yRange*30).toFixed(1)}`).join(' '));
-  return `<svg class="run-history-route" viewBox="0 0 72 40" aria-label="Vista previa del recorrido GPS" role="img">${paths.map(d=>`<path d="${d}"/>`).join('')}</svg>`;
-}
+function routeThumbnail(activity) { return thumbSvg(routeSegments(activity), { label: 'Vista previa del recorrido GPS' }); }
 
 async function uploadRunPhotos(userId, files, existing = []) {
 
@@ -441,14 +435,16 @@ async function renderRun(view, ctx) {
             </div>
           </div>
         </div>
-        <div class="run-plan-route"><div><b>Ruta de hoy</b><small id="run-plan-info">${esc(routeSummary(planned()))}${planned() ? '' : ' · opcional'}</small></div><span><button type="button" class="btn sm ghost" id="run-plan-route">${planned() ? 'Cambiar' : 'Marcar de dónde a dónde'}</button>${planned() ? '<button type="button" class="btn sm ghost" id="run-plan-clear">Quitar</button>' : ''}</span></div>
-        <details class="card run-manual-card"><summary>Registrar manualmente</summary><form id="run-manual-form">${manualFormMarkup()}</form></details>
+        <details class="card adm-fold run-fold"><summary><b>Ruta de hoy</b><small id="run-plan-info">${planned() ? esc(routeSummary(planned())) + ' · lista para correr' : 'Sin ruta · opcional'}</small></summary><div class="adm-fold__body">${planned() ? `<div class="rt-prev">${thumbSvg([planned().points], { cls: 'rt-thumb', label: 'Vista previa de la ruta' })}<span>${esc(routeSummary(planned()))}</span></div>` : '<p class="muted">Marca de dónde a dónde vas a correr, o elige una de Mis rutas.</p>'}<div class="quick-actions"><button type="button" class="btn sm ghost" id="run-plan-route">${planned() ? 'Cambiar' : 'Marcar de dónde a dónde'}</button>${planned() ? '<button type="button" class="btn sm ghost" id="run-plan-clear">Quitar</button>' : ''}</div></div></details>
+        <details class="card adm-fold run-fold" id="run-myroutes"><summary><b>Mis rutas</b><small data-mr-count>Cargando…</small></summary><div class="adm-fold__body" data-mr-body></div></details>
+        <details class="card adm-fold run-fold run-manual-fold"><summary><b>Registrar manualmente</b><small>Una carrera sin GPS</small></summary><div class="adm-fold__body"><form id="run-manual-form">${manualFormMarkup()}</form></div></details>
         <p id="run-gps-hint" class="run-note">GPS requiere HTTPS y permiso de ubicación.</p>
       </div>`;
 
       shownStatus = null;
       mapController = mountMap($('#run-map-live', box), [], { zoomControl: false, interactive: false, ghost: ghostPts() });
-      $('#run-plan-route', box).onclick = async () => { const out = await openRoutePicker({ route: planned(), title: 'Ruta de hoy (opcional)', allowRemove: true }); if (!out) return; setPlannedRoute(userId, out.route ? { ...out.route, set_at: Date.now() } : null); renderRunScreen(box); };
+      $('#run-plan-route', box).onclick = async () => { const out = await openRoutePicker({ route: planned(), title: 'Ruta de hoy (opcional)', allowRemove: true }); if (!out) return; setPlannedRoute(userId, out.route ? { ...out.route, set_at: Date.now() } : null); if (out.route) await saveRouteToLibrary(supabase, userId, out.route); renderRunScreen(box); };
+      mountMyRoutes($('#run-myroutes', box), { supabase, userId, onUse: (route) => { setPlannedRoute(userId, { ...route, set_at: Date.now() }); notify('Ruta lista para correr.', 'success'); renderRunScreen(box); } });
       const clearPlan = $('#run-plan-clear', box); if (clearPlan) clearPlan.onclick = () => { setPlannedRoute(userId, null); renderRunScreen(box); };
 
       $('#run-start', box).onclick = () => { runCountdown(() => { const ok = tracker.start(paint, (message) => { const m = $('#run-live-msg', view); if (m) m.textContent = message; }); if (ok) { page = 'run'; render(); } }); };

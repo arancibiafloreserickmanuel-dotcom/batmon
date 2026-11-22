@@ -87,6 +87,32 @@ export function coverage(planned, segments) {
   return samples.filter((p) => distToPolyline(p, actual) <= 50).length / samples.length;
 }
 
+/* ---------- Miniatura SVG de una ruta (segmentos de {lat,lon} o de [lat,lon]) ---------- */
+export function thumbSvg(segments, { cls = 'run-history-route', label = 'Vista previa del recorrido' } = {}) {
+  const ll = (p) => (Array.isArray(p) ? { lat: +p[0], lon: +p[1] } : { lat: +p.lat, lon: +p.lon });
+  const isPoint = (p) => (Array.isArray(p) ? typeof p[0] === 'number' : !!p && 'lat' in p);
+  const groups = (segments?.length && isPoint(segments[0]) ? [segments] : segments || [])
+    .map((g) => g.map(ll).filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon))).filter((g) => g.length);
+  const all = groups.flat(); if (!all.length) return '';
+  const minLat = Math.min(...all.map((p) => p.lat)), maxLat = Math.max(...all.map((p) => p.lat)), minLon = Math.min(...all.map((p) => p.lon)), maxLon = Math.max(...all.map((p) => p.lon));
+  const xr = maxLon - minLon || 1e-6, yr = maxLat - minLat || 1e-6;
+  const d = groups.map((g) => g.map((p, i) => `${i ? 'L' : 'M'} ${(5 + (p.lon - minLon) / xr * 62).toFixed(1)} ${(35 - (p.lat - minLat) / yr * 30).toFixed(1)}`).join(' '));
+  return `<svg class="${cls}" viewBox="0 0 72 40" aria-label="${label}" role="img">${d.map((x) => `<path d="${x}"/>`).join('')}</svg>`;
+}
+
+/* ---------- Calle o lugar de un punto (OpenStreetMap), con memoria para no repetir consultas ---------- */
+const streetCache = new Map();
+export async function reverseStreet(lat, lon) {
+  const key = `${(+lat).toFixed(4)},${(+lon).toFixed(4)}`;
+  if (streetCache.has(key)) return streetCache.get(key);
+  let out = '';
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=es&lat=${(+lat).toFixed(5)}&lon=${(+lon).toFixed(5)}`, { signal: AbortSignal.timeout(6000) });
+    if (res.ok) { const a = (await res.json()).address || {}; out = [a.road || a.pedestrian || a.footway || a.neighbourhood || a.suburb, a.suburb && a.road ? a.suburb : '', a.city || a.town || a.village].filter(Boolean).slice(0, 2).join(', '); }
+  } catch { /* sin conexión: se muestran solo las coordenadas */ }
+  streetCache.set(key, out); return out;
+}
+
 /* ---------- Ruta planeada guardada en el dispositivo (Running) ---------- */
 const plannedKey = (userId) => `batmon_planned_route_${userId}`;
 export function getPlannedRoute(userId) { try { return JSON.parse(localStorage.getItem(plannedKey(userId))); } catch { return null; } }

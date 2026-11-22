@@ -2382,16 +2382,15 @@ body.appbody .route-picker__go{flex:0 0 36px;width:36px;height:36px;min-height:0
 .run-map-wrap--static:not(:has(.goal-menu-input:checked)){z-index:0;isolation:isolate}
 
 /* Registro manual compacto */
-.run-manual-card>summary{padding:10px 14px;font-size:13px}
-.run-manual-card form{padding:10px 12px;display:grid;gap:8px}
-.run-manual-card h2{display:none}
-:is(.run-manual-card form,#manual-create,#manual-edit) .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-:is(.run-manual-card form,#manual-create,#manual-edit) label{display:grid;gap:3px;margin:0;font-size:11px}
-body.appbody :is(.run-manual-card form,#manual-create,#manual-edit) :is(input:not([type=file]):not([type=hidden]),select){min-height:0!important;height:34px!important;padding:0 10px!important;font-size:13px!important;border-radius:9px!important;margin:0!important}
-body.appbody :is(.run-manual-card form,#manual-create,#manual-edit) .dd button.dd-btn{min-height:34px;height:34px;padding:0 10px;font-size:13px}
-:is(.run-manual-card form,#manual-create,#manual-edit) .run-manual-pace{margin:0;font-size:11px}
-:is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions{margin:0;gap:8px}
-:is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions .btn{margin:0;flex:1}
+.run-manual-fold form{display:grid;gap:8px}
+.run-manual-fold h2{display:none}
+:is(.run-manual-fold form,#manual-create,#manual-edit) .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+:is(.run-manual-fold form,#manual-create,#manual-edit) label{display:grid;gap:3px;margin:0;font-size:11px}
+body.appbody :is(.run-manual-fold form,#manual-create,#manual-edit) :is(input:not([type=file]):not([type=hidden]),select){min-height:0!important;height:34px!important;padding:0 10px!important;font-size:13px!important;border-radius:9px!important;margin:0!important}
+body.appbody :is(.run-manual-fold form,#manual-create,#manual-edit) .dd button.dd-btn{min-height:34px;height:34px;padding:0 10px;font-size:13px}
+:is(.run-manual-fold form,#manual-create,#manual-edit) .run-manual-pace{margin:0;font-size:11px}
+:is(.run-manual-fold form,#manual-create,#manual-edit) .quick-actions{margin:0;gap:8px}
+:is(.run-manual-fold form,#manual-create,#manual-edit) .quick-actions .btn{margin:0;flex:1}
 
 /* Móvil: sin rebote ni hueco al llegar al final; el menú inferior queda fijo y estable */
 html,body{overscroll-behavior-y:none}
@@ -2439,3 +2438,20 @@ body.appbody .run-review-form .dd button.dd-btn{min-height:36px;height:36px;padd
 }
 
 .sess-media__row--solo{padding:6px 0;font-size:12px;font-weight:600}
+
+/* Tarjetas de la pantalla de preparación (ruta de hoy, mis rutas, registro manual) */
+.run-fold{margin:0 0 6px}
+.rt-prev{display:flex;align-items:center;gap:10px;font-size:13px}
+.rt-thumb{width:84px;height:46px;flex:0 0 auto;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.rt-list{display:grid;gap:6px}
+.rt-card .adm-fold__body{gap:8px}
+.rt-card>summary{grid-template-columns:auto 1fr auto;gap:1px 10px}
+.rt-card>summary .rt-thumb{grid-row:1 / span 2;width:56px;height:32px}
+.rt-card>summary b{grid-column:2;font-size:15px}
+.rt-card>summary small{grid-column:2}
+.rt-card>summary::after{grid-column:3}
+.rt-info{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.rt-info b{color:var(--ink);font-weight:600}
+.rt-info .rt-fromto{display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.rt-map{height:200px;border-radius:14px;overflow:hidden;background:var(--line)}
+.rt-actions{display:flex;gap:8px;flex-wrap:wrap}.rt-actions .btn{margin:0;flex:1 1 auto}
