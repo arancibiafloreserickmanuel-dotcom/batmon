@@ -3,6 +3,8 @@ import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog, fmt, paceStr } from './common.js';
 import { openShredder } from './shredder.js';
 import { TALK_ICON } from './talk-icon.js';
+import { openComments } from './comments-sheet.js';
+import './comments-sheet.css';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { rankFor, TIER_POINTS } from './ranks.js';
 import { likeMarkup, mountLike } from './like-button.js';
@@ -299,17 +301,15 @@ export async function renderSharedFeed(box, ctx) {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     return `<p class="act-likes">${esc(likesLine(a))}</p>
       <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" data-comments aria-label="Comentarios">${ICON.comment}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
-      <div class="act-comments" data-comment-box hidden>${c.map((x) => `<p data-cid="${x.id}"><b>${esc(nameOf(x.user_id))}</b> ${esc(x.body)}${x.user_id === me || ctx.isAdmin ? ' <button type="button" class="link" data-cdel>borrar</button>' : ''}</p>`).join('')}
-        <form class="act-comment-form"><input maxlength="500" placeholder="Escribe un comentario" required><button class="btn sm" type="submit">Enviar</button></form></div>`;
+      ${c.length ? `<button type="button" class="link cm-link" data-comments-open>Ver ${c.length === 1 ? 'el comentario' : `los ${c.length} comentarios`}</button>` : ''}`;
   };
 
   box.innerHTML = `<div class="act-list">${acts.map(cardMarkup).join('')}</div>`;
   const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { observer.unobserve(e.target); const a = acts.find((x) => x.id === e.target.closest('[data-act]').dataset.act); mountRouteMap(e.target, a.route); } }), { rootMargin: '200px' }) : null;
 
   const paintFoot = (card) => {
-    const a = acts.find((x) => x.id === card.dataset.act), foot = $('[data-foot]', card), open = !foot.querySelector('[data-comment-box]')?.hidden;
+    const a = acts.find((x) => x.id === card.dataset.act), foot = $('[data-foot]', card);
     foot.innerHTML = footMarkup(a);
-    if (open) foot.querySelector('[data-comment-box]').hidden = false;
     const likeBtn = foot.querySelector('[data-like]'), countOf = () => likes.filter((x) => x.activity_id === a.id).length, isLiked = () => likes.some((x) => x.activity_id === a.id && x.user_id === me);
     const ctl = mountLike(likeBtn, { liked: isLiked(), count: countOf() }), setLine = () => { foot.querySelector('.act-likes').textContent = likesLine(a); };
     likeBtn.onclick = async () => {
@@ -319,18 +319,27 @@ export async function renderSharedFeed(box, ctx) {
       const { error: e } = was ? await supabase.from('activity_likes').delete().eq('activity_id', a.id).eq('user_id', me) : await supabase.from('activity_likes').insert({ activity_id: a.id });
       if (e) { notify(e.message); if (was) likes.push({ activity_id: a.id, user_id: me }); else likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); ctl.set(was, countOf()); setLine(); }
     };
-    foot.querySelector('[data-comments]').onclick = () => { const b = foot.querySelector('[data-comment-box]'); b.hidden = !b.hidden; if (!b.hidden) b.querySelector('input').focus(); };
+    const openSheet = () => openComments({
+      getList: () => comments.filter((x) => x.activity_id === a.id).map((x) => ({ id: x.id, name: nameOf(x.user_id), body: x.body, at: x.created_at, mine: x.user_id === me })),
+      canDelete: (x) => x.mine || ctx.isAdmin,
+      onSend: async (body) => {
+        const { data, error: err } = await supabase.from('activity_comments').insert({ activity_id: a.id, body }).select('id,activity_id,user_id,body,created_at').single();
+        if (err) { notify(err.message); return false; }
+        comments.push(data); return true;
+      },
+      onDelete: async (id) => {
+        const { error: err } = await supabase.from('activity_comments').delete().eq('id', id);
+        if (err) { notify(err.message); return false; }
+        comments = comments.filter((x) => x.id !== id); return true;
+      },
+      onClose: () => paintFoot(card),
+    });
+    foot.querySelector('[data-comments]').onclick = openSheet;
+    foot.querySelector('[data-comments-open]')?.addEventListener('click', openSheet);
     foot.querySelector('[data-native]').onclick = async () => {
       const text = `${a.title} · ${nameOf(a.user_id)} en Batmon Crowd`;
       try { if (navigator.share) await navigator.share({ title: a.title, text, url: location.origin }); else { await navigator.clipboard.writeText(`${text} ${location.origin}`); notify('Enlace listo para pegar.', 'success'); } } catch { /* cancelado */ }
     };
-    foot.querySelector('.act-comment-form').onsubmit = async (e) => {
-      e.preventDefault(); const input = e.currentTarget.querySelector('input'), body = input.value.trim(); if (!body) return;
-      const { data, error: err } = await supabase.from('activity_comments').insert({ activity_id: a.id, body }).select('id,activity_id,user_id,body,created_at').single();
-      if (err) { notify(err.message); return; }
-      comments.push(data); paintFoot(card);
-    };
-    foot.querySelectorAll('[data-cdel]').forEach((btn) => { btn.onclick = async () => { const id = btn.closest('[data-cid]').dataset.cid; const { error: err } = await supabase.from('activity_comments').delete().eq('id', id); if (err) { notify(err.message); return; } comments = comments.filter((x) => x.id !== id); paintFoot(card); }; });
   };
 
   box.querySelectorAll('[data-act]').forEach((card) => {

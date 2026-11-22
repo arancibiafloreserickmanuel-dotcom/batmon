@@ -1,6 +1,8 @@
 import { likeMarkup, mountLike } from './like-button.js';
 import { openShredder } from './shredder.js';
 import { TALK_ICON } from './talk-icon.js';
+import { openComments } from './comments-sheet.js';
+import './comments-sheet.css';
 import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
@@ -47,6 +49,7 @@ async function renderActivity(box, ctx) {
   ]);
   const interactionsReady=!reactionResult.error&&!commentResult.error;
   const reactions=reactionResult.data||[],comments=commentResult.data||[];
+  const commentsLink = postId => { const n = comments.filter(x => x.post_id === postId).length; return n ? `<button type="button" class="link cm-link" data-open-comments="${postId}">Ver ${n === 1 ? 'el comentario' : `los ${n} comentarios`}</button>` : ''; };
   const people = new Map(directory.map(person => [person.id,person.full_name || 'Socio Batmon']));
   people.set(ctx.user.id,ctx.profile?.full_name||'Tú');
   const owner = new Map(directory.map(person => [person.id,person]));
@@ -67,7 +70,7 @@ async function renderActivity(box, ctx) {
       ? `<video class="community-media" src="${esc(src)}" controls playsinline preload="metadata"></video>`
       : `<img class="community-media look-${post.look||'orig'}" src="${esc(src)}" alt="Publicación de ${esc(people.get(post.user_id)||'un socio')}" loading="lazy">`
       : '<div class="card warn">El archivo ya no está disponible.</div>';
-    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`${likeMarkup(ownLike,likes.length,`data-like-post="${post.id}"`)}<button type="button" class="act-talk" data-focus-comment aria-label="Comentar" title="Comentar">${TALK_ICON}</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link icon-del" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}" aria-label="Eliminar publicación" title="Eliminar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>`:''}</div><div class="community-comments">${interactionsReady?`${postComments.slice(-5).map(comment=>`<p><b>${esc(people.get(comment.user_id)||'Socio')}:</b> ${esc(comment.body)}</p>`).join('')}<form data-comment-form="${post.id}"><input name="body" maxlength="500" placeholder="Escribe un comentario…" aria-label="Comentario" required><button type="submit" class="link">Enviar</button></form>`:'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
+    return `<article class="card community-post" data-post-card="${post.id}"><header class="community-post-head"><button type="button" class="community-avatar" data-avatar="${post.user_id}" aria-label="Ver foto">${avatarOf.get(post.user_id)?avatarImg(avatarOf.get(post.user_id)):esc(initialsOf(people.get(post.user_id)))}</button><div><b>${esc(people.get(post.user_id)||'Socio Batmon')}</b><small>${esc(MODULES.find(([key])=>key===post.module_key)?.[1]||post.module_key)} · ${new Date(post.created_at).toLocaleDateString('es-BO',{day:'numeric',month:'short',year:'numeric'})}${post.visibility==='close'?' · Mejores amigos':''}</small></div></header>${content}${post.caption?`<p>${esc(post.caption)}</p>`:''}<div class="community-post-actions">${interactionsReady?`${likeMarkup(ownLike,likes.length,`data-like-post="${post.id}"`)}<button type="button" class="act-talk" data-focus-comment aria-label="Comentar" title="Comentar">${TALK_ICON}</button>`:''}${post.user_id===ctx.user.id?`<button type="button" class="link icon-del" data-delete-post="${post.id}" data-media-path="${esc(post.media_path)}" aria-label="Eliminar publicación" title="Eliminar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>`:''}</div><div class="community-comments" data-comments-line="${post.id}">${interactionsReady?commentsLink(post.id):'<p class="muted">Comentarios y reacciones requieren la migración 0014.</p>'}</div></article>`;
   }).join('');
   box.innerHTML = `${shareButton()}<div class="quick-actions"><a class="link" href="#inicio">Ver calendario y eventos del club</a></div><div class="community-feed">${cards}</div>`;
   bindShareButton(box, ctx);
@@ -84,14 +87,6 @@ async function renderActivity(box, ctx) {
       if (actionError) { liked = was; ctl.set(was, base + (was ? 1 : 0)); notify(`No se pudo actualizar la reacción: ${actionError.message}`); }
     };
   });
-  box.querySelectorAll('[data-comment-form]').forEach(form => form.onsubmit = async event => {
-    event.preventDefault(); const input=form.elements.body; const body=input.value.trim(); if(!body)return;
-    const submit=form.querySelector('button'); submit.disabled=true;
-    const {error: commentError}=await supabase.from('post_comments').insert({post_id:form.dataset.commentForm,user_id:ctx.user.id,body});
-    if(commentError){submit.disabled=false;notify(`No se pudo comentar: ${commentError.message}`);return;}
-    renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
-  });
-  box.querySelectorAll('[data-focus-comment]').forEach(button => button.onclick = () => { const input = button.closest('[data-post-card]')?.querySelector('[data-comment-form] input'); input?.scrollIntoView({behavior:'smooth',block:'center'}); input?.focus({preventScroll:true}); });
   box.querySelectorAll('[data-delete-post]').forEach(button => button.onclick = () => openShredder({name:'publicación',image:button.closest('[data-post-card]')?.querySelector('img.community-media')?.src||'',onCommit:async()=>{
     const postId=button.dataset.deletePost, path=button.dataset.mediaPath;
     const {error: deleteError}=await supabase.from('profile_posts').delete().eq('id',postId).eq('user_id',ctx.user.id);
