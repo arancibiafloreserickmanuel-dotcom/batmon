@@ -108,6 +108,7 @@ export function mountApparelGallery() {
   let raf = 0;
   let batRaf = 0;
   let batHolder = null;
+  let batAngle = 0;
   const pointer = new Vector2();
   const raycaster = new Raycaster();
 
@@ -154,7 +155,14 @@ export function mountApparelGallery() {
       mesh.userData.scale = scale;
       mesh.scale.setScalar(scale);
     });
-    if (batHolder) batHolder.rotation.y = -spin.rotation.y;   // contrarresta el giro de la espiral: siempre de perfil a la cámara
+    if (batHolder) {
+      // Siempre de perfil a la cámara (contrarresta el giro de la espiral). En la parte trasera del carrusel las fotos
+      // van en sentido contrario: ahí el murciélago se da la vuelta (180°) para seguir mirando hacia donde avanza.
+      const c = Math.cos(batAngle + spin.rotation.y);
+      const t = Math.min(1, Math.max(0, (c + 0.35) / 0.7));
+      const flip = Math.PI * (1 - t * t * (3 - 2 * t));
+      batHolder.rotation.y = -spin.rotation.y + flip;
+    }
     renderer.render(scene, camera);
   }
 
@@ -266,7 +274,7 @@ export function mountApparelGallery() {
         bat.scale.setScalar((L.cardWidth * 1.15) / 1.83);
         // De perfil (lado derecho), cuerpo horizontal y cabeza hacia la derecha: las alas quedan de canto y solo se ven al batir
         bat.rotation.set(Math.PI / 2, 0, -Math.PI / 2, 'XYZ');
-        batHolder = holder;
+        batHolder = holder; batAngle = angle;
         bat.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
         holder.add(bat); spin.add(holder);
         const mixer = new AnimationMixer(bat);
