@@ -541,6 +541,7 @@ async function renderRun(view, ctx) {
     bindSettingsToggleFields(box, 'cfg');
     shownStatus = state.status;
     mapController = mountMap($('#run-map-live', box), state.segments || [], { ghost: ghostPts() });
+    if (planned()) $('.run-maptools', box).classList.add('has-route'); // con ruta asignada no se dibuja otra
     mountMapTools($('.run-maptools', box), { mapPromise: mapController, supabase, userId, userName: (ctx.profile?.full_name || ctx.user?.user_metadata?.full_name || '').trim(), isAdmin: !!ctx.isAdmin, notify });
 
     const swipe = $('#run-swipe', box);
