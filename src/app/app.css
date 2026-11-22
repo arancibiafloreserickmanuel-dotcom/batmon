@@ -2535,3 +2535,12 @@ body.appbody .community-post-actions .act-share svg{width:24px;height:24px}
 .act-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px 12px}
 .act-stats b{font-size:15px}
 .act-desc{margin:0 14px 8px;font-size:12px;line-height:1.4;color:var(--muted);white-space:pre-wrap}
+
+/* Datos de la actividad ordenados: principales en 3 columnas, secundarios en una fila pequeña */
+.act-stats{grid-template-columns:repeat(3,1fr);gap:4px 10px;padding:0 14px 6px;text-align:center}
+.act-stats b{font-size:20px;letter-spacing:-.01em}
+.act-stats--sub{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));padding-bottom:10px;border-bottom:1px solid var(--line);margin:0 14px 8px;padding-left:0;padding-right:0}
+.act-stats--sub b{font-size:13px;font-weight:600}
+.act-stats--sub small{font-size:10px}
+body.appbody .act-actions .act-talk .talk-icon{width:26px;height:22px}
+body.appbody [data-share-open]{margin-bottom:12px}

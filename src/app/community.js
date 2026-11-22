@@ -26,6 +26,7 @@ export async function renderCommunity(view, ctx) {
   else {
     box.innerHTML = '<div id="club-acts"></div><div id="club-wall"></div>';
     await Promise.all([renderSharedFeed($('#club-acts', box), ctx), renderActivity($('#club-wall', box), ctx)]);
+    const share = $('[data-share-open]', box); if (share) box.prepend(share); // el botón va arriba de las actividades
   }
 }
 

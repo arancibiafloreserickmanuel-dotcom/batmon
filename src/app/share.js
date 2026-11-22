@@ -222,21 +222,21 @@ const clock = (sec) => { sec = Math.round(sec || 0); const h = Math.floor(sec / 
 const initials = (name) => (name || 'BC').split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
 
 function statsMarkup(a) {
-  const s = a.stats || {};
-  const cells = [];
+  const s = a.stats || {}, main = [], extra = [];
   if (a.kind === 'running') {
-    cells.push(['Distancia', `${fmt(s.distance_km, 2)} km`]);
-    if (s.distance_km && s.duration_sec) cells.push(['Ritmo', `${paceStr(Number(s.distance_km), s.duration_sec / 60)} /km`]);
-    cells.push(['Tiempo', clock(s.duration_sec)]);
+    main.push(['Distancia', `${fmt(s.distance_km, 2)} km`]);
+    main.push(['Ritmo', s.distance_km && s.duration_sec ? `${paceStr(Number(s.distance_km), s.duration_sec / 60)} /km` : '—']);
+    main.push(['Tiempo', clock(s.duration_sec)]);
+    if (s.elevation_m) extra.push(['Desnivel', `${fmt(s.elevation_m, 0)} m`]);
   } else {
-    cells.push(['Tiempo', clock(s.duration_sec)]);
-    if (s.sets) cells.push(['Series', String(s.sets)]);
-    if (s.exercises) cells.push(['Ejercicios', String(s.exercises)]);
+    main.push(['Tiempo', clock(s.duration_sec)]);
+    if (s.sets) main.push(['Series', String(s.sets)]);
+    if (s.exercises) main.push(['Ejercicios', String(s.exercises)]);
   }
-  if (a.effort) cells.push(['Esfuerzo', EFFORT_LABEL[a.effort] || String(a.effort)]);
-  cells.push(['Fecha', dateLabel(a.performed_on)]);
-  if (a.kind === 'running' && s.elevation_m) cells.push(['Desnivel', `${fmt(s.elevation_m, 0)} m`]);
-  return `<div class="act-stats">${cells.map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
+  if (a.effort) extra.unshift(['Esfuerzo', EFFORT_LABEL[a.effort] || String(a.effort)]);
+  extra.unshift(['Fecha', dateLabel(a.performed_on)]);
+  const cell = ([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`;
+  return `<div class="act-stats">${main.map(cell).join('')}</div><div class="act-stats act-stats--sub">${extra.map(cell).join('')}</div>`;
 }
 
 async function mountRouteMap(el, route) {
@@ -307,11 +307,11 @@ export async function renderSharedFeed(box, ctx) {
     return `<article class="card act-card" data-act="${a.id}">
       <header class="act-head"><button type="button" class="act-avatar" data-avatar aria-label="Ver foto de ${esc(name)}">${avatars.get(a.user_id) ? avatarImg(avatars.get(a.user_id)) : esc(initialsOf(name))}</button>
         <div class="act-who"><b>${esc(own ? `${name} (tú)` : name)}</b><small>${esc(dateLabel(a.performed_on))}${a.visibility === 'close' ? ' · Mejores amigos' : ''}</small><small class="act-place"><span class="act-kind">${a.kind === 'running' ? ICON.run : ICON.dumbbell}</span>${a.place ? esc(a.place) : a.kind === 'running' ? 'Carrera' : 'Pliometría'}</small></div>
-        <span class="act-tools"><button type="button" class="act-del act-talk" data-hcomments aria-label="Comentarios" title="Comentarios">${TALK_ICON}</button>${own ? '<button type="button" class="act-del" data-del aria-label="Eliminar actividad" title="Eliminar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="tr-lid"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/></g><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>' : ''}</span></header>
+        <span class="act-tools">${own ? '<button type="button" class="act-del" data-del aria-label="Eliminar actividad" title="Eliminar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="tr-lid"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/></g><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button>' : ''}</span></header>
       ${mediaMarkup(a)}
       <h2 class="act-title">${esc(a.title)}</h2>
       ${statsMarkup(a)}
-      ${logros.length ? `<div class="act-logros">${logros.map((l) => `<div class="act-logro act-logro--${esc(l.tier)}"><span>${ICON.trophy}</span><b>${esc(l.text)}</b></div>`).join('')}</div>` : ''}
+      ${own && logros.length ? `<div class="act-logros">${logros.map((l) => `<div class="act-logro act-logro--${esc(l.tier)}"><span>${ICON.trophy}</span><b>${esc(l.text)}</b></div>`).join('')}</div>` : ''}
       ${a.description ? `<p class="act-desc">${esc(a.description)}</p>` : ''}
       <div class="act-foot" data-foot></div></article>`;
   };
@@ -325,7 +325,7 @@ export async function renderSharedFeed(box, ctx) {
   const footMarkup = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     return `<p class="act-likes">${esc(likesLine(a))}</p>
-      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" data-comments aria-label="Comentarios">${ICON.comment}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
+      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
       ${c.length ? `<button type="button" class="link cm-link" data-comments-open>Ver ${c.length === 1 ? 'el comentario' : `los ${c.length} comentarios`}</button>` : ''}`;
   };
 
@@ -375,7 +375,6 @@ export async function renderSharedFeed(box, ctx) {
     if (mapEl) { if (observer) observer.observe(mapEl); else mountRouteMap(mapEl, a.route); }
     const av = card.querySelector('[data-avatar]');
     if (av) av.onclick = () => openPhotoViewer(avatars.get(a.user_id), nameOf(a.user_id));
-    card.querySelector('[data-hcomments]').onclick = () => card.querySelector('[data-comments]')?.click();
     const del = card.querySelector('[data-del]');
     if (del) del.onclick = async () => {
       const remove = async () => {
