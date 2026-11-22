@@ -1,5 +1,5 @@
 /* Trituradora de eliminar (basada en "The shredder delete button" de Animorio). Colores solo en grises y un rojo oscuro. */
-.shred-ov{--paper:#fdfdfb;--paper-back:#dcdcdc;--paper-edge:#c9c9c9;--doc-ink:#1c1c1c;--doc-muted:#8a8a8a;--doc-accent:#3a3a3a;--danger:#9b1c2e;--machine:#26282d;--ink:#1c1c1c;--muted:#7c7c7c;
+.shred-ov{--paper:#fdfdfb;--paper-back:#dcdcdc;--paper-edge:#c9c9c9;--doc-ink:#1c1c1c;--doc-muted:#8a8a8a;--doc-accent:#3a3a3a;--danger:#7d1226;--machine:#26282d;--ink:#1c1c1c;--muted:#7c7c7c;
   position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(18,18,20,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:hidden;touch-action:manipulation}
 .shred-ov *{box-sizing:border-box}
 .shred-ov .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
@@ -10,9 +10,9 @@
 .shred__sheet{position:relative;width:208px;height:270px}
 .shred__ghost{position:absolute;inset:0;border:1.5px dashed rgba(255,255,255,.45);border-radius:4px;opacity:0}
 .shred__box{position:relative;z-index:2;display:grid;place-items:center;width:264px;height:66px;margin-top:22px}
-body.appbody .shred-ov .shred__btn,.shred-ov .shred__btn{position:relative;width:172px;height:52px;min-height:0;min-width:0;margin:0;padding:0!important;border:0!important;border-radius:26px;overflow:hidden;background:transparent!important;color:#fff!important;font:inherit;cursor:pointer;box-shadow:0 14px 26px -14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.2)!important;-webkit-tap-highlight-color:transparent;text-shadow:none}
+body.appbody .shred-ov .shred__btn,.shred-ov .shred__btn{position:relative;width:172px;height:52px;min-height:0;min-width:0;margin:0;padding:0!important;border:0!important;border-radius:26px;overflow:hidden;background:transparent!important;color:#fff!important;font:inherit;cursor:pointer;box-shadow:6px 6px 14px rgba(0,0,0,.55),-5px -5px 12px rgba(255,255,255,.07)!important;-webkit-tap-highlight-color:transparent;text-shadow:none}
 .shred__face{position:absolute;inset:0;border-radius:inherit}
-.shred__face--delete{background:linear-gradient(180deg,color-mix(in srgb,var(--danger) 86%,#fff),var(--danger) 55%,color-mix(in srgb,var(--danger) 88%,#000));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12)}
+.shred__face--delete{background:var(--danger);box-shadow:none}
 .shred__face--machine{opacity:0;background:linear-gradient(180deg,color-mix(in srgb,var(--machine) 78%,#fff) 0%,var(--machine) 34%,color-mix(in srgb,var(--machine) 80%,#000) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.5)}
 .shred__slot{position:absolute;top:0;left:14px;right:14px;height:7px;border-radius:0 0 5px 5px;background:linear-gradient(180deg,#050506,#15161a);box-shadow:0 1px 0 rgba(255,255,255,.1)}
 .shred__teeth{position:absolute;bottom:0;left:14px;right:14px;height:7px;border-radius:4px 4px 0 0;background:repeating-linear-gradient(90deg,#0b0c0e 0 calc(100% - 1.5px),#3b3e45 calc(100% - 1.5px) 100%);background-size:16px 100%;box-shadow:0 -1px 0 rgba(255,255,255,.08)}

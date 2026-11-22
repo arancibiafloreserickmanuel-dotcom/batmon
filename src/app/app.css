@@ -2509,3 +2509,13 @@ body.appbody .community-post-actions>*{justify-self:stretch;display:grid;place-i
 body.appbody .community-post-actions .lk{display:inline-flex;justify-content:center;width:100%;padding:6px 10px}
 body.appbody .community-post-actions .icon-del{margin-left:0;width:auto;height:auto;color:var(--ink)}
 body.appbody .community-post-actions .act-talk .talk-icon{width:24px;height:21px}
+
+/* Animación de los iconos eliminar y compartir */
+.tr-lid{transform-origin:4px 6.5px;transition:transform .35s cubic-bezier(.3,1.7,.5,1)}
+button:is(:hover,:active,:focus-visible) .tr-lid{transform:translateY(-1px) rotate(-18deg)}
+.sh-arrow{transition:transform .3s ease}
+button:is(:hover,:active,:focus-visible) .sh-arrow{animation:sh-up .7s ease-in-out infinite}
+@keyframes sh-up{0%,100%{transform:translateY(0)}45%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.tr-lid{transition:none}button .sh-arrow{animation:none!important}}
+body.appbody .community-post-actions .act-share{display:grid;place-items:center}
+body.appbody .community-post-actions .act-share svg{width:24px;height:24px}
