@@ -3,6 +3,7 @@ import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog, fmt, paceStr } from './common.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { rankFor, TIER_POINTS } from './ranks.js';
+import { likeMarkup, mountLike } from './like-button.js';
 
 const EFFORT = [[2, 'Muy fácil'], [4, 'Fácil'], [6, 'Moderado'], [8, 'Duro'], [10, 'Máximo esfuerzo']];
 const EFFORT_LABEL = Object.fromEntries(EFFORT);
@@ -286,12 +287,16 @@ export async function renderSharedFeed(box, ctx) {
       <div class="act-foot" data-foot></div></article>`;
   };
 
-  const footMarkup = (a) => {
+  const likesLine = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     const others = l.filter((x) => x.user_id !== me).map((x) => nameOf(x.user_id).split(' ')[0]);
     const text = !l.length ? '¡Sé el primero en dar like!' : liked ? (others.length ? `Te gusta a ti y a ${others.length} más` : 'Te gusta a ti') : `Les gusta a ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` y ${others.length - 2} más` : ''}`;
-    return `<p class="act-likes">${esc(text)}${c.length ? ` · ${c.length} comentario${c.length === 1 ? '' : 's'}` : ''}</p>
-      <div class="act-actions"><button type="button" data-like class="${liked ? 'on' : ''}" aria-pressed="${liked}" aria-label="Me gusta">${ICON.like}</button><button type="button" data-comments aria-label="Comentarios">${ICON.comment}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
+    return `${text}${c.length ? ` · ${c.length} comentario${c.length === 1 ? '' : 's'}` : ''}`;
+  };
+  const footMarkup = (a) => {
+    const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
+    return `<p class="act-likes">${esc(likesLine(a))}</p>
+      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" data-comments aria-label="Comentarios">${ICON.comment}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
       <div class="act-comments" data-comment-box hidden>${c.map((x) => `<p data-cid="${x.id}"><b>${esc(nameOf(x.user_id))}</b> ${esc(x.body)}${x.user_id === me || ctx.isAdmin ? ' <button type="button" class="link" data-cdel>borrar</button>' : ''}</p>`).join('')}
         <form class="act-comment-form"><input maxlength="500" placeholder="Escribe un comentario" required><button class="btn sm" type="submit">Enviar</button></form></div>`;
   };
@@ -303,10 +308,14 @@ export async function renderSharedFeed(box, ctx) {
     const a = acts.find((x) => x.id === card.dataset.act), foot = $('[data-foot]', card), open = !foot.querySelector('[data-comment-box]')?.hidden;
     foot.innerHTML = footMarkup(a);
     if (open) foot.querySelector('[data-comment-box]').hidden = false;
-    foot.querySelector('[data-like]').onclick = async () => {
-      const liked = likes.some((x) => x.activity_id === a.id && x.user_id === me);
-      if (liked) { likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); paintFoot(card); const { error: e } = await supabase.from('activity_likes').delete().eq('activity_id', a.id).eq('user_id', me); if (e) { notify(e.message); likes.push({ activity_id: a.id, user_id: me }); paintFoot(card); } }
-      else { likes.push({ activity_id: a.id, user_id: me }); paintFoot(card); const { error: e } = await supabase.from('activity_likes').insert({ activity_id: a.id }); if (e) { notify(e.message); likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); paintFoot(card); } }
+    const likeBtn = foot.querySelector('[data-like]'), countOf = () => likes.filter((x) => x.activity_id === a.id).length, isLiked = () => likes.some((x) => x.activity_id === a.id && x.user_id === me);
+    const ctl = mountLike(likeBtn, { liked: isLiked(), count: countOf() }), setLine = () => { foot.querySelector('.act-likes').textContent = likesLine(a); };
+    likeBtn.onclick = async () => {
+      const was = isLiked();
+      if (was) likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); else likes.push({ activity_id: a.id, user_id: me });
+      ctl.set(!was, countOf()); setLine(); // la animación corre sobre el mismo botón: no se vuelve a dibujar todo
+      const { error: e } = was ? await supabase.from('activity_likes').delete().eq('activity_id', a.id).eq('user_id', me) : await supabase.from('activity_likes').insert({ activity_id: a.id });
+      if (e) { notify(e.message); if (was) likes.push({ activity_id: a.id, user_id: me }); else likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); ctl.set(was, countOf()); setLine(); }
     };
     foot.querySelector('[data-comments]').onclick = () => { const b = foot.querySelector('[data-comment-box]'); b.hidden = !b.hidden; if (!b.hidden) b.querySelector('input').focus(); };
     foot.querySelector('[data-native]').onclick = async () => {
