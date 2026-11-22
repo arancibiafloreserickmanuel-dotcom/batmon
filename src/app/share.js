@@ -28,7 +28,7 @@ export function shareSectionMarkup({ titlePlaceholder = 'Mi actividad' } = {}) {
       <label>Añadir fotos · hasta 3<input type="file" data-share-photos accept="image/jpeg,image/png,image/webp" multiple></label>
       <label>¿Cómo autoevalúas esta actividad?<select data-share-effort><option value="">Elegir</option>${EFFORT.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></label>
       <label>¿Quién puede verlo?<select data-share-vis><option value="friends">Mis amigos</option><option value="close">Solo mejores amigos</option></select></label>
-      <p class="muted">Tus notas personales nunca se comparten.</p>
+      
     </div>
   </section>`;
 }
@@ -38,8 +38,16 @@ export function bindShareSection(root, { route = [], onPlace } = {}) {
   if (!box) return;
   const toggle = box.querySelector('[data-share-on]'), fields = box.querySelector('[data-share-fields]');
   let guessed = false;
+  const host = (sel) => root.querySelector(sel);
+  const hide = (sel, on) => { const el = box.querySelector(sel)?.closest('label'); if (el) el.hidden = on; };
+  hide('[data-share-effort]', !!host('[name=rpe]')); hide('[data-share-photos]', !!host('[name=photos]'));
   toggle.onchange = () => {
     fields.hidden = !toggle.checked;
+    if (toggle.checked) { // lo que ya escribiste arriba se trae solo (puedes editarlo)
+      const t = box.querySelector('[data-share-title]'), d = box.querySelector('[data-share-desc]');
+      if (!t.value) t.value = host('[name=activity_name]')?.value.trim() || '';
+      if (!d.value) d.value = host('[name=notes]')?.value.trim() || '';
+    }
     if (toggle.checked && !guessed && route.length) {
       guessed = true;
       guessPlace(route).then((place) => { const input = box.querySelector('[data-share-place]'); if (place && input && !input.value) input.value = place; });
@@ -50,14 +58,15 @@ export function bindShareSection(root, { route = [], onPlace } = {}) {
 export function readShare(root, fallbackTitle) {
   const box = root.querySelector('[data-share]');
   if (!box || !box.querySelector('[data-share-on]').checked) return null;
-  const effort = Number(box.querySelector('[data-share-effort]').value) || null;
+  const effort = Number(box.querySelector('[data-share-effort]').value) || Number(root.querySelector('[name=rpe]')?.value) || null;
+  const own = Array.from(box.querySelector('[data-share-photos]').files || []), hostFiles = Array.from(root.querySelector('[name=photos]')?.files || []);
   return {
-    title: box.querySelector('[data-share-title]').value.trim() || fallbackTitle,
-    description: box.querySelector('[data-share-desc]').value.trim(),
+    title: box.querySelector('[data-share-title]').value.trim() || root.querySelector('[name=activity_name]')?.value.trim() || fallbackTitle,
+    description: box.querySelector('[data-share-desc]').value.trim() || root.querySelector('[name=notes]')?.value.trim() || '',
     place: box.querySelector('[data-share-place]').value.trim(),
     effort,
     visibility: box.querySelector('[data-share-vis]').value === 'close' ? 'close' : 'friends',
-    files: Array.from(box.querySelector('[data-share-photos]').files || []),
+    files: (own.length ? own : hostFiles).slice(0, 3),
   };
 }
 

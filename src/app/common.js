@@ -21,7 +21,7 @@ export function showDelayedLoading(target, delay = 1000) {
 }
 
 export const LEVEL = { beginner: 'Principiante', intermediate: 'Intermedio', expert: 'Avanzado' };
-export const RUN_TYPE = { easy: 'Suave', long: 'Largo', tempo: 'Tempo', intervals: 'Series', race: 'Carrera', recovery: 'Recuperación' };
+export const RUN_TYPE = { easy: 'Suave', long: 'Largo', tempo: 'Tiempo', intervals: 'Series', race: 'Carrera', recovery: 'Recuperación' };
 export const DISC = { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación' };
 
 // borrador en el navegador (no es crítico: si falla, no pasa nada)

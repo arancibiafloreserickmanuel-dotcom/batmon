@@ -213,9 +213,11 @@ export function sessionMediaMarkup(ctx, kind) {
 }
 
 export function readSessionMedia(root) {
-  const file = root.querySelector('[name=sess_media]')?.files?.[0];
+  const publish = !!root.querySelector('[name=sess_pub]')?.checked;
+  // Si quieres publicar y ya subiste fotos de la actividad, se usa la primera: no hay que subirla otra vez.
+  const file = root.querySelector('[name=sess_media]')?.files?.[0] || (publish ? root.querySelector('[name=photos]')?.files?.[0] : null);
   if (!file) return null;
-  return { file, publish: !!root.querySelector('[name=sess_pub]')?.checked, category: root.querySelector('[name=sess_cat]')?.value || 'running' };
+  return { file, publish, category: root.querySelector('[name=sess_cat]')?.value || 'running' };
 }
 
 export async function saveSessionMedia(ctx, sm, { kind, ref }) {
