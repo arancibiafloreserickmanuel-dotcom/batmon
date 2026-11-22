@@ -2571,3 +2571,9 @@ body.appbody :is(.act-actions,.community-post-actions) .act-talk{display:inline-
 .event-attendees{margin-top:4px;display:grid;gap:10px}
 .event-page .route-card{margin:0}
 .event-page__more{margin:0}
+
+/* Interruptores en modo oscuro: sin blanco brillante, con sombra */
+body[data-theme="dark"] .share-switch+span{--c1:#9a9a9a;--bg:#2c2c2c;box-shadow:.25em .25em .55em rgba(0,0,0,.6),-.2em -.2em .5em rgba(255,255,255,.05)}
+body[data-theme="dark"] .share-switch+span i{background:#555;box-shadow:.12em .12em .3em rgba(0,0,0,.6),-.06em -.06em .2em rgba(255,255,255,.05)}
+body[data-theme="dark"] .share-switch:checked+span{background:#232323;box-shadow:inset .2em .2em .45em rgba(0,0,0,.65),inset -.15em -.15em .35em rgba(255,255,255,.05)}
+body[data-theme="dark"] .share-switch:checked+span i{background:var(--c1);box-shadow:.12em .12em .3em rgba(0,0,0,.65)}
