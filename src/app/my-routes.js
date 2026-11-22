@@ -3,7 +3,8 @@
 import { esc } from '../supabase.js';
 import { thumbSvg, reverseStreet } from './route-tools.js';
 import { mountRouteMap } from './route-picker.js';
-import { confirmDialog, notify } from './common.js';
+import { notify } from './common.js';
+import { openShredder } from './shredder.js';
 
 const LEVEL = { facil: 'Fácil', moderada: 'Moderada', dificil: 'Difícil' };
 const SURFACE = { asfalto: 'Asfalto', tierra: 'Tierra', pista: 'Pista', montana: 'Montaña', mixta: 'Mixta' };
@@ -55,11 +56,13 @@ export async function mountMyRoutes(host, { supabase, userId, onUse }) {
       if (!el.hidden && !mapped) { mapped = true; mountRouteMap(el, { points: r.points }); }
     };
     card.querySelector('[data-use]').onclick = () => onUse({ profile: 'foot', waypoints: [first, last], points: r.points, distance_km: Number(r.distance_km), routed: true });
-    card.querySelector('[data-del]').onclick = async () => {
-      if (!(await confirmDialog('¿Eliminar esta ruta de tus guardadas?', 'Eliminar ruta'))) return;
-      const { error: er } = await supabase.from('club_routes').delete().eq('id', r.id).eq('user_id', userId);
-      if (er) { notify(er.message); return; }
-      notify('Ruta eliminada.', 'success'); mountMyRoutes(host, { supabase, userId, onUse });
-    };
+    card.querySelector('[data-del]').onclick = () => openShredder({
+      name: r.name, points: r.points,
+      onCommit: async () => { // se borra de verdad cuando acaba el tiempo de "Deshacer"
+        const { error: er } = await supabase.from('club_routes').delete().eq('id', r.id).eq('user_id', userId);
+        if (er) { notify(er.message); return; }
+        notify('Ruta eliminada.', 'success'); if (host.isConnected) mountMyRoutes(host, { supabase, userId, onUse });
+      },
+    });
   });
 }

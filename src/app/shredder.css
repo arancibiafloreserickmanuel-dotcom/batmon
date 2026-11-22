@@ -1,0 +1,29 @@
+/* Trituradora de eliminar (basada en "The shredder delete button" de Animorio). Colores solo en grises y un rojo oscuro. */
+.shred-ov{--paper:#fdfdfb;--paper-back:#dcdcdc;--paper-edge:#c9c9c9;--doc-ink:#1c1c1c;--doc-muted:#8a8a8a;--doc-accent:#3a3a3a;--danger:#9b1c2e;--machine:#26282d;--ink:#1c1c1c;--muted:#7c7c7c;
+  position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(18,18,20,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:hidden;touch-action:manipulation}
+.shred-ov *{box-sizing:border-box}
+.shred-ov .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.shred-x{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:40px;height:40px;z-index:3;display:grid;place-items:center;font:400 26px/1 Inter,sans-serif;color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:50%;cursor:pointer;transition:opacity .2s}
+.shred-ov:not([data-state='idle']) .shred-x{opacity:0;pointer-events:none}
+.shred{position:relative;display:grid;justify-items:center;padding-bottom:170px}
+.shred__canvas{position:fixed;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
+.shred__sheet{position:relative;width:208px;height:270px}
+.shred__ghost{position:absolute;inset:0;border:1.5px dashed rgba(255,255,255,.45);border-radius:4px;opacity:0}
+.shred__box{position:relative;z-index:2;display:grid;place-items:center;width:264px;height:66px;margin-top:22px}
+body.appbody .shred-ov .shred__btn,.shred-ov .shred__btn{position:relative;width:172px;height:52px;min-height:0;min-width:0;margin:0;padding:0!important;border:0!important;border-radius:26px;overflow:hidden;background:transparent!important;color:#fff!important;font:inherit;cursor:pointer;box-shadow:0 14px 26px -14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.2)!important;-webkit-tap-highlight-color:transparent;text-shadow:none}
+.shred__face{position:absolute;inset:0;border-radius:inherit}
+.shred__face--delete{background:linear-gradient(180deg,color-mix(in srgb,var(--danger) 86%,#fff),var(--danger) 55%,color-mix(in srgb,var(--danger) 88%,#000));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12)}
+.shred__face--machine{opacity:0;background:linear-gradient(180deg,color-mix(in srgb,var(--machine) 78%,#fff) 0%,var(--machine) 34%,color-mix(in srgb,var(--machine) 80%,#000) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.5)}
+.shred__slot{position:absolute;top:0;left:14px;right:14px;height:7px;border-radius:0 0 5px 5px;background:linear-gradient(180deg,#050506,#15161a);box-shadow:0 1px 0 rgba(255,255,255,.1)}
+.shred__teeth{position:absolute;bottom:0;left:14px;right:14px;height:7px;border-radius:4px 4px 0 0;background:repeating-linear-gradient(90deg,#0b0c0e 0 calc(100% - 1.5px),#3b3e45 calc(100% - 1.5px) 100%);background-size:16px 100%;box-shadow:0 -1px 0 rgba(255,255,255,.08)}
+.shred__state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:9px;padding-top:1px;color:rgba(255,255,255,.74);font-size:13px;font-weight:520;letter-spacing:.01em;white-space:nowrap}
+.shred__face--undo{opacity:0;background:#22252b;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.shred__timer{position:absolute;left:22px;right:22px;bottom:7px;height:2px;border-radius:1px;background:rgba(255,255,255,.5);transform-origin:0 50%}
+.shred__label{position:absolute;top:50%;left:50%;z-index:2;display:flex;align-items:center;gap:8px;width:max-content;font-size:15px;font-weight:600;letter-spacing:-.005em;pointer-events:none}
+.shred__label--undo{opacity:0}
+.shred__icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.shred__lid{transform-origin:4px 6.5px;transition:transform .35s cubic-bezier(.3,1.7,.5,1)}
+@media (hover:hover) and (pointer:fine){.shred[data-state='idle'] .shred__btn:hover .shred__lid{transform:translateY(-1px) rotate(-18deg)}}
+.shred__btn[data-press] .shred__lid{transform:translateY(-1px) rotate(-18deg)}
+.shred__btn:focus-visible{outline:2px solid #fff;outline-offset:4px}
+@media (prefers-reduced-motion:reduce){.shred__lid{transition:none}}
