@@ -2577,3 +2577,8 @@ body[data-theme="dark"] .share-switch+span{--c1:#000;--bg:#c6c6c8;box-shadow:.25
 body[data-theme="dark"] .share-switch+span i{background:var(--bg);box-shadow:.15em .15em .3em rgba(0,0,0,.35),-.1em -.1em .25em rgba(255,255,255,.2)}
 body[data-theme="dark"] .share-switch:checked+span{box-shadow:inset .2em .2em .4em rgba(0,0,0,.4),inset -.2em -.2em .4em rgba(255,255,255,.25)}
 body[data-theme="dark"] .share-switch:checked+span i{background:var(--c1);box-shadow:0 0 .6em rgba(255,255,255,.18)}
+
+/* Mis rutinas: duplicar y eliminar como iconos sin fondo */
+.plyo-routine-row__links{gap:4px;margin-top:2px}
+body.appbody .plyo-icon-btn{width:34px;height:34px;min-height:0;padding:0;display:inline-grid;place-items:center;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:50%;color:var(--muted);cursor:pointer}
+body.appbody .plyo-icon-btn:active,body.appbody .plyo-icon-btn:hover{color:var(--ink)}

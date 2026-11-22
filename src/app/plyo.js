@@ -459,11 +459,11 @@ function renderPlan(box, view, ctx) {
       </span>
     </button>
     <button class="btn plyo-new-plan" id="plyo-new-plan" type="button">${ICON.plus}<span>Crear nueva rutina</span></button>
-    <details class="card plyo-routines" id="plyo-routines"${list.length ? ' open' : ''}>
+    <details class="card plyo-routines" id="plyo-routines">
       <summary><span>Mis rutinas guardadas</span><small>${list.length}</small></summary>
       <div class="plyo-routines__list">${list.length ? list.map((p) => { const s2 = planStats(p), on = weekPlan._activePlan === p.id; return `<div class="plyo-routine-row${on ? ' is-active' : ''}" data-plan="${p.id}">
         <div class="plyo-routine-row__info" data-plan-open="${p.id}"><b>${esc(p.name)}</b><small>${s2.days} día${s2.days === 1 ? '' : 's'} · ${s2.ex} ejercicio${s2.ex === 1 ? '' : 's'}</small>
-          <span class="plyo-routine-row__links"><button class="link" data-plan-dup="${p.id}" type="button">Duplicar</button><button class="link" data-plan-del="${p.id}" type="button">Eliminar</button></span></div>
+          <span class="plyo-routine-row__links"><button class="plyo-icon-btn" data-plan-dup="${p.id}" type="button" aria-label="Duplicar rutina" title="Duplicar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button><button class="plyo-icon-btn" data-plan-del="${p.id}" type="button" aria-label="Eliminar rutina" title="Eliminar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="tr-lid"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.25h5V6.5"/></g><path d="M6.2 6.5l.9 13.25h9.8l.9-13.25"/><path d="M10.25 10.5v5.5M13.75 10.5v5.5"/></svg></button></span></div>
         <button class="btn sm ${on ? '' : 'ghost'}" data-plan-select="${p.id}" type="button">${on ? 'Activa' : 'Seleccionar'}</button>
       </div>`; }).join('') : '<p class="muted">Aún no tienes rutinas. Crea una con el botón de arriba.</p>'}
       <button class="link" id="open-lib-plan" type="button">Ver biblioteca de ejercicios</button></div>
