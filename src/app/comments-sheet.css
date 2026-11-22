@@ -14,7 +14,7 @@ body.appbody .cm-close{position:absolute;right:8px;top:8px;width:36px;height:36p
 body.appbody .cm-del{padding:0;min-height:0;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--muted);font-size:12px;text-decoration:underline}
 .cm-empty{margin:auto;text-align:center;color:var(--muted);font-size:14px;padding:40px 0}
 .cm-form{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
-.cm-form input{flex:1;min-width:0;height:42px;border-radius:21px;padding:0 16px;font-size:15px}
+body.appbody .cm-form input{flex:1;min-width:0;height:42px;border-radius:21px;padding:0 16px;font-size:16px!important} /* 16 px: con menos, iOS acerca la pantalla al escribir */
 body.appbody .cm-send{flex:0 0 auto;width:42px;height:42px;min-height:0;padding:0;display:grid;place-items:center;border-radius:50%;background:var(--ink)!important;color:var(--surface,#fff)!important;border:0!important}
 body.appbody .cm-send:disabled{opacity:.5}
 body.appbody .cm-link{padding:6px 0;min-height:0;color:var(--muted);font-size:13px;background:transparent!important;border:0!important;box-shadow:none!important}
