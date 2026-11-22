@@ -107,6 +107,7 @@ export function mountApparelGallery() {
   let extraTurns = 0;
   let raf = 0;
   let batRaf = 0;
+  let batHolder = null;
   const pointer = new Vector2();
   const raycaster = new Raycaster();
 
@@ -153,6 +154,7 @@ export function mountApparelGallery() {
       mesh.userData.scale = scale;
       mesh.scale.setScalar(scale);
     });
+    if (batHolder) batHolder.rotation.y = -spin.rotation.y;   // contrarresta el giro de la espiral: siempre de perfil a la cámara
     renderer.render(scene, camera);
   }
 
@@ -260,11 +262,11 @@ export function mountApparelGallery() {
         const angle = (count - 1) * L.step;
         const holder = new Group();
         holder.position.copy(cardCenter(angle, midY));
-        holder.rotation.y = angle;
         const bat = gltf.scene;
-        bat.scale.setScalar((L.cardWidth * 1.2) / 1.83);
-        bat.rotation.z = 1.4;                       // acostado: la cabeza apunta hacia donde avanza, casi horizontal
-        bat.rotation.y = -1.05;                     // de lado: vuela de perfil mirando hacia donde avanza (derecha a izquierda)
+        bat.scale.setScalar((L.cardWidth * 1.15) / 1.83);
+        // De perfil (lado derecho), cuerpo horizontal y cabeza hacia la derecha: las alas quedan de canto y solo se ven al batir
+        bat.rotation.set(Math.PI / 2, 0, -Math.PI / 2, 'XYZ');
+        batHolder = holder;
         bat.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
         holder.add(bat); spin.add(holder);
         const mixer = new AnimationMixer(bat);
