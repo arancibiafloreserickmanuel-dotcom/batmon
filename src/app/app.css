@@ -2500,3 +2500,5 @@ body.appbody .act-del:active{color:var(--ink)}
 
 /* Eliminar como icono de papelera */
 body.appbody .icon-del{width:44px;min-width:44px;padding:0;display:inline-grid;place-items:center}
+
+body.appbody .community-post-actions .icon-del{margin-left:auto;display:inline-grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;color:var(--muted);background:transparent!important;border:0!important;box-shadow:none!important}
