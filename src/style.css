@@ -152,3 +152,10 @@ html, body {
   color: var(--ink);
 }
 .fallback.show { display: flex; }
+
+/* App: iPhone 15 Pro Max con capturas */
+.app-showcase { padding: 6vh 0 12vh; }
+.app-showcase h2 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: clamp(28px, 5vw, 52px); line-height: .95; text-transform: uppercase; }
+.app-track { display: flex; gap: clamp(8px, 2vw, 28px); margin-top: 5vh; padding: 0 max(24px, calc((100vw - 1440px) / 2 + 24px)) 24px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.app-track::-webkit-scrollbar { display: none; }
+.app-phone { flex: 0 0 auto; height: clamp(420px, 62vh, 640px); width: auto; scroll-snap-align: center; filter: drop-shadow(0 24px 34px rgba(0,0,0,.28)); user-select: none; -webkit-user-drag: none; }
