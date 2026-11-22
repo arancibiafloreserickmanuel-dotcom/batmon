@@ -2392,3 +2392,18 @@ body.appbody :is(.run-manual-card form,#manual-create,#manual-edit) .dd button.d
 :is(.run-manual-card form,#manual-create,#manual-edit) .run-manual-pace{margin:0;font-size:11px}
 :is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions{margin:0;gap:8px}
 :is(.run-manual-card form,#manual-create,#manual-edit) .quick-actions .btn{margin:0;flex:1}
+
+/* Móvil: sin rebote ni hueco al llegar al final; el menú inferior queda fijo y estable */
+html,body{overscroll-behavior-y:none}
+html{background:var(--surface,#fff)}
+body.appbody{min-height:100dvh}
+body.appbody .tabs.main{transform:translate3d(-50%,0,0);will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden;contain:layout style}
+main#view{padding-bottom:calc(128px + env(safe-area-inset-bottom))}
+/* Sin halo blanco del menú sobre las tarjetas que pasan por detrás */
+body.appbody[data-theme="light"] .tabs.main{--dock-shadow:0 8px 22px rgba(0,0,0,.20),0 1px 0 rgba(255,255,255,.5) inset}
+body.appbody[data-theme="dark"] .tabs.main{--dock-shadow:0 8px 22px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.06) inset}
+
+/* Tarjeta del plan: no tapa el menú Esta semana / Este mes */
+#run-coach{display:block;position:relative;z-index:0;margin-bottom:6px}
+.coach-card{margin-bottom:22px}
+.run-progress .run-period{position:relative;z-index:1;padding:4px 2px 8px}
