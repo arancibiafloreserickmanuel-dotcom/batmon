@@ -263,6 +263,7 @@ export function mountApparelGallery() {
         holder.rotation.y = angle;
         const bat = gltf.scene;
         bat.scale.setScalar((L.cardWidth * 1.2) / 1.83);
+        bat.rotation.z = 1.4;                       // acostado: la cabeza apunta hacia donde avanza, casi horizontal
         bat.rotation.y = -1.05;                     // de lado: vuela de perfil mirando hacia donde avanza (derecha a izquierda)
         bat.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
         holder.add(bat); spin.add(holder);
