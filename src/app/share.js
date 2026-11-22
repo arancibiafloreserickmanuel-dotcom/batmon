@@ -319,13 +319,12 @@ export async function renderSharedFeed(box, ctx) {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     const others = l.filter((x) => x.user_id !== me).map((x) => nameOf(x.user_id).split(' ')[0]);
     const text = !l.length ? '' : liked ? (others.length ? `Te gusta a ti y a ${others.length} más` : 'Te gusta a ti') : `Les gusta a ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` y ${others.length - 2} más` : ''}`;
-    return [text, c.length ? `${c.length} comentario${c.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+    return text;
   };
   const footMarkup = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     return `<p class="act-likes"${likesLine(a) ? '' : ' hidden'}>${esc(likesLine(a))}</p>
-      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
-      ${c.length ? `<button type="button" class="link cm-link" data-comments-open>Ver ${c.length === 1 ? 'el comentario' : `los ${c.length} comentarios`}</button>` : ''}`;
+      <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}<span class="act-count">${c.length || ''}</span></button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>`;
   };
 
   box.innerHTML = `<div class="act-list">${acts.map(cardMarkup).join('')}</div>`;
@@ -359,7 +358,6 @@ export async function renderSharedFeed(box, ctx) {
       onClose: () => paintFoot(card),
     });
     foot.querySelector('[data-comments]').onclick = openSheet;
-    foot.querySelector('[data-comments-open]')?.addEventListener('click', openSheet);
     foot.querySelector('[data-native]').onclick = async () => {
       const text = `${a.title} · ${nameOf(a.user_id)} en Batmon Crowd`;
       try { if (navigator.share) await navigator.share({ title: a.title, text, url: location.origin }); else { await navigator.clipboard.writeText(`${text} ${location.origin}`); notify('Enlace listo para pegar.', 'success'); } } catch { /* cancelado */ }
