@@ -2360,3 +2360,23 @@ body.appbody :is(button,a).animated-back:not(.auth-submit):not(.settings-logout)
 .admin-item[data-uid] .adm-sw b{font-size:12.5px}
 .admin-item[data-uid]>.btn{justify-self:start;margin:6px 0 0}
 @media(max-width:420px){.admin-item[data-uid] .adm-perms{grid-template-columns:1fr}}
+
+/* Avisos importantes en rojo apagado (legibles en claro y oscuro) */
+.alertbox{background:#f6e4e4;border-color:#a33;color:#4a0f0f;font-size:14px;line-height:1.5}
+.alertbox a{color:#4a0f0f;font-weight:700;text-decoration:underline}
+body.appbody[data-theme="dark"] .alertbox{background:#3a1616;border-color:#8c3a3a;color:#ffdede}
+body.appbody[data-theme="dark"] .alertbox a{color:#fff}
+
+/* Selector de ruta: compacto */
+.route-picker__bar{display:block}
+.route-picker__search{display:flex;gap:6px;min-width:0}
+body.appbody .route-picker__search input{padding:7px 12px!important;min-height:0!important;height:36px!important;font-size:13px!important;border-radius:10px!important;margin:0!important}
+body.appbody .route-picker__go{flex:0 0 36px;width:36px;height:36px;min-height:0;margin:0;padding:0;display:grid;place-items:center;border-radius:10px}
+.route-picker__foot{display:grid;gap:6px;justify-items:center}
+.route-picker__foot b{margin:0}
+.route-picker__tools{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;width:100%}
+.route-picker__tools .btn{margin:0}
+.route-picker__foot>.btn[data-done]{width:100%}
+.rp-hit{touch-action:none;cursor:grab}
+/* El botón COMENZAR y sus iconos no se montan sobre el resto de la pantalla (menú inferior, cabecera) */
+.run-map-wrap--static:not(:has(.goal-menu-input:checked)){z-index:0;isolation:isolate}

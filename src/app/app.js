@@ -126,7 +126,7 @@ function route() {
   const isTrainingRoute = tab === 'training' || TRAINING_MODULES.some((item) => item.route === tab);
   document.querySelectorAll('#tabs a').forEach((a) => {
     const href = a.getAttribute('href');
-    const active = href === '#' + tab || (href === '#training' && isTrainingRoute);
+    const active = href === '#' + (tab === 'membresia' ? 'perfil' : tab) || (href === '#training' && isTrainingRoute);
     a.classList.toggle('on', active);
     a.setAttribute('aria-current', active ? 'page' : 'false');
   });
@@ -141,7 +141,7 @@ function route() {
     view.innerHTML = `<h1>${title}</h1><div class="card warn">Este módulo está desactivado para tu cuenta. Consulta con el administrador del club.</div><a class="btn ghost" href="#training">Ver disciplinas disponibles</a>`;
     return;
   }
-  const fn = { inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, gym: renderTraining, perfil: renderProfile }[tab] || renderHome;
+  const fn = { membresia: renderMembership, inicio: renderHome, club: renderCommunity, running: () => renderRunning(view, ctx, 'running'), cycling: () => renderRunning(view, ctx, 'cycling'), swimming: () => renderRunning(view, ctx, 'swimming'), plyo: renderPlyo, gym: renderTraining, perfil: renderProfile }[tab] || renderHome;
   const stopLoading=showDelayedLoading(view);
   Promise.resolve().then(()=>fn(view, ctx)).then(() => {
     if (moduleKey && !['running', 'cycling', 'swimming'].includes(tab)) {
@@ -616,9 +616,9 @@ async function renderHome(v) {
   const previousStatus = localStorage.getItem(seenKey);
   if (currentMembership?.status) localStorage.setItem(seenKey, currentMembership.status);
   const statusNotice = previousStatus && currentMembership?.status && previousStatus !== currentMembership.status && ['approved', 'rejected'].includes(currentMembership.status)
-    ? `<div class="card ${currentMembership.status === 'approved' ? 'okbox' : 'warn'}">${currentMembership.status === 'approved' ? '¡Tu pago fue aprobado! Ya puedes registrar entrenamientos.' : 'Tu pago fue rechazado. Revisa el comprobante y vuelve a enviarlo desde Membresía.'}</div>` : '';
-  const membershipNotice = membershipResult.error ? '<div class="card warn">No se pudo consultar el estado de tu membresía.</div>' : ctx.isAdmin ? '' : !currentMembership || currentMembership.status === 'rejected'
-    ? '<div class="card warn">Aún no tienes la membresía de este mes aprobada. <a href="#perfil">Ver membresía en tu perfil</a></div>'
+    ? `<div class="card ${currentMembership.status === 'approved' ? 'okbox' : 'alertbox'}">${currentMembership.status === 'approved' ? '¡Tu pago fue aprobado! Ya puedes registrar entrenamientos.' : 'Tu pago fue rechazado. Revisa el comprobante y vuelve a enviarlo desde Membresía.'}</div>` : '';
+  const membershipNotice = membershipResult.error ? '<div class="card warn">No se pudo consultar el estado de tu membresía.</div>' : (ctx.isAdmin || (ctx.profile?.access_override && (!ctx.profile.access_until || ctx.profile.access_until >= new Date().toISOString().slice(0, 10)))) ? '' : !currentMembership || currentMembership.status === 'rejected'
+    ? '<div class="card alertbox">Aún no tienes la membresía de este mes aprobada. <a href="#membresia">Ver membresía</a></div>'
     : currentMembership.status === 'pending' ? '<div class="card warn">Tu pago está pendiente de aprobación.</div>' : '';
   const recentUnavailable = (activityResult.error || workoutResult.error) && !recentItems.length;
   const recentMarkup = `<details class="card home-recent"><summary><span>Actividad reciente</span><small>${recentUnavailable ? 'No disponible' : recentItems.length ? `${recentItems.length} esta semana` : 'Sin actividad esta semana'}</small></summary>${recentItems.length ? `<div class="home-recent-list">${recentItems.map((item) => `<a class="home-recent-item" href="${esc(item.route)}"><span><b>${esc(item.title)}</b><small>${esc(item.detail)}</small></span><time datetime="${esc(item.date)}">${new Date(`${item.date}T12:00:00`).toLocaleDateString('es-BO', { day: 'numeric', month: 'short' })}</time></a>`).join('')}</div>` : `<p class="muted">${recentUnavailable ? 'No se pudo cargar la actividad reciente.' : 'Tus actividades completadas aparecerán aquí.'}</p>`}</details>`;
@@ -697,7 +697,7 @@ async function renderMembership(v) {
     </div></section>
     ${mems.length ? `<h2>Mis pagos</h2><div class="activity-list">${mems.map((m) => `<div class="card activity-card"><b>${m.period.slice(0, 7)} · ${m.payment_method === 'cash' ? 'Efectivo' : 'QR'}</b><span class="pill ${m.status}">${STATUS[m.status]}</span></div>`).join('')}</div>` : ''}`;
   decorateBackButton($('#membership-back',v));
-  $('#membership-back',v).onclick=()=>renderProfile(v);
+  $('#membership-back',v).onclick=()=>{ if (location.hash === '#membresia') location.hash = '#perfil'; else renderProfile(v); };
   const blocked='Ya tienes un pago registrado este mes; no se puede enviar otro.';
   const openModal=(html)=>{const modal=document.createElement('div');modal.className='modal payment-modal';modal.innerHTML=`<section class="sheet payment-sheet" role="dialog" aria-modal="true">${html}</section>`;decorateBackButton(modal.querySelector('[data-payment-close]'),'Cerrar',true);modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-payment-close]'))modal.remove();});document.body.append(modal);return modal;};
   const showCardUnavailable=()=>{
