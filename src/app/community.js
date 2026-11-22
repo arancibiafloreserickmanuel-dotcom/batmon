@@ -8,6 +8,7 @@ import { confirmDialog, notify } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { openProfileCard } from './social.js';
+import { renderSharedFeed } from './share.js';
 
 let section = 'activity';
 const MODULES = [['running','Running'],['cycling','Ciclismo'],['plyo','Pliometría'],['training','Entrenamiento'],['swimming','Natación']];
@@ -22,7 +23,10 @@ export async function renderCommunity(view, ctx) {
   if (section === 'members') await renderMembers(box, ctx);
   else if (section === 'events') await renderEventsFeed(box, ctx);
   else if(section==='challenges') await renderChallenges(box,ctx);
-  else await renderActivity(box, ctx);
+  else {
+    box.innerHTML = '<div id="club-acts"></div><div id="club-wall"></div>';
+    await Promise.all([renderSharedFeed($('#club-acts', box), ctx), renderActivity($('#club-wall', box), ctx)]);
+  }
 }
 
 async function renderActivity(box, ctx) {

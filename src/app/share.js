@@ -264,6 +264,24 @@ export async function renderSharedFeed(box, ctx) {
   if (error) { box.innerHTML = `<div class="card warn">Aún no se pueden mostrar actividades compartidas. Falta aplicar la migración 0023 en Supabase. (${esc(error.message)})</div>`; return; }
   if (!acts.length) { box.innerHTML = '<div class="card profile-empty">Todavía no hay actividades compartidas. Al terminar una carrera o sesión puedes activar «Compartir actividad» y aparecerá aquí para ti y tus amigos.</div>'; return; }
 
+  // Las que compartiste antes pueden venir con datos incompletos: se completan con la carrera original (solo se puede leer la tuya).
+  const srcIds = acts.filter((a) => a.user_id === me && a.kind === 'running' && a.source_id).map((a) => a.source_id);
+  if (srcIds.length) {
+    const { data: src = [] } = await supabase.from('activities').select('*').in('id', srcIds);
+    const byId = new Map((src || []).map((r) => [r.id, r]));
+    acts.forEach((a) => {
+      const r = byId.get(a.source_id); if (!r) return;
+      const st = { ...(a.stats || {}) }, dur = st.duration_sec || r.duration_sec || r.duration_seconds || (r.duration_min ? Math.round(Number(r.duration_min) * 60) : 0);
+      if (!st.distance_km && r.distance_km) st.distance_km = Number(r.distance_km);
+      if (!st.duration_sec && dur) st.duration_sec = dur;
+      if (!st.elevation_m && r.elevation_gain_m) st.elevation_m = r.elevation_gain_m;
+      a.stats = st;
+      if (!a.effort && r.rpe) a.effort = r.rpe;
+      if (!a.route?.length) { const rc = compactRoute(Array.isArray(r.route_segments) && r.route_segments.length ? r.route_segments : r.route_points || []); if (rc.length) a.route = rc; }
+      if (!(a.photos || []).length && (r.activity_photos || []).length) a._srcPhotos = r.activity_photos.slice(0, 3); // solo para mostrar: al quitar la actividad no se borran las fotos de la carrera
+    });
+  }
+
   const ids = acts.map((a) => a.id);
   const [likesRes, commentsRes] = await Promise.all([
     supabase.from('activity_likes').select('activity_id,user_id').in('activity_id', ids),
@@ -274,7 +292,7 @@ export async function renderSharedFeed(box, ctx) {
   people.set(me, { id: me, full_name: ctx.profile?.full_name || 'Tú', avatar_path: ctx.profile?.avatar_path, avatar_url: ctx.profile?.avatar_url });
   const sign = async (path) => (path ? (await supabase.storage.from('profile-media').createSignedUrl(path, 1800)).data?.signedUrl || '' : '');
   const avatars = new Map(await Promise.all([...new Set(acts.map((a) => a.user_id))].map(async (id) => [id, await avatarSrc(people.get(id), 1800)])));
-  const photos = new Map(await Promise.all(acts.map(async (a) => [a.id, await Promise.all((a.photos || []).map(sign))])));
+  const photos = new Map(await Promise.all(acts.map(async (a) => [a.id, await Promise.all((a.photos?.length ? a.photos : a._srcPhotos || []).map(sign))])));
   const nameOf = (id) => people.get(id)?.full_name || 'Socio Batmon';
 
   // Se desliza hacia un lado: primero las fotos, después el mapa del recorrido.

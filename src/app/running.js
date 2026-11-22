@@ -10,7 +10,7 @@ import { mountMyRoutes, saveRouteToLibrary } from './my-routes.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
 import { mapToolsMarkup, mountMapTools } from './running-map-tools.js';
 import { sessionMediaMarkup, readSessionMedia, saveSessionMedia } from './profile-ui.js';
-import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros, renderSharedFeed } from './share.js';
+import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros } from './share.js';
 
 // Botón "volver a las disciplinas": vive dentro de la propia pantalla (antes lo añadía app.js al principio y cada render lo borraba).
 const BACK_HTML = '<button type="button" class="training-back-button animated-back animated-back-compact" id="run-back-training"><span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">Todas las disciplinas</span></button>';
@@ -251,21 +251,19 @@ async function renderRun(view, ctx) {
 
     const active = tracker.state && ['running','paused','finished'].includes(tracker.state.status);
 
-    const title = page === 'run' ? (active ? 'Carrera en curso' : 'Correr') : page === 'progress' ? 'Progreso' : page === 'history' ? 'Historial' : page === 'feed' ? 'Actividades' : 'Revisar carrera';
+    const title = page === 'run' ? (active ? 'Carrera en curso' : 'Correr') : page === 'progress' ? 'Progreso' : page === 'history' ? 'Historial' : 'Revisar carrera';
 
     const showSubnav = page !== 'review' && !running && !paused;
 
     view.innerHTML = `<section class="run-module">${BACK_HTML}<header class="run-module__head"><div><p class="run-kicker">RUNNING · BATMON CROWD</p><h1>${title}</h1></div>${active ? `<span class="run-state run-state--${tracker.state.status}">${tracker.state.status === 'paused' ? 'Pausada' : tracker.state.status === 'finished' ? 'Por guardar' : 'En curso'}</span>` : ''}</header>
 
-      ${showSubnav ? `<nav class="running-pages tabs-pill tabs-pill--4" aria-label="Secciones de Running">
+      ${showSubnav ? `<nav class="running-pages tabs-pill" aria-label="Secciones de Running">
         <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-run" value="run">
         <label class="tabs-pill__label" for="run-page-run">Correr</label>
         <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-progress" value="progress">
         <label class="tabs-pill__label" for="run-page-progress">Progreso</label>
         <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-history" value="history">
         <label class="tabs-pill__label" for="run-page-history">Historial</label>
-        <input class="tabs-pill__input" type="radio" name="run-page" id="run-page-feed" value="feed">
-        <label class="tabs-pill__label" for="run-page-feed">Actividades</label>
         <div class="tabs-pill__indicator" aria-hidden="true"></div>
       </nav>` : ''}
 
@@ -282,7 +280,6 @@ async function renderRun(view, ctx) {
 
     if (page === 'history') renderHistory(content);
 
-    if (page === 'feed') renderSharedFeed(content, ctx);
 
     if (page === 'review') renderReview(content);
 
