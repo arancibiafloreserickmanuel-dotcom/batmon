@@ -12,11 +12,16 @@ import {
   PlaneGeometry,
   Raycaster,
   Scene,
+  AmbientLight,
+  AnimationMixer,
+  DirectionalLight,
+  HemisphereLight,
   SRGBColorSpace,
   Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const images = [
   { src: '/apparel-1-polera-militar-espalda.png', alt: 'Polera Batmon Crowd, vista posterior' },
@@ -101,6 +106,7 @@ export function mountApparelGallery() {
   let progress = 0;
   let extraTurns = 0;
   let raf = 0;
+  let batRaf = 0;
   const pointer = new Vector2();
   const raycaster = new Raycaster();
 
@@ -225,7 +231,8 @@ export function mountApparelGallery() {
       renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = SRGBColorSpace;
-      const span = (loaded.length - 1) * L.step;
+      const count = loaded.length + 1;             // + el murciélago, que va como una última "foto" de la espiral
+      const span = (count - 1) * L.step;
       const midY = span / 2 * L.pitch;
       const maxAnisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
       textures = loaded.map(({ image }) => {
@@ -243,6 +250,34 @@ export function mountApparelGallery() {
         spin.add(mesh);
         return mesh;
       });
+
+      // murciélago 3D: se acomoda en la espiral detrás de la última foto, de cara hacia afuera como las demás
+      scene.add(new AmbientLight(0xffffff, 0.45), new HemisphereLight(0xffffff, 0x222222, 0.7));
+      const key = new DirectionalLight(0xffffff, 1.5); key.position.set(-3, 5, 8); scene.add(key);
+      const rimL = new DirectionalLight(0xffffff, 1.1); rimL.position.set(4, 2, -6); scene.add(rimL);
+      new GLTFLoader().loadAsync('/bat/murcielago.glb').then((gltf) => {
+        if (destroyed) return;
+        const angle = (count - 1) * L.step;
+        const holder = new Group();
+        holder.position.copy(cardCenter(angle, midY));
+        holder.rotation.y = angle;
+        const bat = gltf.scene;
+        bat.scale.setScalar((L.cardWidth * 1.2) / 1.83);
+        bat.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+        holder.add(bat); spin.add(holder);
+        const mixer = new AnimationMixer(bat);
+        const clip = gltf.animations.find((c) => c.name === 'Volar') || gltf.animations[0];
+        if (clip) mixer.clipAction(clip).play();
+        let prev = performance.now();
+        const batTick = (now) => {
+          if (destroyed) return;
+          batRaf = requestAnimationFrame(batTick);
+          const dt = Math.min(0.05, (now - prev) / 1000); prev = now;
+          if (!visible) return;
+          mixer.update(dt); draw();
+        };
+        batRaf = requestAnimationFrame(batTick);
+      }).catch(() => {});
 
       const start = -((L.guideLength - 1) * span) / 2;
       const end = span - start;
@@ -269,6 +304,7 @@ export function mountApparelGallery() {
   return () => {
     destroyed = true;
     if (raf) cancelAnimationFrame(raf);
+    if (batRaf) cancelAnimationFrame(batRaf);
     intersection.disconnect();
     resizeObserver.disconnect();
     window.removeEventListener('scroll', setProgress);

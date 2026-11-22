@@ -42,13 +42,14 @@ export async function mountBatFlight() {
   const weights = { Volar: 1, Picada: 0, Planear: 0, Reposo: 0 };
 
   let W = 0, H = 0, vw = 1440, K = 1;
-  let hideA = 1e9, hideB = 1e9, waypoints = [], finalTop = 0, landStart = 0, landEnd = 0, diveA = 0, diveB = 0;
+  let hideA = 1e9, hideB = 1e9, dives = [], waypoints = [], finalTop = 0, landStart = 0, landEnd = 0, diveA = 0, diveB = 0;
   const top = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect().top + scrollY : 0; };
   const hgt = (sel) => document.querySelector(sel)?.offsetHeight || 0;
 
   function layout() {
     W = innerWidth; H = innerHeight; vw = W;
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(W, H, false);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2; camera.updateProjectionMatrix();
     K = W < 768 ? 1.55 : 1;                 // en móvil el murciélago es proporcionalmente más grande
     const T = Object.fromEntries(Object.entries(secs).map(([k, s]) => [k, top(s)]));
@@ -64,14 +65,14 @@ export async function mountBatFlight() {
       [T.cpl + hCpl * 0.8, 0.30, 0.50, 0.27, 320, -8],
       [T.ind - H * 0.15, 0.50, 1.08, 0.27, 360, 0],
     ];
-    // Indumentaria: sube detrás de las poleras en zigzag casi horizontal, como parte de las imágenes
-    const climb = [[0.05, 0.22, 0.90, 345, -16], [0.20, 0.78, 0.74, 20, 16], [0.35, 0.28, 0.60, 340, -16], [0.50, 0.76, 0.48, 22, 16], [0.65, 0.30, 0.38, 340, -16], [0.80, 0.72, 0.30, 20, 14], [0.92, 0.50, 0.24, 360, 0]];
-    for (const [f, x, y, yw, rl] of climb) waypoints.push([T.ind + Rn * f, x, y, 0.28, yw, rl]);
-    diveA = T.ind + Rn * 0.94; diveB = T.ind + Rn + H * 0.15;   // al terminar las poleras, cae en picada
-    hideA = diveB; hideB = T.app - H * 0.3;
-    waypoints.push([diveA, 0.50, 0.26, 0.30, 360, 0], [diveB, 0.50, 1.35, 0.36, 360, 0]);
+    // Indumentaria: al llegar cae en picada; dentro de la galería va como una foto más de la espiral (la dibuja la propia galería)
+    const indEnd = T.ind + Rn;
+    dives = [[T.ind - H * 0.1, T.ind + H * 0.05, T.ind + H * 0.45, T.ind + H * 0.7], [indEnd - H * 0.05, indEnd + H * 0.05, T.app, T.app + H * 0.3]];
+    waypoints.push([T.ind + H * 0.1, 0.50, 0.42, 0.30, 360, 0], [T.ind + H * 0.6, 0.50, 1.35, 0.36, 360, 0]);
+    hideA = T.ind + H * 0.65; hideB = indEnd - H * 0.1;
+    waypoints.push([hideB, 0.60, -0.40, 0.30, 360, 0], [indEnd, 0.60, -0.30, 0.30, 360, 0], [T.app + H * 0.1, 0.50, 0.50, 0.32, 360, 0]);
     // App (fija): vuela por detrás de los celulares
-    waypoints.push([T.app - H * 0.3, 0.82, -0.30, 0.26, 420, 8], [T.app + hApp * 0.3, 0.22, 0.50, 0.26, 470, -8], [T.app + hApp * 0.6, 0.80, 0.42, 0.26, 520, 8], [T.app + hApp * 0.85, 0.30, 0.56, 0.26, 580, -8]);
+    waypoints.push([T.app + hApp * 0.3, 0.22, 0.50, 0.26, 470, -8], [T.app + hApp * 0.6, 0.80, 0.42, 0.26, 520, 8], [T.app + hApp * 0.85, 0.30, 0.56, 0.26, 580, -8]);
     finalTop = poster ? poster.getBoundingClientRect().top + scrollY : T.fin;
     const ph = poster ? poster.offsetHeight : H;
     landEnd = finalTop - (H - ph) / 2;                // póster centrado en pantalla
@@ -102,7 +103,8 @@ export async function mountBatFlight() {
     let X = px * W, Y = py * H, span = pw * Math.min(W, 1100) * K * (W < 768 ? 1 : 1.1), pitch = 0, rollRad = rad(roll), yawRad = rad(yaw);
 
     // picada: cabeza abajo, alas recogidas, con ligera oscilación
-    const dive = ss(diveA - H * 0.05, diveA + H * 0.12, y) * (1 - ss(diveB - H * 0.2, diveB + H * 0.1, y));
+    let dive = 0;
+    for (const [a, b, c, d] of dives) dive = Math.max(dive, ss(a, b, y) * (1 - ss(c, d, y)));
     rollRad = mix(rollRad, Math.PI, dive); yawRad = mix(yawRad, nearestTurn(yawRad), dive);
     X += Math.sin(t * 7) * 6 * dive;
 
