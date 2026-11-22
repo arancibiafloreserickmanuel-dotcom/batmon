@@ -1,6 +1,7 @@
 // Actividades compartidas: formulario de "Compartir" al terminar, feed en tarjetas y logros.
 import { supabase, $, esc } from '../supabase.js';
 import { notify, confirmDialog, fmt, paceStr } from './common.js';
+import { openShredder } from './shredder.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { rankFor, TIER_POINTS } from './ranks.js';
 import { likeMarkup, mountLike } from './like-button.js';
@@ -338,12 +339,11 @@ export async function renderSharedFeed(box, ctx) {
     const av = card.querySelector('[data-avatar]');
     if (av) av.onclick = () => openPhotoViewer(avatars.get(a.user_id), nameOf(a.user_id));
     const del = card.querySelector('[data-del]');
-    if (del) del.onclick = async () => {
-      if (!(await confirmDialog('La actividad dejará de verse en el club. Seguirá guardada en tu historial.', 'Quitar de Actividades'))) return;
+    if (del) del.onclick = () => openShredder({ name: 'actividad', points: Array.isArray(a.route?.points) ? a.route.points : null, onCommit: async () => {
       const { error: err } = await supabase.from('shared_activities').delete().eq('id', a.id);
       if (err) { notify(err.message); return; }
       const removed = a.photos || []; if (removed.length) await supabase.storage.from('profile-media').remove(removed);
       card.remove(); notify('Actividad quitada.', 'success');
-    };
+    } });
   });
 }
