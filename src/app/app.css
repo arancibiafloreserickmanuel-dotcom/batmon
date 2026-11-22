@@ -2437,3 +2437,5 @@ body.appbody .run-review-form .dd button.dd-btn{min-height:36px;height:36px;padd
   .run-review__intro p{font-size:12px}
   .run-map--review{height:30vh;min-height:200px}
 }
+
+.sess-media__row--solo{padding:6px 0;font-size:12px;font-weight:600}

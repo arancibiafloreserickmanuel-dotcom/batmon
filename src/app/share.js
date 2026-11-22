@@ -59,7 +59,7 @@ export function readShare(root, fallbackTitle) {
   const box = root.querySelector('[data-share]');
   if (!box || !box.querySelector('[data-share-on]').checked) return null;
   const effort = Number(box.querySelector('[data-share-effort]').value) || Number(root.querySelector('[name=rpe]')?.value) || null;
-  const own = Array.from(box.querySelector('[data-share-photos]').files || []), hostFiles = Array.from(root.querySelector('[name=photos]')?.files || []);
+  const own = Array.from(box.querySelector('[data-share-photos]').files || []), hostFiles = Array.from(root.querySelector('[name=photos]')?.files || []).filter((f) => f.type.startsWith('image/'));
   return {
     title: box.querySelector('[data-share-title]').value.trim() || root.querySelector('[name=activity_name]')?.value.trim() || fallbackTitle,
     description: box.querySelector('[data-share-desc]').value.trim() || root.querySelector('[name=notes]')?.value.trim() || '',

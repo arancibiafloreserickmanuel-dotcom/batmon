@@ -203,8 +203,10 @@ export async function mountMediaManager(box, ctx) {
 
 /* ───────────────────────── Foto/video al terminar una sesión ───────────────────────── */
 
-export function sessionMediaMarkup(ctx, kind) {
+export function sessionMediaMarkup(ctx, kind, { reuse = false } = {}) {
   const mods = enabledModules(ctx), cur = mods.includes(kind) ? kind : mods[0];
+  // reuse: el archivo ya se subió en el campo de fotos del formulario; aquí solo se decide si va al perfil.
+  if (reuse) return `<label class="sess-media__row sess-media__row--solo"><span>Publicar en mi perfil</span><input type="checkbox" class="share-switch" name="sess_pub" aria-label="Publicar en mi perfil"><span><i></i></span></label><input type="hidden" name="sess_cat" value="${cur}">`;
   return `<fieldset class="sess-media"><legend>Foto o video de la sesión</legend>
     <label class="sess-media__pick">Tomar o elegir<input type="file" name="sess_media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"></label>
     <label class="sess-media__row"><span>Publicar en mi perfil</span><input type="checkbox" class="share-switch" name="sess_pub" aria-label="Publicar en mi perfil"><span><i></i></span></label>
