@@ -883,17 +883,21 @@ async function init() {
     document.body.dataset.theme = theme;
     me = await getProfile(session.user.id);
     if (!['admin', 'socio'].includes(me?.role)) { stopLoading();view.innerHTML = '<h1>Sin acceso</h1><p class="muted">Esta sección es solo para el equipo del club.</p>'; return; }
-    const adminName=me.full_name||session.user.user_metadata?.full_name||'Administrador';
+    const adminName=me.full_name||session.user.user_metadata?.full_name||session.user.email||'Administrador';
     const nameNode=$('#admin-header-name');
     const avatarNode=$('#admin-header-avatar');
     if(nameNode)nameNode.textContent=adminName;
     if(avatarNode){
       const initials=adminName.split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
       avatarNode.textContent=initials;
+      let photo='';
       if(me.avatar_path){
         const {data:avatar}=await supabase.storage.from('profile-media').createSignedUrl(me.avatar_path,3600);
-        if(avatar?.signedUrl)avatarNode.innerHTML=`<img src="${esc(avatar.signedUrl)}" alt="Foto de ${esc(adminName)}">`;
+        photo=avatar?.signedUrl||'';
       }
+      const um=session.user.user_metadata||{};
+      if(!photo)photo=um.avatar_url||um.picture||'';
+      if(photo)avatarNode.innerHTML=`<img src="${esc(photo)}" alt="Foto de ${esc(adminName)}" referrerpolicy="no-referrer">`;
     }
     stopLoading();
     view.innerHTML = '<div id="body"></div>';
