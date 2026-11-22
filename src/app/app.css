@@ -2394,7 +2394,8 @@ body.appbody :is(.run-manual-fold form,#manual-create,#manual-edit) .dd button.d
 
 /* Móvil: sin rebote ni hueco al llegar al final; el menú inferior queda fijo y estable */
 html,body{overscroll-behavior-y:none}
-html{background:var(--surface,#fff)}
+/* el fondo (textura y color) lo pinta el body y se extiende a todo el lienzo: html no debe tener fondo propio o queda blanco bajo el contenido */
+html{background:transparent!important;min-height:100%}
 body.appbody{min-height:100dvh}
 body.appbody .tabs.main{transform:translate3d(-50%,0,0);will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden;contain:layout style}
 main#view{padding-bottom:calc(128px + env(safe-area-inset-bottom))}
