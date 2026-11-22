@@ -841,6 +841,12 @@ async function renderNotifications(v) {
         follow:['Nuevo seguidor',`<b>${who}</b> te comenzó a seguir`,(pendingFrom.has(n.actor_id)?`<button class="btn sm" type="button" data-accept-request="${pendingFrom.get(n.actor_id)}">Aceptar</button>`:'')+`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
         profile_view:['Visita a tu perfil',`<b>${who}</b> vio tu perfil`,`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
         rank_up:['Mejor amigo · rango',`<b>${who}</b> subió a <b>${esc(n.payload?.rank||'un nuevo rango')}</b>`,`<button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
+        comment_like:['Me gusta en tu comentario',`<b>${who}</b> le dio me gusta a tu comentario${n.payload?.body?`: “${esc(n.payload.body)}”`:''}`,''],
+        activity_comment:['Comentario en tu actividad',`<b>${who}</b> comentó tu actividad${n.payload?.body?`: “${esc(n.payload.body)}”`:''}`,''],
+        post_comment:['Comentario en tu publicación',`<b>${who}</b> comentó tu publicación${n.payload?.body?`: “${esc(n.payload.body)}”`:''}`,''],
+        activity_like:['Me gusta en tu actividad',`<b>${who}</b> le dio me gusta a tu actividad${n.payload?.title?` <b>${esc(n.payload.title)}</b>`:''}`,''],
+        post_like:['Me gusta en tu publicación',`<b>${who}</b> le dio me gusta a tu publicación`,''],
+        event_going:['Amigo · evento',`<b>${who}</b> irá al evento <b>${esc(n.payload?.title||'')}</b>`,`<button class="btn sm" type="button" data-open-hash="#evento/${n.ref_id}">Ver evento</button>`],
         challenge_done:['Mejor amigo · reto',`<b>${who}</b> completó el reto <b>${esc(n.payload?.title||'')}</b>`,`<button class="btn sm" type="button" data-open-hash="#reto/${n.ref_id}">Hacer el reto</button><button class="btn sm ghost" type="button" data-view-profile="${n.actor_id}">Ver perfil</button>`],
       }[n.kind];
       if(!kinds)return null;

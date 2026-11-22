@@ -287,6 +287,9 @@ export async function renderSharedFeed(box, ctx) {
     supabase.from('activity_comments').select('id,activity_id,user_id,body,created_at').in('activity_id', ids).order('created_at', { ascending: true }),
   ]);
   let likes = likesRes.data || [], comments = commentsRes.data || [];
+  // Me gusta de comentarios (si aún no existe la tabla, simplemente no se muestran)
+  const clRes = comments.length ? await supabase.from('comment_likes').select('comment_id,user_id').eq('kind', 'activity').in('comment_id', comments.map((x) => x.id)) : { data: [] };
+  let commentLikes = clRes.error ? null : clRes.data || [];
   const people = new Map(directory.map((p) => [p.id, p]));
   people.set(me, { id: me, full_name: ctx.profile?.full_name || 'Tú', avatar_path: ctx.profile?.avatar_path, avatar_url: ctx.profile?.avatar_url });
   const sign = async (path) => (path ? (await supabase.storage.from('profile-media').createSignedUrl(path, 1800)).data?.signedUrl || '' : '');
@@ -343,7 +346,12 @@ export async function renderSharedFeed(box, ctx) {
       if (e) { notify(e.message); if (was) likes.push({ activity_id: a.id, user_id: me }); else likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); ctl.set(was, countOf()); setLine(); }
     };
     const openSheet = () => openComments({
-      getList: () => comments.filter((x) => x.activity_id === a.id).map((x) => ({ id: x.id, name: nameOf(x.user_id), body: x.body, at: x.created_at, mine: x.user_id === me })),
+      getList: () => comments.filter((x) => x.activity_id === a.id).map((x) => ({ id: x.id, name: nameOf(x.user_id), body: x.body, at: x.created_at, mine: x.user_id === me, ...(commentLikes ? { likes: commentLikes.filter((l) => l.comment_id === x.id).length, liked: commentLikes.some((l) => l.comment_id === x.id && l.user_id === me) } : {}) })),
+      onLike: async (id, want) => {
+        const { error: err } = want ? await supabase.from('comment_likes').insert({ kind: 'activity', comment_id: id }) : await supabase.from('comment_likes').delete().eq('kind', 'activity').eq('comment_id', id).eq('user_id', me);
+        if (err) { notify(err.message); return false; }
+        commentLikes = want ? [...commentLikes, { comment_id: id, user_id: me }] : commentLikes.filter((l) => !(l.comment_id === id && l.user_id === me)); return true;
+      },
       canDelete: (x) => x.mine || ctx.isAdmin,
       onSend: async (body) => {
         const { data, error: err } = await supabase.from('activity_comments').insert({ activity_id: a.id, body }).select('id,activity_id,user_id,body,created_at').single();

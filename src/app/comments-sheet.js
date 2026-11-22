@@ -4,6 +4,7 @@ import { esc } from '../supabase.js';
 import { notify } from './common.js';
 
 const SEND = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/></svg>';
+const HEART = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 20.5c-.4 0-.8-.1-1.1-.4C6.600 16.800 3 13.700 3 9.600 3 7 5 5 7.500 5c1.800 0 3.500 1 4.500 2.600C13 6 14.700 5 16.500 5 19 5 21 7 21 9.600c0 4.100-3.600 7.200-7.900 10.500-.3.300-.7.400-1.100.4z"/></svg>';
 const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase() || '?';
 
 export function ago(iso) {
@@ -18,8 +19,9 @@ export function ago(iso) {
 /**
  * getList(): [{ id, name, body, at, mine }] · onSend(body): Promise<boolean> (true si se guardó; quien llama actualiza su lista)
  * onDelete?(id): Promise<boolean> · canDelete?(item) · onClose?()
+ * Me gusta del comentario (opcional): item.likes (número) e item.liked; onLike?(id, quiereDarLike): Promise<boolean>
  */
-export function openComments({ getList, onSend, onDelete, canDelete = () => false, onClose }) {
+export function openComments({ getList, onSend, onDelete, onLike, canDelete = () => false, onClose }) {
   const ov = document.createElement('div');
   ov.className = 'cm-ov';
   ov.innerHTML = `<section class="cm-sheet" role="dialog" aria-modal="true" aria-label="Comentarios">
@@ -32,7 +34,7 @@ export function openComments({ getList, onSend, onDelete, canDelete = () => fals
   const paint = (toEnd = false) => {
     const items = getList();
     list.innerHTML = items.length ? items.map((c) => `<article class="cm-item" data-id="${esc(c.id)}"><span class="cm-av" aria-hidden="true">${esc(initials(c.name))}</span>
-      <div class="cm-body"><p><b>${esc(c.name)}</b> ${esc(c.body)}</p><small>${ago(c.at)}${canDelete(c) ? ' · <button type="button" class="cm-del" data-del>Eliminar</button>' : ''}</small></div></article>`).join('') : '<p class="cm-empty">Aún no hay comentarios.<br>Sé el primero en comentar.</p>';
+      <div class="cm-body"><p><b>${esc(c.name)}</b> ${esc(c.body)}</p><small>${ago(c.at)}${canDelete(c) ? ' · <button type="button" class="cm-del" data-del>Eliminar</button>' : ''}</small></div>${onLike && c.likes !== undefined ? `<button type="button" class="cm-like${c.liked ? ' on' : ''}" data-like aria-pressed="${!!c.liked}" aria-label="Me gusta">${HEART}<span>${c.likes || ''}</span></button>` : ''}</article>`).join('') : '<p class="cm-empty">Aún no hay comentarios.<br>Sé el primero en comentar.</p>';
     if (toEnd) list.scrollTop = list.scrollHeight;
   };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
@@ -40,6 +42,8 @@ export function openComments({ getList, onSend, onDelete, canDelete = () => fals
   addEventListener('keydown', onKey);
   ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
   list.addEventListener('click', async (e) => {
+    const lk = e.target.closest('[data-like]');
+    if (lk && onLike) { const was = lk.classList.contains('on'); lk.disabled = true; if (await onLike(lk.closest('.cm-item').dataset.id, !was)) paint(); else lk.disabled = false; return; }
     const b = e.target.closest('[data-del]'); if (!b || !onDelete) return;
     if (await onDelete(b.closest('.cm-item').dataset.id)) paint();
   });

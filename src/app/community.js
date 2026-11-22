@@ -57,6 +57,8 @@ async function renderActivity(box, ctx) {
   ]);
   const interactionsReady=!reactionResult.error&&!commentResult.error;
   const reactions=reactionResult.data||[],comments=commentResult.data||[];
+  const clRes = comments.length ? await supabase.from('comment_likes').select('comment_id,user_id').eq('kind','post').in('comment_id',comments.map(x=>x.id)) : {data:[]};
+  let commentLikes = clRes.error ? null : clRes.data||[];
   const commentCount = postId => comments.filter(x => x.post_id === postId).length;
   const people = new Map(directory.map(person => [person.id,person.full_name || 'Socio Batmon']));
   people.set(ctx.user.id,ctx.profile?.full_name||'Tú');
@@ -96,7 +98,12 @@ async function renderActivity(box, ctx) {
     };
   });
   const openPost = postId => openComments({
-    getList: () => comments.filter(x => x.post_id === postId).map(x => ({ id: x.id, name: people.get(x.user_id) || 'Socio', body: x.body, at: x.created_at, mine: x.user_id === ctx.user.id })),
+    getList: () => comments.filter(x => x.post_id === postId).map(x => ({ id: x.id, name: people.get(x.user_id) || 'Socio', body: x.body, at: x.created_at, mine: x.user_id === ctx.user.id, ...(commentLikes ? { likes: commentLikes.filter(l => l.comment_id === x.id).length, liked: commentLikes.some(l => l.comment_id === x.id && l.user_id === ctx.user.id) } : {}) })),
+    onLike: async (id, want) => {
+      const { error: likeError } = want ? await supabase.from('comment_likes').insert({ kind: 'post', comment_id: id }) : await supabase.from('comment_likes').delete().eq('kind','post').eq('comment_id',id).eq('user_id',ctx.user.id);
+      if (likeError) { notify(likeError.message); return false; }
+      commentLikes = want ? [...commentLikes, { comment_id: id, user_id: ctx.user.id }] : commentLikes.filter(l => !(l.comment_id === id && l.user_id === ctx.user.id)); return true;
+    },
     onSend: async body => {
       const { data, error: commentError } = await supabase.from('post_comments').insert({ post_id: postId, user_id: ctx.user.id, body }).select('id,post_id,user_id,body,created_at').single();
       if (commentError) { notify(`No se pudo comentar: ${commentError.message}`); return false; }
