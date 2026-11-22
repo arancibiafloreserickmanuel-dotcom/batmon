@@ -3,7 +3,7 @@
 import gsap from 'gsap';
 
 const HEART = 'M16 27.6c-.5 0-1-.2-1.4-.5C8.9 22.6 3.6 18.1 3.6 11.9c0-3.8 2.9-6.6 6.4-6.6 2.5 0 4.6 1.3 6 3.3 1.4-2 3.5-3.3 6-3.3 3.5 0 6.4 2.8 6.4 6.6 0 6.2-5.3 10.7-11 15.2-.4.3-.9.5-1.4.5z';
-const RAYS = 8, BURST = 0.6, POP = [1, 0.4], ROLL = 0.5, COLORS = ['#ff2f55', '#ff8a5c', '#ffc247'];
+const RAYS = 8, BURST = 0.6, POP = [1, 0.4], ROLL = 0.5, COLORS = ['#a3162e', '#7d1226', '#b0334a'];
 const SVG = 'http://www.w3.org/2000/svg';
 const fmt = new Intl.NumberFormat('es-BO');
 

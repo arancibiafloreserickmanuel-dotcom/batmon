@@ -2456,18 +2456,20 @@ body.appbody .run-review-form .dd button.dd-btn{min-height:36px;height:36px;padd
 .rt-map{height:200px;border-radius:14px;overflow:hidden;background:var(--line)}
 .rt-actions{display:flex;gap:8px;flex-wrap:wrap}.rt-actions .btn{margin:0;flex:1 1 auto}
 
+body.appbody{--lk-red:#a3162e;--lk-ring:#b0475a}
+body.appbody[data-theme="dark"]{--lk-red:#c0273f;--lk-ring:#d0596c}
 /* Botón Me gusta animado (sin fondo): corazón + contador */
 body.appbody :is(.act-actions,.community-post-actions) .lk{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:6px 10px;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
 .lk__icon{position:relative;display:grid;place-items:center;width:26px;height:26px}
 .lk__heart{width:26px;height:26px;overflow:visible}
 .lk__outline{fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linejoin:round;transition:stroke .25s ease}
-.lk[aria-pressed='true'] .lk__outline{stroke:#ff2f55}
-.lk__fill{fill:#ff2f55}
+.lk[aria-pressed='true'] .lk__outline{stroke:var(--lk-red)}
+.lk__fill{fill:var(--lk-red)}
 .lk__burst{position:absolute;left:50%;top:50%;width:104px;height:104px;margin:-52px 0 0 -52px;overflow:visible;pointer-events:none}
-.lk__ring{fill:none;stroke:#ff7d96;stroke-width:0}
+.lk__ring{fill:none;stroke:var(--lk-ring);stroke-width:0}
 .lk__burst line{stroke-width:3;stroke-linecap:round}
 .lk__count{display:inline-flex;font:700 16px Inter,sans-serif;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s ease}
-.lk[aria-pressed='true'] .lk__count{color:#ff2f55}
+.lk[aria-pressed='true'] .lk__count{color:var(--lk-red)}
 .lk .slot{position:relative;display:inline-block;overflow:hidden;padding:4px 0;margin:-4px 0}
 .lk .slot>span{display:inline-block}
 .lk .slot>span+span{position:absolute;left:0;top:4px}
