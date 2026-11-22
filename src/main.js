@@ -93,6 +93,9 @@ const appLoader = new IntersectionObserver(([entry]) => {
   import('./app-slider.js').then(({ mountAppSlider }) => { if (!pageIsClosing) mountAppSlider(appRoot); });
 }, { rootMargin: '300px 0px' });
 if (appRoot) appLoader.observe(appRoot);
+// Murciélago que vuela con el scroll (se carga cuando la página ya está lista)
+const startBat = () => import('./bat-flight.js').then(({ mountBatFlight }) => { if (!pageIsClosing) mountBatFlight().catch((e) => console.warn('Murciélago no disponible', e)); });
+if (document.readyState === 'complete') setTimeout(startBat, 800); else addEventListener('load', () => setTimeout(startBat, 800), { once: true });
 if (apparelRoot) apparelLoader.observe(apparelRoot);
 window.addEventListener('pagehide', () => {
   pageIsClosing = true;

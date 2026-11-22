@@ -3,3 +3,6 @@ dist
 .npm-cache
 .env
 .env.local
+
+bat-work/*.blend1
+bat-work/*.gif
