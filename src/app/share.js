@@ -234,7 +234,6 @@ function statsMarkup(a) {
     if (s.exercises) main.push(['Ejercicios', String(s.exercises)]);
   }
   if (a.effort) extra.unshift(['Esfuerzo', EFFORT_LABEL[a.effort] || String(a.effort)]);
-  extra.unshift(['Fecha', dateLabel(a.performed_on)]);
   const cell = ([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`;
   return `<div class="act-stats">${main.map(cell).join('')}</div><div class="act-stats act-stats--sub">${extra.map(cell).join('')}</div>`;
 }
@@ -319,12 +318,12 @@ export async function renderSharedFeed(box, ctx) {
   const likesLine = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
     const others = l.filter((x) => x.user_id !== me).map((x) => nameOf(x.user_id).split(' ')[0]);
-    const text = !l.length ? '¡Sé el primero en dar like!' : liked ? (others.length ? `Te gusta a ti y a ${others.length} más` : 'Te gusta a ti') : `Les gusta a ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` y ${others.length - 2} más` : ''}`;
-    return `${text}${c.length ? ` · ${c.length} comentario${c.length === 1 ? '' : 's'}` : ''}`;
+    const text = !l.length ? '' : liked ? (others.length ? `Te gusta a ti y a ${others.length} más` : 'Te gusta a ti') : `Les gusta a ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` y ${others.length - 2} más` : ''}`;
+    return [text, c.length ? `${c.length} comentario${c.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
   };
   const footMarkup = (a) => {
     const l = likes.filter((x) => x.activity_id === a.id), liked = l.some((x) => x.user_id === me), c = comments.filter((x) => x.activity_id === a.id);
-    return `<p class="act-likes">${esc(likesLine(a))}</p>
+    return `<p class="act-likes"${likesLine(a) ? '' : ' hidden'}>${esc(likesLine(a))}</p>
       <div class="act-actions">${likeMarkup(liked, l.length)}<button type="button" class="act-talk" data-comments aria-label="Comentarios">${TALK_ICON}</button><button type="button" data-native aria-label="Compartir">${ICON.share}</button></div>
       ${c.length ? `<button type="button" class="link cm-link" data-comments-open>Ver ${c.length === 1 ? 'el comentario' : `los ${c.length} comentarios`}</button>` : ''}`;
   };
@@ -336,7 +335,7 @@ export async function renderSharedFeed(box, ctx) {
     const a = acts.find((x) => x.id === card.dataset.act), foot = $('[data-foot]', card);
     foot.innerHTML = footMarkup(a);
     const likeBtn = foot.querySelector('[data-like]'), countOf = () => likes.filter((x) => x.activity_id === a.id).length, isLiked = () => likes.some((x) => x.activity_id === a.id && x.user_id === me);
-    const ctl = mountLike(likeBtn, { liked: isLiked(), count: countOf() }), setLine = () => { foot.querySelector('.act-likes').textContent = likesLine(a); };
+    const ctl = mountLike(likeBtn, { liked: isLiked(), count: countOf() }), setLine = () => { const p = foot.querySelector('.act-likes'); p.textContent = likesLine(a); p.hidden = !p.textContent; };
     likeBtn.onclick = async () => {
       const was = isLiked();
       if (was) likes = likes.filter((x) => !(x.activity_id === a.id && x.user_id === me)); else likes.push({ activity_id: a.id, user_id: me });
