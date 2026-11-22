@@ -9,6 +9,7 @@ const EMBLEM = { cx: 0.492, cy: 0.538, w: 0.787 }; // dónde está el murciélag
 const rad = MathUtils.degToRad;
 const ss = (a, b, x) => { const t = MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const mix = (a, b, t) => a + (b - a) * t;
+const nearestTurn = (a) => Math.round(a / (2 * Math.PI)) * 2 * Math.PI;   // el frente más cercano (múltiplo de 360°)
 
 export async function mountBatFlight() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
@@ -31,6 +32,8 @@ export async function mountBatFlight() {
   const gltf = await new GLTFLoader().loadAsync('/bat/murcielago.glb');
   const bat = gltf.scene; scene.add(bat);
   bat.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; if (o.material) o.material.envMapIntensity = 0.4; } });
+  const mats = new Set();
+  bat.traverse((o) => { if (o.isMesh && o.material) mats.add(o.material); });
   const mixer = new AnimationMixer(bat);
   const act = {};
   for (const clip of gltf.animations) { const a = mixer.clipAction(clip); a.setLoop(LoopRepeat, Infinity); a.play(); a.setEffectiveWeight(0); act[clip.name] = a; }
@@ -52,21 +55,21 @@ export async function mountBatFlight() {
     // [scrollY, x, y, ancho (fracción de pantalla), yaw°, alabeo°]
     waypoints = [
       [0, 0.80, 0.30, 0.30, -38, 8],
-      [H * 0.6, 0.24, 0.40, 0.27, 34, -9],
-      [T.com + hCom * 0.1, 0.74, 0.34, 0.26, -36, 8],
-      [T.com + hCom * 0.7, 0.22, 0.52, 0.27, 32, -8],
-      [T.cpl + hCpl * 0.15, 0.72, 0.30, 0.26, -34, 8],
-      [T.cpl + hCpl * 0.8, 0.30, 0.50, 0.27, 30, -8],
-      [T.ind - H * 0.1, 0.55, 0.22, 0.28, -10, 4],
+      [H * 0.6, 0.24, 0.40, 0.27, 50, -9],
+      [T.com + hCom * 0.1, 0.74, 0.34, 0.26, 95, 10],
+      [T.com + hCom * 0.7, 0.22, 0.52, 0.27, 180, -9],
+      [T.cpl + hCpl * 0.15, 0.72, 0.30, 0.26, 255, 10],
+      [T.cpl + hCpl * 0.8, 0.30, 0.50, 0.27, 320, -8],
+      [T.ind - H * 0.1, 0.55, 0.22, 0.28, 360, 4],
     ];
     diveA = T.ind; diveB = T.ind + H * 1.1;   // caída en picada al entrar a Indumentaria
-    waypoints.push([diveA, 0.52, 0.26, 0.30, 0, 0], [diveB, 0.50, 1.35, 0.36, 0, 0]);
-    waypoints.push([T.app - H * 0.5, 0.82, -0.25, 0.26, -35, 8], [T.app + hApp * 0.55, 0.28, 0.48, 0.26, 28, -8]);
+    waypoints.push([diveA, 0.52, 0.26, 0.30, 360, 0], [diveB, 0.50, 1.35, 0.36, 360, 0]);
+    waypoints.push([T.app - H * 0.5, 0.82, -0.25, 0.26, 420, 8], [T.app + hApp * 0.55, 0.28, 0.48, 0.26, 540, -8]);
     finalTop = poster ? poster.getBoundingClientRect().top + scrollY : T.fin;
     const ph = poster ? poster.offsetHeight : H;
     landEnd = finalTop - (H - ph) / 2;                // póster centrado en pantalla
     landStart = landEnd - H * 0.95;
-    waypoints.push([landStart, 0.62, 0.12, 0.28, -20, 6]);
+    waypoints.push([landStart, 0.62, 0.12, 0.28, 700, 6]);
     waypoints.sort((a, b) => a[0] - b[0]);
   }
 
@@ -81,7 +84,7 @@ export async function mountBatFlight() {
 
   // estado suavizado
   const S = { x: 0, y: 0, span: 0, yaw: 0, roll: 0, pitch: 0, ready: false, flap: 1 };
-  let frontNow = true, last = performance.now(), raf = 0, running = true, lastY = scrollY, t0 = last;
+  let fadeV = 0, frontNow = true, last = performance.now(), raf = 0, running = true, lastY = scrollY, t0 = last;
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -93,7 +96,7 @@ export async function mountBatFlight() {
 
     // picada: cabeza abajo, alas recogidas, con ligera oscilación
     const dive = ss(diveA - H * 0.05, diveA + H * 0.12, y) * (1 - ss(diveB - H * 0.2, diveB + H * 0.1, y));
-    rollRad = mix(rollRad, Math.PI, dive); yawRad = mix(yawRad, 0, dive);
+    rollRad = mix(rollRad, Math.PI, dive); yawRad = mix(yawRad, nearestTurn(yawRad), dive);
     X += Math.sin(t * 7) * 6 * dive;
 
     // aterrizaje exacto sobre el murciélago del póster
@@ -104,7 +107,7 @@ export async function mountBatFlight() {
       const tx = r.left + r.width * EMBLEM.cx, ty = r.top + r.height * EMBLEM.cy, tw = r.width * EMBLEM.w;
       const e = land * land * (3 - 2 * land);
       X = mix(X, tx, e); Y = mix(Y, ty, e); span = mix(span, tw, e);
-      yawRad = mix(yawRad, 0, ss(0.45, 1, land)); rollRad = mix(rollRad, 0, ss(0.35, 1, land));
+      yawRad = mix(yawRad, nearestTurn(yawRad), ss(0.45, 1, land)); rollRad = mix(rollRad, 0, ss(0.35, 1, land));
       rest = ss(0.8, 1, land);
     }
     // despegue: parte exactamente del murciélago de la imagen de la portada y se va al abrir el scroll
@@ -114,7 +117,7 @@ export async function mountBatFlight() {
       const tx = r.left + r.width * EMBLEM.cx, ty = r.top + r.height * EMBLEM.cy, tw = r.width * EMBLEM.w;
       const e = take * take * (3 - 2 * take);
       X = mix(X, tx, e); Y = mix(Y, ty, e); span = mix(span, tw, e);
-      yawRad = mix(yawRad, 0, ss(0.3, 1, take)); rollRad = mix(rollRad, 0, ss(0.2, 1, take));
+      yawRad = mix(yawRad, nearestTurn(yawRad), ss(0.3, 1, take)); rollRad = mix(rollRad, 0, ss(0.2, 1, take));
       rest = Math.max(rest, ss(0.85, 1, take));
     }
     // delante en la portada y al aterrizar; detrás del contenido en el resto (Comunidad, Complejos, Indumentaria, App)
@@ -142,7 +145,11 @@ export async function mountBatFlight() {
     mixer.timeScale = (0.9 + 0.1 * S.flap) * (1 - rest * 0.8);
     mixer.update(dt);
 
-    bat.visible = S.span > 2 && S.y < H * 1.6 && S.y > -H * 0.6;
+    // al quedar posado sobre el póster, se desvanece y deja la imagen tal cual
+    fadeV += ((land > 0.985 ? 1 : 0) - fadeV) * (1 - Math.exp(-dt * 2.6));
+    const alpha = 1 - fadeV;
+    for (const m of mats) { m.opacity = alpha; m.transparent = alpha < 0.999; }
+    bat.visible = alpha > 0.01 && S.span > 2 && S.y < H * 1.6 && S.y > -H * 0.6;
     const sc = S.span / MODEL_SPAN;
     bat.scale.setScalar(sc);
     bat.position.set(S.x - W / 2, -(S.y - H / 2), 0);
