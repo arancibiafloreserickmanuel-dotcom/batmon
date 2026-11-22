@@ -1,4 +1,5 @@
 import { supabase, $, esc } from '../supabase.js';
+import { openShredder } from './shredder.js';
 import { fmt, today, num, draft, confirmDialog, notify } from './common.js';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -179,11 +180,10 @@ async function renderHistory(box, view, ctx) {
   const volume = sessions.reduce((sum, s) => sum + s.workout_sets.reduce((n, x) => n + (Number(x.weight_kg) || 0) * (Number(x.reps) || 0), 0), 0);
   box.innerHTML = `<div class="grid"><div class="card stat"><b>${sessions.length}</b><span>Sesiones</span></div><div class="card stat"><b>${setCount}</b><span>Series</span></div><div class="card stat"><b>${fmt(volume, 0)} kg</b><span>Volumen registrado</span></div></div>
     <h2>Sesiones guardadas</h2>${sessions.length ? `<div class="activity-list">${sessions.map((s) => `<details class="card training-history"><summary><b>${s.performed_on}</b> · ${s.workout_sets.length} series${s.duration_min ? ` · ${fmt(s.duration_min, 0)} min` : ''}${s.rpe ? ` · RPE ${s.rpe}` : ''}</summary><div class="history-exercises">${groupSets(s.workout_sets).map((group) => `<div class="history-exercise"><b>${label(group.exercise)}</b><span>${group.sets.map((x) => `${x.reps ? `${x.reps} reps` : ''}${x.weight_kg ? ` × ${x.weight_kg} kg` : ''}${x.duration_sec ? ` ${x.duration_sec} s` : ''}`.trim()).join(' · ')}</span></div>`).join('')}</div>${s.notes ? `<p class="muted">${esc(s.notes)}</p>` : ''}<button class="btn sm ghost" type="button" data-delete-session="${s.id}">Borrar sesión</button></details>`).join('')}</div>` : '<p class="card muted">Aún no hay entrenamientos registrados. Arma un plan semanal y empieza tu primera sesión.</p>'}`;
-  box.querySelectorAll('[data-delete-session]').forEach((b) => (b.onclick = async () => {
-    if (!(await confirmDialog('¿Borrar este entrenamiento y todas sus series?', 'Borrar entrenamiento'))) return;
+  box.querySelectorAll('[data-delete-session]').forEach((b) => (b.onclick = () => openShredder({ name: 'entrenamiento', onCommit: async () => {
     const { error: deleteError } = await supabase.from('workouts').delete().eq('id', b.dataset.deleteSession);
     if (deleteError) notify(deleteError.message); else renderTraining(view, ctx);
-  }));
+  } })));
   void view;
 }
 

@@ -1,4 +1,5 @@
 import { supabase, $, esc } from '../supabase.js';
+import { openShredder } from './shredder.js';
 import { mountPlyoCoach } from './coach-ui.js';
 import { loadAthlete, saveAthlete, plyoWeekIndex, plyoItems } from './coach.js';
 import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
@@ -910,11 +911,10 @@ async function renderProgress(box, view, ctx) {
 
   mountPlyoCoach($('#plyo-coach', box), ctx, coachHooks(view, ctx));
   box.querySelectorAll('[data-period]').forEach((b) => (b.onclick = () => { progressPeriod = b.dataset.period; renderProgress(box, view, ctx); }));
-  box.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
-    if (!(await confirmDialog('¿Borrar esta sesión y sus series?', 'Borrar sesión'))) return;
+  box.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => openShredder({ name: 'sesión', onCommit: async () => {
     const { error: e } = await supabase.from('workouts').delete().eq('id', b.dataset.del);
     if (e) notify(e.message); else renderProgress(box, view, ctx);
-  }));
+  } })));
   box.querySelectorAll('[data-edit-session]').forEach((b) => (b.onclick = () => editSessionMeta(ws.find((w) => w.id === b.dataset.editSession), box, view, ctx)));
   bindAssessmentForm(box, view, ctx);
 }

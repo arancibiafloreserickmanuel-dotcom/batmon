@@ -1,6 +1,7 @@
 // Perfil: progreso interactivo, galería de fotos/videos (mantén presionado para gestionar), fotos de sesión,
 // privacidad y perfil de otro socio al estilo Instagram. Todo con el diseño Soft UI del club.
 import { supabase, esc } from '../supabase.js';
+import { openShredder } from './shredder.js';
 import { notify, confirmDialog, fmt, iso } from './common.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { computeLogros, logrosMarkup } from './share.js';
@@ -157,13 +158,12 @@ export function openMediaSheet(ctx, post, url, onChange = () => {}) {
       notify(st.published ? 'Publicada en tu perfil.' : 'Guardada como oculta.', 'success'); m.remove(); onChange();
     };
     const del = m.querySelector('[data-del]');
-    if (del) del.onclick = async () => {
-      if (!(await confirmDialog('¿Eliminar esta foto o video de tu perfil?', 'Eliminar'))) return;
+    if (del) del.onclick = () => { m.remove(); openShredder({ name: 'foto o video', onCommit: async () => {
       const { error } = await supabase.from('profile_posts').delete().eq('id', post.id).eq('user_id', ctx.user.id);
       if (error) { notify(error.message); return; }
       if (/\/(posts|session)\//.test(post.media_path)) await supabase.storage.from('profile-media').remove([post.media_path]);
-      m.remove(); onChange();
-    };
+      onChange();
+    } }); };
   };
   document.body.append(m);
   m.onclick = (e) => { if (e.target === m) m.remove(); };

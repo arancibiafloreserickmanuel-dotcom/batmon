@@ -1,4 +1,5 @@
 import { likeMarkup, mountLike } from './like-button.js';
+import { openShredder } from './shredder.js';
 import { supabase, $, esc } from '../supabase.js';
 import { confirmDialog, notify } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
@@ -89,15 +90,14 @@ async function renderActivity(box, ctx) {
     if(commentError){submit.disabled=false;notify(`No se pudo comentar: ${commentError.message}`);return;}
     renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
   });
-  box.querySelectorAll('[data-delete-post]').forEach(button => button.onclick = async () => {
-    if (!(await confirmDialog('¿Eliminar esta publicación?','Eliminar publicación'))) return;
+  box.querySelectorAll('[data-delete-post]').forEach(button => button.onclick = () => openShredder({name:'publicación',onCommit:async()=>{
     const postId=button.dataset.deletePost, path=button.dataset.mediaPath;
     const {error: deleteError}=await supabase.from('profile_posts').delete().eq('id',postId).eq('user_id',ctx.user.id);
     if(deleteError){notify(deleteError.message);return;}
     const {error:storageError}=/\/(posts|session)\//.test(path)?await supabase.storage.from('profile-media').remove([path]):{error:null};
     if(storageError)notify(`Publicación eliminada, pero no se pudo borrar el archivo: ${storageError.message}`);
     renderCommunity(box.closest('#view')||document.querySelector('#view'),ctx);
-  });
+  }}));
 }
 
 function shareButton() {

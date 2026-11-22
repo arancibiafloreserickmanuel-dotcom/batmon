@@ -1,4 +1,5 @@
 import { mountRunCoach } from './coach-ui.js';
+import { openShredder } from './shredder.js';
 import { supabase, $, esc } from '../supabase.js';
 
 import { fmt, today, paceStr, num, RUN_TYPE, DISC, confirmDialog, notify } from './common.js';
@@ -767,7 +768,7 @@ async function renderRun(view, ctx) {
 
     $('#detail-edit',dialog).onclick=()=>{const form=document.createElement('form');form.className='run-detail-sheet';form.id='manual-edit';form.innerHTML=manualFormMarkup(activity);content.replaceChildren(form);bindManual(form,activity);};
 
-    $('#detail-delete',dialog).onclick=async()=>{if(!(await confirmDialog('Esta acción eliminará la actividad y su recorrido GPS.','Eliminar actividad')))return;const {error:deleteError}=await supabase.from('activities').delete().eq('id',activity.id).eq('user_id',userId);if(deleteError){notify(`No se pudo eliminar: ${deleteError.message}`);return;}if(activity.activity_photos?.length){const {error:storageError}=await supabase.storage.from('profile-media').remove(activity.activity_photos);if(storageError)notify('Actividad borrada; no se pudieron eliminar sus fotos almacenadas.');}dialog.close();await refreshActivities();renderHistory(box);notify('Actividad eliminada.','success');};
+    $('#detail-delete',dialog).onclick=()=>{dialog.close();openShredder({name:'actividad',points:(routeSegments(activity)[0]||[]).map(p=>[+p.lat,+p.lon]),onCommit:async()=>{const {error:deleteError}=await supabase.from('activities').delete().eq('id',activity.id).eq('user_id',userId);if(deleteError){notify(`No se pudo eliminar: ${deleteError.message}`);return;}if(activity.activity_photos?.length){const {error:storageError}=await supabase.storage.from('profile-media').remove(activity.activity_photos);if(storageError)notify('Actividad borrada; no se pudieron eliminar sus fotos almacenadas.');}await refreshActivities();renderHistory(box);notify('Actividad eliminada.','success');}});};
 
   }
 
@@ -817,12 +818,11 @@ async function renderOtherDiscipline(view, ctx, discipline) {
       form.innerHTML = manualFormMarkup(activity); bindOtherManual(form, activity);
       form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-    view.querySelectorAll('[data-other-delete]').forEach(button => button.onclick = async () => {
-      if (!(await confirmDialog('Se eliminará esta actividad de tu historial.', 'Eliminar actividad'))) return;
+    view.querySelectorAll('[data-other-delete]').forEach(button => button.onclick = () => openShredder({ name: 'actividad', onCommit: async () => {
       const { error: deleteError } = await supabase.from('activities').delete().eq('id', button.dataset.otherDelete).eq('user_id', ctx.user.id);
       if (deleteError) { notify(`No se pudo eliminar: ${deleteError.message}`); return; }
       await renderOtherDiscipline(view, ctx, discipline);
-    });
+    } }));
   };
   historyTab.onclick = showHistory;
   $('#other-open-history', view).onclick = showHistory;
