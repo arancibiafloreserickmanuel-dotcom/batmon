@@ -2591,3 +2591,9 @@ body.appbody .plyo-icon-btn:active,body.appbody .plyo-icon-btn:hover{color:var(-
 body.appbody{background-image:none!important;background-attachment:scroll!important}
 body.appbody::before{content:"";position:fixed;left:0;top:0;width:100%;height:100vh;height:100lvh;z-index:-1;pointer-events:none;background:url('/theme-light.png') center top/cover no-repeat}
 body.appbody[data-theme="dark"]::before{background-image:url('/theme-dark.png')}
+
+/* Fondo de escritorio (pantallas anchas): claro = textura blanca, oscuro = textura negra; el de móvil queda igual */
+@media (min-width: 900px) {
+  body.appbody::before { background-image: url('/theme-light-desktop.webp'); }
+  body.appbody[data-theme="dark"]::before { background-image: url('/theme-dark-desktop.webp'); }
+}
