@@ -33,8 +33,8 @@ const sheet = (html) => {
 };
 const chip = (key, v, label, on, extra = '') => `<button type="button" class="pd-chip${on ? ' on' : ''}" data-ch="${key}" data-v="${esc(String(v))}" ${extra}>${esc(label)}</button>`;
 const num = (label, key, d, o = {}) => `<label class="cf">${esc(label)}<input type="number" inputmode="decimal" data-k="${key}" data-num="1" ${o.min != null ? `min="${o.min}"` : ''} ${o.max != null ? `max="${o.max}"` : ''} step="${o.step || 'any'}" value="${getP(d, key) ?? ''}" placeholder="${esc(o.ph || '')}"></label>`;
-const when = (day, d, pre) => `<div class="cf-when"><b>${day}</b><input type="time" data-k="${pre}.schedule.${day}.time" value="${esc(getP(d, `${pre}.schedule.${day}.time`) || '')}" aria-label="Hora ${day}"><input type="text" maxlength="40" data-k="${pre}.schedule.${day}.after" value="${esc(getP(d, `${pre}.schedule.${day}.after`) || '')}" placeholder="o: después de… (trabajo, clases)" aria-label="Después de, ${day}"></div>`;
-const daysChips = (key, d, multi = true) => `<div class="pd-chips">${DAYS.map((x) => chip(key, x, x.slice(0, 3), (getP(d, key) || []).includes(x), multi ? 'data-multi="1"' : '')).join('')}</div>`;
+const when = (day, d, pre) => `<div class="cf-when"><b>${day}</b><input type="time" data-k="${pre}.schedule.${day}.time" value="${esc(getP(d, `${pre}.schedule.${day}.time`) || '')}" aria-label="Hora ${day}"><input type="text" maxlength="40" data-k="${pre}.schedule.${day}.after" value="${esc(getP(d, `${pre}.schedule.${day}.after`) || '')}" placeholder="Después de…" aria-label="Después de, ${day}"></div>`;
+const daysChips = (key, d, multi = true) => `<div class="pd-chips cw-days">${DAYS.map((x) => chip(key, x, x.slice(0, 3), (getP(d, key) || []).includes(x), multi ? 'data-multi="1"' : '')).join('')}</div>`;
 
 // Asistente genérico por pasos.
 function wizard({ title, data, steps, finishLabel, onFinish }) {
@@ -164,7 +164,7 @@ function openRunWeekEditor(ctx, plan, onDone) {
     root.innerHTML = `<div class="sheet-h"><b>Mi semana de running</b>${closeButton()}</div>
       <p class="cw-intro">Cambia los días (mantén ${n} días por semana) y el horario. Puedes poner la hora exacta o decir “después de…”.</p>
       <p class="cw-l">Días</p>${daysChips('rp.days', d)}
-      ${sel.length === n ? `<p class="cw-l">Tirada larga / carrera</p><div class="pd-chips">${sel.map((x) => chip('rp.longDay', x, x.slice(0, 3), d.rp.longDay === x)).join('')}</div>
+      ${sel.length === n ? `<p class="cw-l">Tirada larga / carrera</p><div class="pd-chips cw-days">${sel.map((x) => chip('rp.longDay', x, x.slice(0, 3), d.rp.longDay === x)).join('')}</div>
       <p class="cw-l">Horario</p>${[...sel].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)).map((x) => when(x, d, 'rp')).join('')}` : `<p class="cw-warn">Elige exactamente ${n} días (ahora ${sel.length}).</p>`}
       <p class="msg" id="cw-msg"></p><div class="cw-nav"><span></span><button class="btn" data-save type="button">Guardar</button></div>`;
     root.querySelector('[data-close]').onclick = () => m.remove();

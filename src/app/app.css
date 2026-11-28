@@ -2603,3 +2603,42 @@ body.appbody .close-btn{flex:0 0 auto;align-self:center}
 body.appbody .run-detail-sheet>.close-btn{justify-self:end}
 /* sobre fondos oscuros, sin el halo blanco del relieve claro */
 body.appbody :is(.photo-viewer__box,.shred-ov,.proof-v2__bar) button.animated-back.close-btn{box-shadow:0 2px 8px #0008}
+
+/* ───── Running en móvil ───── */
+/* Editar mi semana / asistentes: los 7 días en una fila y cada horario en su bloque */
+body.appbody .coach-sheet .cw-l{margin:10px 0 2px}
+body.appbody .coach-sheet .cw-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+body.appbody .coach-sheet .cw-days button.pd-chip{min-width:0;min-height:42px;margin:0;padding:0;text-align:center;border-radius:10px;font-size:12px;box-shadow:none}
+body.appbody .coach-sheet .cf-when{grid-template-columns:minmax(0,118px) minmax(0,1fr);gap:6px 8px;margin:0;padding:10px;border:1px solid color-mix(in srgb,var(--ink) 9%,transparent);border-radius:14px}
+body.appbody .coach-sheet .cf-when b{grid-column:1/-1;grid-row:auto;font:400 17px Anton,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+body.appbody .coach-sheet .cf-when input{min-width:0;min-height:42px;height:42px;margin:0;padding:0 10px;border-radius:10px}
+body.appbody .coach-sheet .cw-nav>span:empty{display:none}
+body.appbody .coach-sheet .cw-nav .btn{flex:1;min-width:0;margin:0}
+/* Ritmo siempre en una línea */
+.run-counter-top>*,.run-map-keystats>*{min-width:0}
+body.appbody .run-counter-top b{font-size:clamp(19px,6.4vw,34px);white-space:nowrap}
+body.appbody .run-map-keystats b{font-size:clamp(19px,6.4vw,32px);white-space:nowrap}
+.run-stat-row b{text-align:right}
+@media(max-width:600px){
+  /* Progreso */
+  body.appbody .run-progress .run-period{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
+  body.appbody .run-progress .run-period button{min-width:0;padding:8px 4px}
+  body.appbody .run-progress .run-progress__stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* Historial: filtros y botones en dos columnas, tarjetas sin apretarse */
+  body.appbody .run-history-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 8px;align-items:end}
+  body.appbody .run-history-tools label{display:grid;gap:7px;min-width:0;margin:0;font-size:12px}
+  body.appbody .run-history-tools .dd{min-width:0}
+  body.appbody .run-history-tools .dd button.dd-btn{min-height:40px;gap:4px;padding:0 8px;font-size:11px}
+  body.appbody .run-history-tools button.btn{width:100%;height:42px;min-height:42px;margin:0;padding:0 6px;font-size:11px}
+  body.appbody .run-history-card button.run-history-open{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;text-align:left}
+  body.appbody .run-history-card .run-history-open>*{grid-column:1;grid-row:auto}
+  body.appbody .run-history-card .run-history-open>.run-history-route{grid-column:2;grid-row:1}
+  body.appbody .run-history-card .run-history-open>[aria-hidden="true"]:last-child{grid-column:2;grid-row:3;justify-self:end}
+  body.appbody .run-history-card .run-history-open>.run-history-card__main{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;grid-column:1/-1}
+  .run-history-card__head b{overflow-wrap:anywhere}
+  /* Ventanas de running más compactas */
+  body.appbody .run-detail-sheet{gap:10px;padding:14px}
+  body.appbody .run-detail-sheet h2{margin:0}
+  body.appbody .run-detail-sheet .dd{margin-top:6px}
+}
+
