@@ -1,6 +1,6 @@
 import { supabase, $, esc } from '../supabase.js';
 import { openShredder } from './shredder.js';
-import { fmt, today, num, draft, confirmDialog, notify } from './common.js';
+import { fmt, today, num, draft, confirmDialog, notify, closeButton } from './common.js';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const FIELDS = [['reps', 'Repeticiones', 1], ['weight_kg', 'Peso (kg)', 0.5], ['duration_sec', 'Tiempo (s)', 5], ['rest_sec', 'Descanso (s)', 5]];
@@ -52,7 +52,7 @@ function renderPlan(box, view, ctx) {
 function editPlanDay(day, view, ctx) {
   const previous = currentPlan[day] || [];
   const selected = new Map(previous.map((row) => [row.exercise_id, { sets: row.sets || 3, reps: row.reps || 10 }]));
-  const m = modal(`<div class="sheet-h"><b>Plan · ${day}</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Plan · ${day}</b>${closeButton()}</div>
     <label for="exercise-filter">Buscar ejercicio</label><input id="exercise-filter" type="search" placeholder="Ej. sentadilla, flexión…">
     <div class="plan-exercise-list" id="plan-exercise-list"></div>
     <div class="sheet-f quick-actions"><button class="btn ghost" id="rest-day">Marcar descanso</button><button class="btn" id="save-day">Guardar plan</button></div>`);
@@ -146,7 +146,7 @@ function drawExerciseCard(item, i) {
 }
 
 function pickTrainingExercise(onPick) {
-  const m = modal(`<div class="sheet-h"><b>Agregar ejercicio</b><button class="link" data-close>Cerrar</button></div><label for="training-search">Buscar</label><input id="training-search" type="search" placeholder="Filtrar ejercicios…"><div class="plan-exercise-list" id="training-choices"></div>`);
+  const m = modal(`<div class="sheet-h"><b>Agregar ejercicio</b>${closeButton()}</div><label for="training-search">Buscar</label><input id="training-search" type="search" placeholder="Filtrar ejercicios…"><div class="plan-exercise-list" id="training-choices"></div>`);
   const draw = () => {
     const q = $('#training-search', m).value.trim().toLowerCase();
     $('#training-choices', m).innerHTML = exercises.filter((e) => !q || `${e.name} ${e.name_es || ''}`.toLowerCase().includes(q)).map((e) => `<button class="card exercise-choice" type="button" data-ex="${esc(e.id)}"><b>${label(e)}</b><small>${esc((e.primary_muscles || []).join(', '))}</small></button>`).join('');

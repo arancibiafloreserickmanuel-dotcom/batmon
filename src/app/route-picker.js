@@ -1,4 +1,5 @@
 // Selector de ruta A→B sobre el mapa + vista de ruta guardada.
+import { closeButton } from './common.js';
 import { buildRoute, PROFILE_LABEL } from './route-tools.js';
 
 const DEFAULT_CENTER = [-19.0196, -65.2619];
@@ -19,7 +20,7 @@ export function openRoutePicker({ route = null, profile = 'foot', title = 'Marca
     const modal = document.createElement('div');
     modal.className = 'modal route-picker';
     modal.innerHTML = `<section class="sheet route-picker__sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="sheet-h"><h2>${esc(title)}</h2><button class="link" type="button" data-cancel>Cerrar</button></div>
+      <div class="sheet-h"><h2>${esc(title)}</h2>${closeButton('data-cancel')}</div>
       <div class="route-picker__bar">
         <form class="route-picker__search" data-search><input type="search" placeholder="Buscar calle o lugar…" aria-label="Buscar lugar" autocomplete="off"><button type="submit" class="route-picker__go" aria-label="Buscar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button></form>
         <div class="route-picker__results" data-results hidden></div>

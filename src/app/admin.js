@@ -2,7 +2,7 @@ import { initDropdowns } from './dropdown.js';
 import './app.css';
 import { autoEnhanceFileInputs } from './upload-field.js';
 import { supabase, $, esc, getProfile } from '../supabase.js';
-import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading, exerciseImgUrl } from './common.js';
+import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading, exerciseImgUrl, closeButton } from './common.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
 import { openPlacePicker } from './place-picker.js';
 
@@ -19,18 +19,10 @@ const TABS = [
 const STATUS = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 let me = null;
 
-function decorateAdminBackButton(button,label='Cerrar',compact=false){
-  if(!button)return;
-  button.classList.add('animated-back');
-  if(compact)button.classList.add('animated-back-compact');
-  button.innerHTML=`<span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">${esc(label)}</span>`;
-}
-
 function modal(html) {
   const m = document.createElement('div');
   m.className = 'modal';
   m.innerHTML = `<div class="sheet">${html}</div>`;
-  m.querySelectorAll('[data-close]').forEach(button=>decorateAdminBackButton(button,'Cerrar',true));
   m.onclick = (e) => { if (e.target === m) m.remove(); };
   document.body.appendChild(m);
   return m;
@@ -46,7 +38,7 @@ const monthLabel = (period) => { const [y, mo] = String(period).slice(0, 7).spli
 
 function openProof(url) {
   const overlay = document.createElement('div'); overlay.className = 'proof-v2';
-  overlay.innerHTML = `<div class="proof-v2__bar"><button type="button" class="btn sm ghost" data-close>← Cerrar</button><a class="btn sm ghost" href="${url}" target="_blank" rel="noopener">Abrir en pestaña</a></div><div class="proof-v2__stage"><img src="${url}" alt="Comprobante de pago"></div>`;
+  overlay.innerHTML = `<div class="proof-v2__bar">${closeButton()}<a class="btn sm ghost" href="${url}" target="_blank" rel="noopener">Abrir en pestaña</a></div><div class="proof-v2__stage"><img src="${url}" alt="Comprobante de pago"></div>`;
   overlay.onclick = (e) => { if (e.target === overlay || e.target.classList.contains('proof-v2__stage') || e.target.closest('[data-close]')) overlay.remove(); };
   document.body.append(overlay);
 }
@@ -62,7 +54,7 @@ function payCard(x, { who = '', url = '' } = {}) {
 
 /* Edita mes, método y estado de un pago. */
 function editPayment(x, done) {
-  const m = modal(`<div class="sheet-h"><b>Editar pago</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Editar pago</b>${closeButton()}</div>
     <form class="adm-form" id="pay-form">
       <label>Mes que cubre<input type="month" name="period" required value="${x.period.slice(0, 7)}"></label>
       <label>Forma de pago<select name="payment_method">${Object.entries(PAY_METHOD).map(([k, v]) => `<option value="${k}" ${x.payment_method === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -203,7 +195,7 @@ async function detalle(u) {
   const self = u.id === me.id;
   const acc = (title, hint, inner) => fold(title, hint, inner);
   const payRows = mems.map((x) => payCard(x, { url: proofUrls[x.id] })).join('');
-  const m = modal(`<div class="sheet-h"><b>${esc(u.full_name)}</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>${esc(u.full_name)}</b>${closeButton()}</div>
     <p class="muted">${u.username ? '@' + esc(u.username) + ' · ' : ''}${esc(u.email)} · alta ${u.created_at.slice(0, 10)} · <b>${ROLE_LABEL[u.role]}</b></p>
     <div class="pf-accs">
     ${acc('Acceso y pagos', 'Pagos del cliente y acceso sin pago', `${sw('id="acc-on"', u.access_override, 'Dar acceso sin pago', 'Puede registrar entrenamientos aunque no haya pagado')}<label class="adm-date">Acceso hasta (opcional)<input id="acc-until" type="date" value="${u.access_until || ''}"></label><button class="btn sm" id="acc-save">Guardar acceso</button><h3 class="pf-sub">Pagos de este cliente</h3><div class="admin-cards">${payRows || '<p class="card muted">Sin pagos registrados.</p>'}</div>`)}
@@ -343,7 +335,7 @@ async function ejercicios() {
 
   function openForm(ex) {
     const isNew = !ex, cat = ex ? ex.category : exState.cat;
-    const m = modal(`<div class="sheet-h"><b>${isNew ? 'Agregar ejercicio' : 'Editar ejercicio'} · ${esc(CAT_LABEL[cat] || cat)}</b><button class="link" data-close>Cerrar</button></div>
+    const m = modal(`<div class="sheet-h"><b>${isNew ? 'Agregar ejercicio' : 'Editar ejercicio'} · ${esc(CAT_LABEL[cat] || cat)}</b>${closeButton()}</div>
       <form id="ex-form" class="adm-form">${datalists()}
         <label>Nombre<input name="name" maxlength="120" required value="${esc(ex ? exName(ex) : '')}" autocomplete="off"></label><div id="ex-sim" class="adm-sim"></div>
         <label>Nivel<select name="level">${Object.entries(LEVEL_LABEL).map(([v, t]) => `<option value="${v}" ${(ex?.level || 'beginner') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
@@ -387,7 +379,7 @@ async function ejercicios() {
   function openBulk() {
     const cat = exState.cat, catPool = data.filter((e) => e.category === cat);
     let drafts = [];
-    const m = modal(`<div class="sheet-h"><b>Agregar en masa · ${esc(CAT_LABEL[cat] || cat)}</b><button class="link" data-close>Cerrar</button></div>
+    const m = modal(`<div class="sheet-h"><b>Agregar en masa · ${esc(CAT_LABEL[cat] || cat)}</b>${closeButton()}</div>
       <p class="muted">Elige varias fotos: cada una será un ejercicio y su nombre sale del nombre del archivo (puedes cambiarlo). También puedes pegar una lista de nombres.</p>${datalists()}
       <label>Fotos<input id="bk-files" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label>
       <label>O pega nombres (uno por línea)<textarea id="bk-names" rows="3" placeholder="Salto vertical&#10;Sentadilla con salto"></textarea></label><button class="btn sm ghost" id="bk-addnames" type="button">Agregar nombres a la lista</button>
@@ -538,7 +530,7 @@ async function eventos() {
     const m = modal(`
       <div class="sheet-h">
         <b>${isEdit ? 'Editar evento' : 'Nuevo evento del Club'}</b>
-        <button class="link" data-close>Cerrar</button>
+        ${closeButton()}
       </div>
       <form id="event-form" class="card" style="margin-top:12px;border:0;padding:0;">
         <label for="ef-title">Título del evento *</label>
@@ -711,7 +703,7 @@ async function eventos() {
     const m = modal(`
       <div class="sheet-h">
         <b>Asistencia: ${esc(e.title)}</b>
-        <button class="link" data-close>Cerrar</button>
+        ${closeButton()}
       </div>
       <div style="margin:10px 0 14px;">
         <span class="admin-rsvp-pill confirmed">✓ ${confirmed.length} confirmados</span>
@@ -745,7 +737,7 @@ async function eventos() {
     const m = modal(`
       <div class="sheet-h">
         <b>Recordar evento</b>
-        <button class="link" data-close>Cerrar</button>
+        ${closeButton()}
       </div>
       <p class="muted">Envía un recordatorio directo a la campana de notificaciones de los socios.</p>
       <div class="card" style="border:0;padding:0;margin-top:10px;">
@@ -829,7 +821,7 @@ async function retos() {
 
   function openForm(row) {
     const v = (k) => esc(row?.[k] ?? '');
-    const m = modal(`<div class="sheet-h"><b>${row ? 'Editar reto' : 'Nuevo reto'}</b><button class="link" data-close>Cerrar</button></div>
+    const m = modal(`<div class="sheet-h"><b>${row ? 'Editar reto' : 'Nuevo reto'}</b>${closeButton()}</div>
       <form class="admin-challenge-form adm-form" id="challenge-form"><input type="hidden" name="id" value="${v('id')}">
         <label>Título<input name="title" maxlength="100" required value="${v('title')}"></label>
         <label>Descripción<textarea name="description" maxlength="500" rows="3">${v('description')}</textarea></label>

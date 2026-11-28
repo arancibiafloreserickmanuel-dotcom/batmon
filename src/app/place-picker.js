@@ -1,4 +1,5 @@
 // Elegir un punto en el mapa (lugar de un evento). Devuelve { lat, lon }, null si se cierra, o 'remove' si se quita.
+import { closeButton } from './common.js';
 import { esc } from '../supabase.js';
 
 const loadLeaflet = async () => { const [{ default: L }] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]); return L; };
@@ -15,7 +16,7 @@ export function openPlacePicker({ lat = null, lon = null, title = 'Lugar del eve
     const modal = document.createElement('div');
     modal.className = 'modal route-picker';
     modal.innerHTML = `<section class="sheet route-picker__sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="sheet-h"><h2>${esc(title)}</h2><button class="link" type="button" data-cancel>Cerrar</button></div>
+      <div class="sheet-h"><h2>${esc(title)}</h2>${closeButton('data-cancel')}</div>
       <div class="route-picker__bar"><form class="route-picker__search" data-search><input type="search" placeholder="Buscar calle o lugar…" aria-label="Buscar lugar" autocomplete="off"><button type="submit" class="route-picker__go" aria-label="Buscar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></form><div class="route-picker__results" data-results hidden></div></div>
       <div class="route-picker__map" data-map></div>
       <p class="route-picker__hint" data-hint>Toca el mapa para marcar el lugar exacto. Puedes arrastrar el punto para ajustarlo.</p>

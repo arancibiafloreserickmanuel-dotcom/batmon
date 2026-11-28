@@ -3,7 +3,7 @@
   position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(18,18,20,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:hidden;touch-action:manipulation}
 .shred-ov *{box-sizing:border-box}
 .shred-ov .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.shred-x{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:40px;height:40px;z-index:3;display:grid;place-items:center;font:400 26px/1 Inter,sans-serif;color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:50%;cursor:pointer;transition:opacity .2s}
+body.appbody .shred-ov .shred-x{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;z-index:3;transition:opacity .2s}
 .shred-ov:not([data-state='idle']) .shred-x{opacity:0;pointer-events:none}
 .shred{position:relative;display:grid;justify-items:center;padding-bottom:170px}
 .shred__canvas{position:fixed;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}

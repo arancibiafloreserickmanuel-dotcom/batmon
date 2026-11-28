@@ -1,3 +1,4 @@
+import { closeButton } from './common.js';
 // Rangos: los LOGROS son la moneda. Los logros salen de (1) logros de cuenta conseguidos y (2) retos completados.
 // El rango solo depende de constancia y esfuerzo verificado en la app, nunca del físico, peso o medidas del socio.
 const BASE = '/ranks';
@@ -43,7 +44,7 @@ const escHtml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<':
 /** Ventana con la explicación de los rangos (se abre al tocar el icono del perfil). */
 export function openRankInfo(rank, account = 0, challenges = 0) {
   const modal = document.createElement('div'); modal.className = 'modal rank-info';
-  modal.innerHTML = `<section class="sheet" role="dialog" aria-modal="true" aria-label="Rangos"><div class="sheet-h"><h2>Rangos</h2><button class="link" type="button" data-close>Cerrar</button></div>
+  modal.innerHTML = `<section class="sheet" role="dialog" aria-modal="true" aria-label="Rangos"><div class="sheet-h"><h2>Rangos</h2>${closeButton()}</div>
     <div class="rank-info__me"><img src="${rank.iconBig}" alt=""><div><b>${escHtml(rank.name)}</b><p class="muted">${rank.points} logros${rank.next ? ` · faltan ${rank.missing} para ${escHtml(rank.nextName)}` : ' · rango máximo'}</p><small class="muted">Cuenta: ${account} · Retos: ${challenges}</small></div></div>
     <p><b>¿Qué son los logros?</b> Son la moneda para subir de rango. Se ganan con los logros de tu cuenta (bronce +10, plata +25, oro +60) y completando retos del club.</p>
     <p><b>¿Cómo subo?</b> Entrena con constancia en Running, Ciclismo, Natación, Pliometría y Fuerza, comparte tus entrenamientos y completa retos.</p>

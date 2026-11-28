@@ -1,5 +1,6 @@
 // Herramientas del mapa en pantalla completa durante la carrera:
 // buscador de rutas del club, filtros, capas, brújula, "dónde estoy" y dibujo de rutas propias.
+import { closeButton } from './common.js';
 import { esc } from '../supabase.js';
 
 const DIFFICULTY = {
@@ -276,7 +277,7 @@ export async function mountMapTools(root, { mapPromise, supabase, userId, userNa
   function saveDialog() {
     if (drawPts.length < 2) return;
     const dlg = document.createElement('dialog'); dlg.className = 'run-detail-dialog';
-    dlg.innerHTML = `<form class="run-detail-sheet mt-save" method="dialog"><button class="link run-detail-close" type="button" id="mt-s-close">Cerrar</button><h2>Guardar ruta</h2>
+    dlg.innerHTML = `<form class="run-detail-sheet mt-save" method="dialog">${closeButton('id="mt-s-close"', 'run-detail-close')}<h2>Guardar ruta</h2>
       <p class="muted">${fmtKm(drawKm())} km · ${drawPts.length} puntos</p>
       <label>Nombre<input id="mt-s-name" maxlength="80" required placeholder="Circuito Parque Bolívar"></label>
       <label>Dificultad<select id="mt-s-diff">${Object.entries(DIFFICULTY).map(([k, v]) => `<option value="${k}" ${k === 'moderada' ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label>

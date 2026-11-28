@@ -3,7 +3,7 @@ import { openShredder } from './shredder.js';
 import { mountPlyoCoach } from './coach-ui.js';
 import { loadAthlete, saveAthlete, plyoWeekIndex, plyoItems } from './coach.js';
 import { localize, searchExercises, equipEs, muscleEs } from './exercise-i18n.js';
-import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart, exerciseImgUrl } from './common.js';
+import { fmt, today, num, LEVEL, draft, confirmDialog, notify, weekStart, monthStart, exerciseImgUrl, closeButton } from './common.js';
 import { shareSectionMarkup, bindShareSection, readShare, publishShare, activityLogros } from './share.js';
 import { sessionMediaMarkup, readSessionMedia, saveSessionMedia } from './profile-ui.js';
 
@@ -164,7 +164,7 @@ const blankSetsFor = (ex, n = 3) => Array.from({ length: n }, () => blankSetFor(
 
 function keypad(label, current, step, onSet) {
   let val = current == null ? '' : String(current), fresh = true;
-  const m = modal(`<div class="sheet-h"><b>${esc(label)}</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>${esc(label)}</b>${closeButton()}</div>
     <div class="ses-pad__val" id="kv"></div>
     <div class="ses-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, '⌫'].map((k) => `<button type="button" data-k="${k}">${k}</button>`).join('')}</div>
     <div class="ses-pad__step"><button type="button" data-d="-1">− ${step}</button><button type="button" data-d="1">+ ${step}</button></div>
@@ -617,7 +617,7 @@ function drawDays(box, view, ctx) {
     });
   } else {
     $('#np-rename', box).onclick = () => {
-      const m = modal(`<div class="sheet-h"><b>Nombre de la rutina</b><button class="link" data-close>Cerrar</button></div><input id="rn2" maxlength="80" value="${esc(plan.name)}"><div class="sheet-f"><button class="btn" id="rn2ok" type="button">Guardar</button></div>`);
+      const m = modal(`<div class="sheet-h"><b>Nombre de la rutina</b>${closeButton()}</div><input id="rn2" maxlength="80" value="${esc(plan.name)}"><div class="sheet-f"><button class="btn" id="rn2ok" type="button">Guardar</button></div>`);
       m.querySelector('[data-close]').onclick = () => m.remove();
       $('#rn2ok', m).onclick = async () => { const v = $('#rn2', m).value.trim(); if (!v) return; plan.name = v.slice(0, 80); weekPlan = { ...weekPlan, _plans: plansList().map((p) => (p.id === plan.id ? plan : p)) }; m.remove(); await savePlans(ctx); drawDays(box, view, ctx); };
     };
@@ -758,7 +758,7 @@ function drawDayEditor(box, view, ctx) {
 }
 
 function restModal(current, onPick) {
-  const m = modal(`<div class="sheet-h"><b>Descanso entre series</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Descanso entre series</b>${closeButton()}</div>
     <div class="rest-presets">${REST_PRESETS.map((s) => `<button type="button" class="btn sm ${s === current ? '' : 'ghost'}" data-s="${s}">${s} s</button>`).join('')}</div>
     <label for="rc">Personalizado (segundos)</label><input id="rc" type="number" min="0" step="5" inputmode="numeric" value="${current}">
     <div class="sheet-f"><button class="btn" id="rok" type="button">Listo</button></div>`);
@@ -921,7 +921,7 @@ async function renderProgress(box, view, ctx) {
 }
 
 function editSessionMeta(w, box, view, ctx) {
-  const m = modal(`<div class="sheet-h"><b>Editar sesión</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Editar sesión</b>${closeButton()}</div>
     <p class="muted">Solo puedes editar la fecha, duración, esfuerzo y notas. Las series se editan borrando y repitiendo la sesión.</p>
     <label for="em-date">Fecha</label><input id="em-date" type="date" max="${today()}" value="${w.performed_on}">
     <label for="em-dur">Duración (min)</label><input id="em-dur" type="number" min="1" inputmode="numeric" value="${w.duration_min || ''}">
@@ -1002,7 +1002,7 @@ function picker(ctx, onPick) {
   const chosen = new Set();
   const levels = [...new Set(catalog.map((e) => e.level).filter(Boolean))];
   const equips = [...new Set(catalog.map((e) => e.equipment || 'none'))].sort((x, y) => equipEs(x).localeCompare(equipEs(y), 'es'));
-  const m = modal(`<div class="sheet-h"><b>Agregar ejercicios</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Agregar ejercicios</b>${closeButton()}</div>
     <button type="button" class="pd-newex" id="newex"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Crear ejercicio propio</span></button>
     <div class="pd-pick">
       <input id="q" type="search" placeholder="Buscar: salto, jump, cajón, balón…" autocomplete="off">
@@ -1032,7 +1032,7 @@ function picker(ctx, onPick) {
 }
 
 function customForm(ctx, onDone) {
-  const m = modal(`<div class="sheet-h"><b>Ejercicio propio</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>Ejercicio propio</b>${closeButton()}</div>
     <form id="cf"><label for="cn">Nombre</label><input id="cn" required maxlength="80">
     <div class="row"><div><label for="cl">Nivel</label><select id="cl"><option value="beginner">Principiante</option><option value="intermediate">Intermedio</option><option value="expert">Avanzado</option></select></div>
     <div><label for="ce">Equipo</label><input id="ce" placeholder="cajón, balón…" maxlength="40"></div></div>
@@ -1055,7 +1055,7 @@ function customForm(ctx, onDone) {
 
 /* ------------------------------ Biblioteca ------------------------------ */
 function openLibrary(ctx, view) {
-  const m = modal(`<div class="sheet-h"><b>Biblioteca de ejercicios (${catalog.length})</b><button class="link" data-close>Cerrar</button></div><div id="lib-body"></div>`);
+  const m = modal(`<div class="sheet-h"><b>Biblioteca de ejercicios (${catalog.length})</b>${closeButton()}</div><div id="lib-body"></div>`);
   library($('#lib-body', m), view, ctx);
   m.querySelector('[data-close]').onclick = () => m.remove();
 }
@@ -1076,7 +1076,7 @@ function library(box, view, ctx) {
 
 function detail(e, ctx, view) {
   const mine = e.source === 'custom' && e.created_by === ctx.user.id;
-  const m = modal(`<div class="sheet-h"><b>${name(e)}</b><button class="link" data-close>Cerrar</button></div>
+  const m = modal(`<div class="sheet-h"><b>${name(e)}</b>${closeButton()}</div>
     <div class="imgs">${(e.images || []).map((i) => `<img src="${esc(exerciseImgUrl(i))}" alt="" loading="lazy">`).join('')}</div>
     <p class="muted">${esc(LEVEL[e.level] || e.level || '')} · ${esc(equipEs(e.equipment))}</p>
     <p><b>Músculos:</b> ${esc((e.primary_muscles || []).map(muscleEs).join(', ') || '—')}${e.secondary_muscles?.length ? ` <span class="muted">(+ ${esc(e.secondary_muscles.map(muscleEs).join(', '))})</span>` : ''}</p>

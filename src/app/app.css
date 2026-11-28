@@ -1851,7 +1851,7 @@ button.community-avatar,button.act-avatar,button.profile-avatar{padding:0;border
 .photo-viewer__box{position:relative;display:grid;justify-items:center;gap:12px;max-width:min(92vw,640px);color:#fff}
 .photo-viewer__box img{display:block;width:min(92vw,560px);max-height:78dvh;object-fit:contain;border-radius:20px;box-shadow:0 20px 60px #000a}
 .photo-viewer__box p{margin:0;font:400 18px Anton,sans-serif;letter-spacing:.04em;text-transform:uppercase}
-.photo-viewer__close{position:absolute;top:-6px;right:-6px;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:#fff;color:#111;font-size:16px;cursor:pointer;box-shadow:0 4px 14px #0008}
+body.appbody .photo-viewer__box .photo-viewer__close{position:absolute;top:8px;right:8px;z-index:2}
 
 /* ===== Rangos, eventos como página y retos en tarjetas ===== */
 .rank-card{display:flex;gap:16px;align-items:center}
@@ -2597,3 +2597,9 @@ body.appbody[data-theme="dark"]::before{background-image:url('/theme-dark.png')}
   body.appbody::before { background-image: url('/theme-light-desktop.webp'); }
   body.appbody[data-theme="dark"]::before { background-image: url('/theme-dark-desktop.webp'); }
 }
+
+/* Botón Cerrar: nunca se encoge ni se estira dentro de cabeceras y ventanas */
+body.appbody .close-btn{flex:0 0 auto;align-self:center}
+body.appbody .run-detail-sheet>.close-btn{justify-self:end}
+/* sobre fondos oscuros, sin el halo blanco del relieve claro */
+body.appbody :is(.photo-viewer__box,.shred-ov,.proof-v2__bar) button.animated-back.close-btn{box-shadow:0 2px 8px #0008}

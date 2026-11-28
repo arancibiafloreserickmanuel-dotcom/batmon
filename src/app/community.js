@@ -4,7 +4,7 @@ import { TALK_ICON } from './talk-icon.js';
 import { openComments } from './comments-sheet.js';
 import './comments-sheet.css';
 import { supabase, $, esc } from '../supabase.js';
-import { confirmDialog, notify } from './common.js';
+import { confirmDialog, notify, closeButton } from './common.js';
 import { renderEventsFeed, renderChallenges } from './club-pages.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { openProfileCard } from './social.js';
@@ -135,7 +135,7 @@ function bindShareButton(box, ctx) {
   open.onclick = async () => {
     const { data: closeRows = [] } = await supabase.from('close_friends').select('friend');
     const modal = document.createElement('div'); modal.className = 'modal share-module';
-    modal.innerHTML = `<section class="sheet share-sheet" role="dialog" aria-modal="true" aria-label="Compartir entrenamiento"><div class="sheet-h"><h2>Compartir entrenamiento</h2><button class="link" type="button" data-close>Cerrar</button></div>
+    modal.innerHTML = `<section class="sheet share-sheet" role="dialog" aria-modal="true" aria-label="Compartir entrenamiento"><div class="sheet-h"><h2>Compartir entrenamiento</h2>${closeButton()}</div>
       <form id="community-publish" class="community-publish"><label>Disciplina<select name="module_key">${MODULES.filter(([key])=>ctx.modules?.[key]).map(([key,title])=>`<option value="${key}">${title}</option>`).join('')}</select></label><label>Foto o video<input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" required></label><label>Descripción<input name="caption" maxlength="500" placeholder="¿Qué entrenaste hoy?"></label>
         <fieldset class="share-audience"><legend>¿Quién puede verlo?</legend>
           <nav class="running-pages tabs-pill tabs-pill--2" aria-label="Quién puede verlo"><input class="tabs-pill__input" type="radio" name="visibility" id="vis-friends" value="friends" checked><label class="tabs-pill__label" for="vis-friends">Mis amigos</label><input class="tabs-pill__input" type="radio" name="visibility" id="vis-close" value="close"><label class="tabs-pill__label" for="vis-close">Mejores amigos</label><div class="tabs-pill__indicator" aria-hidden="true"></div></nav>

@@ -1,4 +1,5 @@
 // Fotos de perfil: la subida propia manda; si no hay, se usa la de la cuenta de Google.
+import { closeButton } from './common.js';
 import { supabase, esc } from '../supabase.js';
 
 export const initialsOf = (name) => (name || 'BC').split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
@@ -30,7 +31,7 @@ export function openPhotoViewer(src, name = '') {
   if (!src) return;
   const modal = document.createElement('div');
   modal.className = 'modal photo-viewer';
-  modal.innerHTML = `<section class="photo-viewer__box" role="dialog" aria-modal="true" aria-label="Foto de ${esc(name)}"><button type="button" class="photo-viewer__close" aria-label="Cerrar">✕</button><img src="${esc(src)}" alt="Foto de ${esc(name)}" referrerpolicy="no-referrer">${name ? `<p>${esc(name)}</p>` : ''}</section>`;
+  modal.innerHTML = `<section class="photo-viewer__box" role="dialog" aria-modal="true" aria-label="Foto de ${esc(name)}">${closeButton('', 'photo-viewer__close')}<img src="${esc(src)}" alt="Foto de ${esc(name)}" referrerpolicy="no-referrer">${name ? `<p>${esc(name)}</p>` : ''}</section>`;
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   modal.onclick = (e) => { if (e.target === modal || e.target.closest('.photo-viewer__close')) close(); };

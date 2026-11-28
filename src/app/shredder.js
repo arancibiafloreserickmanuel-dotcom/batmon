@@ -1,5 +1,6 @@
 // Botón de eliminar con trituradora: la hoja entra a la máquina, sale en tiras y se puede deshacer unos segundos.
 // Basado en "The shredder delete button" de Animorio (https://animorio.com): libre en sitios propios y de clientes.
+import { closeButton } from './common.js';
 import gsap from 'gsap';
 import './shredder.css';
 
@@ -8,7 +9,7 @@ const W = 208, H = 270, SEG = 5.4, NODES = Math.round(H / SEG) + 1;
 const N = Math.max(4, Math.min(40, Math.round(STRIPS))), SW = W / N;
 const MW = W + 28, MH = 60, BW = 172, BH = 52, STEP = 1 / 120, VFEED = H / FEED, LAG = 26, CURL_REACH = 16, CRUMBS = 34;
 
-const MARKUP = `<button type="button" class="shred-x" data-cancel aria-label="Cancelar">×</button>
+const MARKUP = `${closeButton('data-cancel', 'shred-x')}
 <div class="shred" data-shred>
   <canvas class="shred__canvas" aria-hidden="true" data-canvas></canvas>
   <div class="shred__sheet" role="img" data-sheet><span class="shred__ghost" data-ghost></span></div>

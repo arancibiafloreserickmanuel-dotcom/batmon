@@ -1,7 +1,7 @@
 // Hoja de comentarios (estilo Instagram): lista arriba, escribir abajo con el icono de enviar.
 // La usan el muro y las actividades de Club. Quien llama guarda en su tabla; aquí solo se dibuja.
 import { esc } from '../supabase.js';
-import { notify } from './common.js';
+import { notify, closeButton } from './common.js';
 
 const SEND = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/></svg>';
 const HEART = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 20.5c-.4 0-.8-.1-1.1-.4C6.600 16.800 3 13.700 3 9.600 3 7 5 5 7.500 5c1.800 0 3.500 1 4.500 2.600C13 6 14.700 5 16.500 5 19 5 21 7 21 9.600c0 4.100-3.600 7.200-7.900 10.500-.3.300-.7.400-1.100.4z"/></svg>';
@@ -25,7 +25,7 @@ export function openComments({ getList, onSend, onDelete, onLike, canDelete = ()
   const ov = document.createElement('div');
   ov.className = 'cm-ov';
   ov.innerHTML = `<section class="cm-sheet" role="dialog" aria-modal="true" aria-label="Comentarios">
-    <header class="cm-head"><span class="cm-grip"></span><b>Comentarios</b><button type="button" class="cm-close" data-close aria-label="Cerrar">×</button></header>
+    <header class="cm-head"><span class="cm-grip"></span><b>Comentarios</b>${closeButton('data-close', 'cm-close')}</header>
     <div class="cm-list" data-list></div>
     <form class="cm-form" data-form autocomplete="off"><input name="body" maxlength="500" placeholder="Añade un comentario…" aria-label="Comentario" required><button type="submit" class="cm-send" aria-label="Enviar comentario" title="Enviar">${SEND}</button></form></section>`;
   document.body.appendChild(ov);

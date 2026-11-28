@@ -31,6 +31,9 @@ export const draft = {
   del(k) { try { localStorage.removeItem(k); } catch { /* ignorar */ } },
 };
 
+/** Botón "Cerrar" único de toda la app: mismo diseño y tamaño que "Volver" (flecha + texto). */
+export const closeButton = (attrs = 'data-close', cls = '') => `<button type="button" class="animated-back animated-back-compact close-btn${cls ? ` ${cls}` : ''}" ${attrs}><span class="animated-back-sweep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H21z"/></svg></span><span class="animated-back-label">Cerrar</span></button>`;
+
 export function notify(message, kind = 'error') {
   let host = document.querySelector('.toast-host');
   if (!host) { host = document.createElement('div'); host.className = 'toast-host'; host.setAttribute('aria-live', 'polite'); document.body.append(host); }

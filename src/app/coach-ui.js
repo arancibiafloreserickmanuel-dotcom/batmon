@@ -1,4 +1,5 @@
 // Interfaz de los cuestionarios y planes: Running y Pliometría (datos compartidos entre ambos).
+import { closeButton } from './common.js';
 import { esc } from '../supabase.js';
 import {
   DAYS, RUN_GOALS, PLYO_GOALS, SCIENCE, loadAthlete, saveAthlete, loadRunPlan, saveRunPlan, buildRunPlan, buildPlyoPlan, reassignPlan, planWeekIndex,
@@ -42,7 +43,7 @@ function wizard({ title, data, steps, finishLabel, onFinish }) {
   const root = m.querySelector('.sheet');
   const draw = () => {
     const st = steps[i];
-    root.innerHTML = `<div class="sheet-h"><b>${esc(title)}</b><button class="link" data-close type="button">Cerrar</button></div>
+    root.innerHTML = `<div class="sheet-h"><b>${esc(title)}</b>${closeButton()}</div>
       <div class="cw-bar" aria-label="Paso ${i + 1} de ${steps.length}"><i style="width:${((i + 1) / steps.length) * 100}%"></i></div>
       <p class="cw-step muted">Paso ${i + 1} de ${steps.length} · ${esc(st.title)}</p>
       <div class="cw-body">${st.intro ? `<p class="cw-intro">${st.intro}</p>` : ''}${st.html(data, ui)}</div>
@@ -160,7 +161,7 @@ function openRunWeekEditor(ctx, plan, onDone) {
   const root = m.querySelector('.sheet');
   const draw = () => {
     const sel = d.rp.days;
-    root.innerHTML = `<div class="sheet-h"><b>Mi semana de running</b><button class="link" data-close type="button">Cerrar</button></div>
+    root.innerHTML = `<div class="sheet-h"><b>Mi semana de running</b>${closeButton()}</div>
       <p class="cw-intro">Cambia los días (mantén ${n} días por semana) y el horario. Puedes poner la hora exacta o decir “después de…”.</p>
       <p class="cw-l">Días</p>${daysChips('rp.days', d)}
       ${sel.length === n ? `<p class="cw-l">Tirada larga / carrera</p><div class="pd-chips">${sel.map((x) => chip('rp.longDay', x, x.slice(0, 3), d.rp.longDay === x)).join('')}</div>

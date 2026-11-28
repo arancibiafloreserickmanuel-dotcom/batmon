@@ -2,7 +2,7 @@
 // privacidad y perfil de otro socio al estilo Instagram. Todo con el diseño Soft UI del club.
 import { supabase, esc } from '../supabase.js';
 import { openShredder } from './shredder.js';
-import { notify, confirmDialog, fmt, iso } from './common.js';
+import { notify, confirmDialog, fmt, iso, closeButton } from './common.js';
 import { avatarSrc, avatarImg, initialsOf, openPhotoViewer } from './avatar.js';
 import { computeLogros, logrosMarkup } from './share.js';
 import { rankFor } from './ranks.js';
@@ -108,7 +108,7 @@ function bindLongPress(el, onLong, onTap) {
 function openViewer(post, url) {
   if (post.media_type !== 'video') { openPhotoViewer(url, post.caption || ''); return; }
   const m = document.createElement('div'); m.className = 'modal pf-viewer';
-  m.innerHTML = `<section class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><b>${esc(MOD[post.module_key] || 'Video')}</b><button class="link" type="button" data-close>Cerrar</button></div><video src="${esc(url)}" controls playsinline autoplay></video>${post.caption ? `<p>${esc(post.caption)}</p>` : ''}</section>`;
+  m.innerHTML = `<section class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><b>${esc(MOD[post.module_key] || 'Video')}</b>${closeButton()}</div><video src="${esc(url)}" controls playsinline autoplay></video>${post.caption ? `<p>${esc(post.caption)}</p>` : ''}</section>`;
   document.body.append(m);
   m.onclick = (e) => { if (e.target === m || e.target.closest('[data-close]')) m.remove(); };
 }
@@ -132,7 +132,7 @@ export function openMediaSheet(ctx, post, url, onChange = () => {}) {
   const mods = enabledModules(ctx);
   if (!mods.includes(st.module_key)) mods.push(st.module_key);
   const draw = () => {
-    m.innerHTML = `<section class="sheet" role="dialog" aria-modal="true" aria-label="Gestionar publicación"><div class="sheet-h"><b>${post._new ? 'Foto de sesión' : 'Mi publicación'}</b><button class="link" type="button" data-close>Cerrar</button></div>
+    m.innerHTML = `<section class="sheet" role="dialog" aria-modal="true" aria-label="Gestionar publicación"><div class="sheet-h"><b>${post._new ? 'Foto de sesión' : 'Mi publicación'}</b>${closeButton()}</div>
       <div class="pf-preview pf-preview--${st.aspect}">${post.media_type === 'video' ? `<video src="${esc(url)}" controls playsinline class="${'look-' + st.look}"></video>` : `<img src="${esc(url)}" alt="" class="${'look-' + st.look}">`}</div>
       <div class="pf-opt"><span>Estado</span><div class="pf-seg pf-seg--sm"><button type="button" class="${st.published ? 'on' : ''}" data-pub="1">Publicada</button><button type="button" class="${!st.published ? 'on' : ''}" data-pub="0">Oculta</button></div></div>
       <div class="pf-opt"><span>Categoría</span><div class="pf-chips">${mods.map((k) => `<button type="button" class="${st.module_key === k ? 'on' : ''}" data-cat="${k}">${MOD[k]}</button>`).join('')}</div></div>
