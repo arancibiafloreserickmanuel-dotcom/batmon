@@ -5,6 +5,7 @@ import { supabase, $, esc, getProfile } from '../supabase.js';
 import { fmt, monthStart, RUN_TYPE, DISC, paceStr, confirmDialog, notify, showDelayedLoading, exerciseImgUrl, closeButton } from './common.js';
 import { openRoutePicker, routeSummary } from './route-picker.js';
 import { openPlacePicker } from './place-picker.js';
+import { mountQrAdmin } from './qr-admin.js';
 
 const view = $('#view');
 const TABS = [
@@ -105,6 +106,7 @@ async function pagos() {
   const count = (st) => rest.filter((m) => m.status === st).length;
 
   $('#body').innerHTML = `
+    <div id="qr-admin"></div>
     <h2>Por revisar (${pending.length})</h2><p class="muted">Pagos que los clientes enviaron y aún no aprobaste.</p>
     <div class="admin-cards">${pending.length ? pending.map((m) => payCard(m, { who: name[m.user_id] || '?', url: urls[m.id] })).join('') : '<p class="card muted">No hay pagos por revisar.</p>'}</div>
     <h2>Historial de pagos (<span id="pay-count">${rest.length}</span>)</h2>
@@ -123,6 +125,7 @@ async function pagos() {
   $('#pay-search').oninput = apply; $('#pay-method').onchange = apply; $('#pay-month').onchange = apply;
   $('#pay-chips').querySelectorAll('button').forEach((c) => (c.onclick = () => { st = c.dataset.st; $('#pay-chips').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === c)); apply(); }));
   bindPayCards($('#body'), mems, urls, pagos);
+  void mountQrAdmin($('#qr-admin'));
 }
 
 /* ------------------------- Clientes, socios y fichas ------------------------- */

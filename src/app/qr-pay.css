@@ -1,0 +1,62 @@
+/* QR de pago: marco y animaciones (monocromo). El código siempre queda legible sobre blanco. */
+.qr-fx{--qr-ink:#0d0d0c;position:relative;width:min(240px,70vw);margin:12px auto;padding:12px}
+body.appbody[data-theme="dark"] .qr-fx{--qr-ink:#fff}
+.qr-fx__box{position:relative;aspect-ratio:1;overflow:hidden;border-radius:14px;background:#fff;box-shadow:0 6px 18px #0003}
+.qr-fx__img{display:block;width:100%;height:100%;object-fit:contain}
+.qr-fx__tiles,.qr-fx__line,.qr-fx__corners{display:none;pointer-events:none}
+.qr-note{margin:4px 0 10px;text-align:center}
+
+/* Escáner: una línea recorre el código */
+.qr-fx[data-fx="scan"] .qr-fx__line{display:block;position:absolute;left:4%;right:4%;top:0;height:3px;border-radius:3px;background:#a3162e;box-shadow:0 0 12px 2px #a3162e99;animation:qr-scan 2.6s ease-in-out infinite}
+.qr-fx[data-fx="scan"] .qr-fx__line::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:34px;background:linear-gradient(transparent,#a3162e2e)}
+@keyframes qr-scan{0%{top:2%}50%{top:97%}100%{top:2%}}
+
+/* Enfoque: las esquinas se acercan y se alejan como una cámara */
+.qr-fx[data-fx="focus"] .qr-fx__corners,.qr-fx[data-fx="scan"] .qr-fx__corners{display:block;position:absolute;inset:0}
+.qr-fx__corners i{position:absolute;width:28px;height:28px;border:0 solid var(--qr-ink)}
+.qr-fx__corners i:nth-child(1){left:0;top:0;border-width:4px 0 0 4px;border-radius:12px 0 0 0}
+.qr-fx__corners i:nth-child(2){right:0;top:0;border-width:4px 4px 0 0;border-radius:0 12px 0 0}
+.qr-fx__corners i:nth-child(3){left:0;bottom:0;border-width:0 0 4px 4px;border-radius:0 0 0 12px}
+.qr-fx__corners i:nth-child(4){right:0;bottom:0;border-width:0 4px 4px 0;border-radius:0 0 12px 0}
+.qr-fx[data-fx="focus"] .qr-fx__corners{animation:qr-focus 1.8s ease-in-out infinite}
+.qr-fx[data-fx="focus"] .qr-fx__box{animation:qr-breathe 1.8s ease-in-out infinite}
+@keyframes qr-focus{0%,100%{inset:-6px}50%{inset:6px}}
+@keyframes qr-breathe{0%,100%{transform:scale(.965)}50%{transform:scale(1)}}
+
+/* Borde en giro: una luz da la vuelta alrededor */
+.qr-fx[data-fx="orbit"]{padding:5px;overflow:hidden;border-radius:20px}
+.qr-fx[data-fx="orbit"]::before{content:"";position:absolute;inset:-35%;background:conic-gradient(transparent 0 55%,var(--qr-ink) 80%,transparent 80.5%);animation:qr-orbit 2.4s linear infinite}
+.qr-fx[data-fx="orbit"] .qr-fx__box{z-index:1;border-radius:16px}
+@keyframes qr-orbit{to{transform:rotate(1turn)}}
+
+/* Mosaico: el código se arma por piezas, se queda visible y vuelve a empezar */
+.qr-fx[data-fx="mosaic"] .qr-fx__tiles{display:grid;position:absolute;inset:0;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr)}
+.qr-fx__tiles i{background:#fff;opacity:0;animation:qr-tile 7s ease infinite}
+.qr-fx__tiles i:nth-child(6n+2){animation-delay:.25s}.qr-fx__tiles i:nth-child(6n+3){animation-delay:.1s}.qr-fx__tiles i:nth-child(6n+4){animation-delay:.35s}.qr-fx__tiles i:nth-child(6n+5){animation-delay:.18s}.qr-fx__tiles i:nth-child(6n){animation-delay:.42s}
+.qr-fx__tiles i:nth-child(4n+1){background:#e9e9e9}
+@keyframes qr-tile{0%{opacity:1;transform:scale(1.02)}3%{opacity:1}12%,94%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:scale(1.02)}}
+
+@media(prefers-reduced-motion:reduce){.qr-fx *,.qr-fx::before{animation:none!important}.qr-fx__tiles,.qr-fx__line{display:none!important}}
+
+/* ---------- Panel de administración ---------- */
+.qr-admin{display:flex;align-items:center;gap:14px;padding:12px;margin:0 0 14px}
+.qr-admin img{width:76px;height:76px;flex:none;object-fit:contain;border-radius:10px;background:#fff}
+.qr-admin div{display:grid;gap:4px;min-width:0;flex:1}
+.qr-admin b{font:400 19px Anton,sans-serif;letter-spacing:.02em}
+.qr-admin small{font-size:12px;color:var(--muted)}
+.qr-admin small.is-bad{color:#a3162e;font-weight:700}
+body.appbody[data-theme="dark"] .qr-admin small.is-bad{color:#e0899a}
+body.appbody .qr-admin .btn{justify-self:start;margin:4px 0 0}
+.qr-crop{position:relative;width:max-content;max-width:calc(100% - 40px);margin:22px auto;line-height:0;touch-action:none;clip-path:inset(-20px round 14px)}
+.qr-crop canvas.qr-crop__src{display:block;max-width:100%;max-height:52dvh;width:auto;height:auto}
+.qr-crop__box{position:absolute;border:2px solid #fff;outline:2px solid #a3162e;box-shadow:0 0 0 2000px #0009;cursor:move;touch-action:none}
+.qr-crop__box i{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #a3162e;box-sizing:border-box;touch-action:none}
+.qr-crop__box i[data-c="nw"]{left:-20px;top:-20px;cursor:nwse-resize}
+.qr-crop__box i[data-c="ne"]{right:-20px;top:-20px;cursor:nesw-resize}
+.qr-crop__box i[data-c="sw"]{left:-20px;bottom:-20px;cursor:nesw-resize}
+.qr-crop__box i[data-c="se"]{right:-20px;bottom:-20px;cursor:nwse-resize}
+.qr-preview .qr-fx{width:min(200px,60vw)}
+.qr-anims{display:flex;flex-wrap:wrap;gap:8px}
+.qr-anims.is-off{opacity:.45;pointer-events:none}
+body.appbody .qr-anims button{padding:8px 14px;font-size:12px;min-height:0}
+body.appbody .qr-anims button.on{background:var(--button-ink);color:var(--button-face)}
